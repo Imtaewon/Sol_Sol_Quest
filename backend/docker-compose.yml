@@ -1,0 +1,55 @@
+version: '3.8'
+services:
+  # FastAPI 애플리케이션 (동일)
+  app:
+    build: .
+    container_name: quest-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql+mysqlconnector://quest_user:questpass@mysql:3306/quest_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mysql  # MongoDB → MySQL로 변경
+      - redis
+
+  # MySQL 데이터베이스 (새로 추가)
+  mysql:
+    image: mysql:8.0
+    container_name: quest-mysql
+    ports:
+      - "3306:3306"  # 내부 포트만 (외부 노출 안 함)
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword123
+      - MYSQL_DATABASE=quest_db 
+      - MYSQL_USER=quest_user
+      - MYSQL_PASSWORD=questpass123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  # Redis 캐시 (동일)
+  redis:
+    image: redis:7.2-alpine
+    container_name: quest-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # phpMyAdmin (선택사항 - DB 관리용)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: quest-phpmyadmin
+    ports:
+      - "8080:80"  # 웹 브라우저로 접속
+    environment:
+      - PMA_HOST=mysql
+      - MYSQL_ROOT_PASSWORD=rootpassword123
+    depends_on:
+      - mysql
+
+volumes:
+  mysql_data:  # MongoDB → MySQL로 변경
+  redis_data: 
