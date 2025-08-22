@@ -28,11 +28,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install flake8 black
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
 
       - name: 🔍 Lint with flake8
         run: |
-          flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics || true
+          flake8 backend/app/ --count --select=E9,F63,F7,F82 --show-source --statistics || true
 
   # 2단계: 테스트 실행
   test:
@@ -52,13 +52,13 @@ jobs:
       - name: 📦 Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r backend/requirements.txt
           pip install pytest httpx
 
       - name: 🧪 Run basic tests
         run: |
+          cd backend
           pytest tests/ -v || echo "No tests found, continuing..."
-          working-directory: ./backend  # ← 추가
 
   # 3단계: 백엔드 개발 서버 배포
   deploy-backend-dev:
