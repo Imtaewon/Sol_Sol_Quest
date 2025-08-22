@@ -1,5 +1,12 @@
 # Dockerfile
-FROM python:3.11-slim
+FROM python:3.11-slim AS base
+# 동일한 베이스 이미지 사용
+
+FROM base AS development
+# 개발용 설정
+
+FROM base AS production  
+# 운영용 설정
 
 WORKDIR /app
 
