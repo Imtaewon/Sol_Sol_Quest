@@ -1,0 +1,74 @@
+version: '3.8'
+services:
+  # FastAPI 애플리케이션
+  app:
+    build: .
+    container_name: quest-fastapi
+    ports:
+      - "8000:8000"  # 개발시 직접 접근용 (선택사항)
+    environment:
+      - DATABASE_URL=mysql+pymysql://quest_user:questpass123@mysql:3306/quest_db
+      - REDIS_URL=redis://redis:6379
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+  # Nginx 프록시
+  nginx:
+    image: nginx:alpine
+    container_name: quest-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro  # 읽기 전용 마운트
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  # MySQL 데이터베이스 (기존과 동일)
+  mysql:
+    image: mysql:8.0
+    container_name: quest-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword123
+      - MYSQL_DATABASE=quest_db
+      - MYSQL_USER=quest_user
+      - MYSQL_PASSWORD=questpass123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+
+  # Redis 캐시 (기존과 동일)
+  redis:
+    image: redis:7.2-alpine
+    container_name: quest-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # phpMyAdmin (기존과 동일)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: quest-phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOST=mysql
+      - PMA_USER=quest_user
+      - PMA_PASSWORD=questpass123
+      - MYSQL_ROOT_PASSWORD=rootpassword123
+    depends_on:
+      - mysql
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:
