@@ -1,12 +1,12 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .models import Base
+from .models import Base, get_db_url
 import os
 
 # Docker 환경에서 mysql 호스트명 사용
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "mysql+pymysql://quest_user:questpass123@mysql:3306/quest_db"
+    "mysql+pymysql://quest_user:questpass123@127.0.0.1:3306/quest_db"
 )
 
 engine = create_engine(DATABASE_URL)

@@ -16,15 +16,21 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 
 # --- helpers ---
-def get_school_or_400(db: Session, code: str, name_from_client: str | None = None) -> School:
-
+def get_school_or_400(db: Session, code: str, name: str | None = None) -> School:
     if not code:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="university_code가 필요합니다.")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="university_code가 필요합니다."
+        )
 
     school = db.query(School).filter(School.code == code).first()
     if not school:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="등록되지 않은 university_code 입니다.")
-
+        # name이 같이 들어온 경우, 디버깅을 돕는 메시지로 활용
+        hint = f" (client_name={name})" if name else ""
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"등록되지 않은 university_code 입니다.{hint}"
+        )
     return school
 
 def _safe_userstat(db: Session, user_id: str):

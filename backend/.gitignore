@@ -23,3 +23,7 @@ database.yml
 
 # AWS 관련
 aws-config/
+
+__pycache__/
+*.pyc
+

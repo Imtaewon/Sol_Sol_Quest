@@ -7,5 +7,4 @@ class UpdateMeRequest(BaseModel):
     university_name: Optional[str] = None
     major: Optional[str] = None
     grade: Optional[int] = Field(default=None, ge=1, le=8)
-    age: Optional[int] = Field(default=None, ge=0, le=120)
     password: Optional[str] = Field(default=None, min_length=8, max_length=128)
