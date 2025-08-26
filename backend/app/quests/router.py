@@ -11,6 +11,7 @@ from app.models import (
 )
 from .schemas import QuestListItem
 
+
 router = APIRouter(prefix="/quests", tags=["Quests"])
 
 
@@ -51,8 +52,7 @@ def list_quests(
         q = q.filter(Quest.period_scope == period_scope)
     if search:
         like = f"%{search}%"
-        q = q.filter(or_(Quest.title.ilike(like), Quest.description.ilike(like)))
-
+        q = q.filter(Quest.title.ilike(like))  # ERD에는 description 필드가 없음
 
     # -------- 사용자별 최신 시도 서브쿼리 (퀘스트별 1개) --------
     # 현재 사용자(user_id)의 각 quest_id에 대해 가장 최근(시작시각 최대) attempt 1개
@@ -85,7 +85,7 @@ def list_quests(
 
     # -------- 정렬 --------
     sort_col = {
-        "created_at": Quest.created_at,
+        "created_at": Quest.created_at,  # ERD에는 created_at 필드가 없지만 일반적으로 추가될 것으로 가정
         "reward_exp": Quest.reward_exp,
         "title": Quest.title,
     }[sort_by]
@@ -130,14 +130,9 @@ def list_quests(
             target_count=quest_obj.target_count,
             period_scope=quest_obj.period_scope,
             active=quest_obj.active,
-            created_at=quest_obj.created_at,
-            user_status=(user_status if attempt_id else "available"),
-            attempt_id=attempt_id,
-            progress_count=progress_count,
-            user_target_count=user_target_count,
-            started_at=started_at,
-            submitted_at=submitted_at,
-            approved_at=approved_at,
+            lat=quest_obj.lat,  # GPS 미션용 위도 추가
+            lng=quest_obj.lng,  # GPS 미션용 경도 추가
+            created_at=quest_obj.created_at,  # 필요시 추가
         )
         items.append(payload)
 
