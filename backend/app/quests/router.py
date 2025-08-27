@@ -1,21 +1,21 @@
-# app/quests/router.py
 from typing import Optional, Literal
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, desc, asc, or_
+from sqlalchemy import func, desc, asc, and_
 from app.database import get_db
-from app.auth.deps import get_current_user  # JWT 인증 의존성 (프로젝트에 이미 있음)
+from app.auth.deps import get_current_user
 from app.models import (
     Quest, QuestAttempt,
-    QuestTypeEnum, QuestVerifyMethodEnum, QuestCategoryEnum, PeriodScopeEnum
+    QuestTypeEnum, QuestVerifyMethodEnum, QuestCategoryEnum, PeriodScopeEnum,
+    QuestAttemptStatusEnum
 )
 from .schemas import QuestListItem
-
+from .service import simple_finish_quest
 
 router = APIRouter(prefix="/quests", tags=["Quests"])
 
-
-@router.get("", response_model=dict)
+# 전체 퀘스트 목록
+@router.get("", response_model=dict, summary="전체 퀘스트 목록 조회 (필터/정렬/페이지네이션)")
 def list_quests(
     # ------- 필터 -------
     type: Optional[QuestTypeEnum] = Query(None, description="퀘스트 유형"),
@@ -23,7 +23,7 @@ def list_quests(
     verify_method: Optional[QuestVerifyMethodEnum] = Query(None, description="인증 방식"),
     period_scope: Optional[PeriodScopeEnum] = Query(None, description="주기 스코프"),
     active: bool = Query(True, description="활성 상태만"),
-    search: Optional[str] = Query(None, description="제목/설명 부분 검색"),
+    search: Optional[str] = Query(None, description="제목 부분 검색"),
 
     # ------- 정렬 / 페이지네이션 -------
     sort_by: Literal["created_at", "reward_exp", "title"] = Query("created_at"),
@@ -31,14 +31,12 @@ def list_quests(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
 
-    # ------- 컨텍스트 -------
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),  # 현재 로그인 사용자
+    current_user=Depends(get_current_user),
 ):
     """
-    퀘스트 목록 조회 + (옵션) 현재 사용자 최신 시도 상태 조인
+    퀘스트 목록 조회 + 현재 사용자 진행상태(최신 attempt 1건) 조인
     """
-
     # 기본 쿼리
     q = db.query(Quest).filter(Quest.active == active)
 
@@ -52,89 +50,115 @@ def list_quests(
         q = q.filter(Quest.period_scope == period_scope)
     if search:
         like = f"%{search}%"
-        q = q.filter(Quest.title.ilike(like))  # ERD에는 description 필드가 없음
+        q = q.filter(Quest.title.ilike(like))
 
-    # -------- 사용자별 최신 시도 서브쿼리 (퀘스트별 1개) --------
-    # 현재 사용자(user_id)의 각 quest_id에 대해 가장 최근(시작시각 최대) attempt 1개
-    LatestAttempt = aliased(QuestAttempt)
+    # ---- (중요) 유저별 최신 attempt 서브쿼리 ----
+    QA1 = aliased(QuestAttempt)
     sub_latest = (
         db.query(
-            LatestAttempt.quest_id.label("quest_id"),
-            func.max(LatestAttempt.started_at).label("max_started_at"),
+            QA1.quest_id.label("quest_id"),
+            func.max(QA1.started_at).label("max_started_at"),
         )
-        .filter(LatestAttempt.user_id == current_user.id)
-        .group_by(LatestAttempt.quest_id)
+        .filter(QA1.user_id == current_user.id)
+        .group_by(QA1.quest_id)
         .subquery()
     )
 
-    # 위 서브쿼리와 실제 Attempt를 다시 조인해서, "최신" Attempt 레코드 자체를 얻는다
-    LatestAttemptRow = aliased(QuestAttempt)
-    # 주 쿼리에 조인해도 되고, 별도 쿼리 후 매핑해도 되나, 여기서는 조인으로 한 번에 묶는다.
+    # 최신 attempt 레코드
+    QA = aliased(QuestAttempt)
     q = (
         q.outerjoin(
             sub_latest,
             sub_latest.c.quest_id == Quest.id
         )
         .outerjoin(
-            LatestAttemptRow,
-            (LatestAttemptRow.quest_id == Quest.id) &
-            (LatestAttemptRow.user_id == current_user.id) &
-            (LatestAttemptRow.started_at == sub_latest.c.max_started_at)
+            QA,
+            and_(
+                QA.quest_id == Quest.id,
+                QA.user_id == current_user.id,
+                QA.started_at == sub_latest.c.max_started_at
+            )
         )
     )
 
-    # -------- 정렬 --------
-    sort_col = {
-        "created_at": Quest.created_at,  # ERD에는 created_at 필드가 없지만 일반적으로 추가될 것으로 가정
+    # 정렬 컬럼 안전 처리 (created_at 없으면 id로 대체)
+    sort_map = {
+        "created_at": getattr(Quest, "created_at", Quest.id),
         "reward_exp": Quest.reward_exp,
         "title": Quest.title,
-    }[sort_by]
+    }
+    sort_col = sort_map[sort_by]
+    q = q.order_by(asc(sort_col) if order == "asc" else desc(sort_col))
 
-    if order == "asc":
-        q = q.order_by(asc(sort_col))
-    else:
-        q = q.order_by(desc(sort_col))
-
-    # -------- total count (pagination) --------
+    # total count (성능 고려: 별도 카운트 서브쿼리)
     total_count = q.with_entities(func.count(Quest.id)).scalar() or 0
 
-    # -------- 페이지네이션 --------
+    # 페이지네이션 & 선택 컬럼
     rows = (
         q.with_entities(
-            Quest,
-            LatestAttemptRow.id.label("attempt_id"),
-            LatestAttemptRow.status.label("user_status"),
-            LatestAttemptRow.progress_count.label("progress_count"),
-            LatestAttemptRow.target_count.label("user_target_count"),
-            LatestAttemptRow.started_at.label("started_at"),
-            LatestAttemptRow.submitted_at.label("submitted_at"),
-            LatestAttemptRow.approved_at.label("approved_at"),
+            Quest.id, Quest.type, Quest.title, Quest.verify_method, Quest.category,
+            Quest.verify_params, Quest.reward_exp, Quest.target_count, Quest.period_scope,
+            Quest.active,
+            getattr(Quest, "created_at", None).label("created_at"),
+            # (옵션) 모델에 없으면 주석 처리
+            getattr(Quest, "lat", None).label("lat"),
+            getattr(Quest, "lng", None).label("lng"),
+
+            QA.id.label("attempt_id"),
+            QA.status.label("user_status"),
+            QA.progress_count.label("progress_count"),
+            QA.target_count.label("user_target_count"),
+            QA.started_at.label("started_at"),
+            QA.submitted_at.label("submitted_at"),
+            QA.approved_at.label("approved_at"),
         )
         .offset((page - 1) * limit)
         .limit(limit)
         .all()
     )
 
-    # -------- 직렬화 --------
     items: list[QuestListItem] = []
-    for quest_obj, attempt_id, user_status, progress_count, user_target_count, started_at, submitted_at, approved_at in rows:
-        # attempt가 없으면 user_status는 "available"로 내려줌
-        payload = QuestListItem(
-            id=quest_obj.id,
-            type=quest_obj.type,
-            title=quest_obj.title,
-            verify_method=quest_obj.verify_method,
-            category=quest_obj.category,
-            verify_params=quest_obj.verify_params,
-            reward_exp=quest_obj.reward_exp,
-            target_count=quest_obj.target_count,
-            period_scope=quest_obj.period_scope,
-            active=quest_obj.active,
-            lat=quest_obj.lat,  # GPS 미션용 위도 추가
-            lng=quest_obj.lng,  # GPS 미션용 경도 추가
-            created_at=quest_obj.created_at,  # 필요시 추가
-        )
-        items.append(payload)
+    for row in rows:
+        (
+            quest_id, quest_type, title, verify_method, category,
+            verify_params, reward_exp, target_count, period_scope,
+            active,
+            created_at,
+            lat, lng,
+
+            attempt_id, user_status, progress_count, user_target_count,
+            started_at, submitted_at, approved_at
+        ) = row
+
+        # attempt가 없으면 DEACTIVE로 해석
+        if user_status is None:
+            user_status = QuestAttemptStatusEnum.DEACTIVE
+            progress_count = 0
+            user_target_count = target_count  # 없으면 기본 타겟을 그대로
+
+        items.append(QuestListItem(
+            id=quest_id,
+            type=quest_type,
+            title=title,
+            verify_method=verify_method,
+            category=category,
+            verify_params=verify_params,
+            reward_exp=reward_exp,
+            target_count=target_count,
+            period_scope=period_scope,
+            active=active,
+            created_at=created_at,
+            lat=lat,
+            lng=lng,
+
+            attempt_id=attempt_id,
+            user_status=user_status,
+            progress_count=progress_count,
+            user_target_count=user_target_count,
+            started_at=started_at,
+            submitted_at=submitted_at,
+            approved_at=approved_at,
+        ))
 
     return {
         "success": True,
@@ -147,3 +171,16 @@ def list_quests(
             },
         },
     }
+
+
+# (시현용) 단일 퀘스트 즉시 완료
+@router.post("/{quest_id}/complete", summary="(시현용) 단일 퀘스트 즉시 완료")
+def complete_simple_quest(
+    quest_id: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    result = simple_finish_quest(db=db, user_id=current_user.id, quest_id=quest_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.get("message", "처리 실패"))
+    return result

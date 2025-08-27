@@ -41,7 +41,7 @@ def _safe_userstat(db: Session, user_id: str):
 
 
 # --- routes ---
-@router.get("/me")
+@router.get("/me", summary="내 프로필 조회")
 def read_me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     # 관계/통계 로드
     school = db.query(School).filter(School.id == current_user.school_id).first() if current_user.school_id else None
@@ -64,7 +64,7 @@ def read_me(current_user: User = Depends(get_current_user), db: Session = Depend
     }
 
 
-@router.patch("/me")
+@router.patch("/me", summary="내 프로필 수정")
 def update_me(
     body: UpdateMeRequest,
     current_user: User = Depends(get_current_user),
