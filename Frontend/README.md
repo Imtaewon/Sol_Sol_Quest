@@ -153,7 +153,7 @@ API 호출 → RTK Query → Redux Store → React Component
 Redux (전역 상태) + React Query (서버 상태) + Local State (컴포넌트 상태)
 ```
 
-## 🔌 백엔드 API 요구사항
+## 🔌 백엔드 API 요구사항 (23개)
 
 ### 인증 관련 API
 
@@ -271,37 +271,28 @@ Response: {
 }
 ```
 
-#### 9. 퀘스트 상세 조회 API
-```
-GET /api/quests/{questId}
-Response: {
-  success: boolean,
-  data: QuestWithAttempt
-}
-```
-
-#### 10. 퀘스트 시작 API
+#### 9. 퀘스트 시작 API
 ```
 POST /api/quests/start
 Request: { quest_id: string }
 Response: { success: boolean, data: QuestAttempt }
 ```
 
-#### 11. 퀘스트 제출 API
+#### 10. 퀘스트 제출 API
 ```
 POST /api/quests/submit
 Request: { quest_id: string, verify_data: any }
 Response: { success: boolean, data: QuestAttempt }
 ```
 
-#### 12. 퀘스트 검증 API
+#### 11. 퀘스트 검증 API
 ```
 POST /api/quests/verify
 Request: { quest_id: string, verify_data: any }
 Response: { success: boolean, data: QuestAttempt }
 ```
 
-#### 13. 추천 퀘스트 조회 API
+#### 12. 추천 퀘스트 조회 API
 ```
 GET /api/quests/recommended
 Response: {
@@ -313,7 +304,7 @@ Response: {
 }
 ```
 
-#### 14. 퀘스트 수령 API
+#### 13. 퀘스트 경험치 수령 API
 ```
 POST /api/quests/claim
 Request: { quest_id: string, exp_amount: number }
@@ -322,7 +313,7 @@ Response: { success: boolean, data: { exp_gained: number } }
 
 ### 랭킹 관련 API
 
-#### 15. 내 학교 랭킹 조회 API (비가입자)
+#### 14. 내 학교 랭킹 조회 API (비가입자)
 ```
 GET /api/ranks/my-school
 Response: {
@@ -337,7 +328,7 @@ Response: {
 }
 ```
 
-#### 16. 내 학교 랭킹 조회 API (가입자)
+#### 15. 내 학교 랭킹 조회 API (가입자)
 ```
 GET /api/ranks/my-school-with-user
 Response: {
@@ -353,7 +344,7 @@ Response: {
 }
 ```
 
-#### 17. 상위 10개 학교 조회 API (총점 기준)
+#### 16. 상위 10개 학교 조회 API (총점 기준)
 ```
 GET /api/ranks/top-schools/total
 Response: {
@@ -368,7 +359,7 @@ Response: {
 }
 ```
 
-#### 18. 상위 10개 학교 조회 API (평균 기준)
+#### 17. 상위 10개 학교 조회 API (평균 기준)
 ```
 GET /api/ranks/top-schools/average
 Response: {
@@ -386,7 +377,7 @@ Response: {
 
 ### 적금 관련 API
 
-#### 19. 적금 가입 제출 API
+#### 18. 적금 가입 제출 API
 ```
 POST /api/saving/signup
 Request: {
@@ -397,7 +388,7 @@ Request: {
 Response: { success: boolean, data: { account_id: string } }
 ```
 
-#### 20. 설문 문제 조회 API
+#### 19. 설문 문제 조회 API
 ```
 GET /api/saving/survey/{questionNumber}
 Response: {
@@ -411,7 +402,7 @@ Response: {
 }
 ```
 
-#### 21. 설문 응답 제출 API
+#### 20. 설문 응답 제출 API
 ```
 POST /api/saving/survey-responses
 Request: SurveyResponse[]
@@ -420,7 +411,7 @@ Response: { success: boolean }
 
 ### 예금 관련 API
 
-#### 22. 예금 가입 API
+#### 21. 예금 가입 API
 ```
 POST /api/deposit/signup
 Request: {
@@ -433,7 +424,7 @@ Response: { success: boolean, data: { account_id: string } }
 
 ### 출석 관련 API
 
-#### 23. 출석 내역 조회 API
+#### 22. 출석 내역 조회 API
 ```
 GET /api/attendance/{year}/{month}
 Response: {
@@ -446,7 +437,7 @@ Response: {
 }
 ```
 
-#### 24. 출석하기 API
+#### 23. 출석하기 API
 ```
 POST /api/attendance/check-in
 Request: { date: string }
