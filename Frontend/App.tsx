@@ -28,6 +28,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
+import { Platform, StyleSheet, View } from 'react-native';
 import { store } from './store';
 import { AuthStack } from './navigation/AuthStack';
 import { MainTabs } from './navigation/MainTabs';
@@ -51,18 +52,60 @@ const Navigation: React.FC = () => {
   return isAuthenticated ? <MainTabs /> : <AuthStack />;
 };
 
+// 웹에서 모바일 뷰를 강제하는 컨테이너
+const MobileContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.webContainer}>
+        <View style={styles.mobileFrame}>
+          {children}
+        </View>
+      </View>
+    );
+  }
+  
+  return <>{children}</>;
+};
+
 // 메인 앱 컴포넌트
 const App: React.FC = () => {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <NavigationContainer>
-          <Navigation />
-          <Toast />
+          <MobileContainer>
+            <Navigation />
+            <Toast />
+          </MobileContainer>
         </NavigationContainer>
       </QueryClientProvider>
     </Provider>
   );
 };
+
+const styles = StyleSheet.create({
+  webContainer: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: '100vh',
+  },
+  mobileFrame: {
+    width: 375, // iPhone 12/13/14 width
+    height: 812, // iPhone 12/13/14 height
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    overflow: 'hidden',
+    boxShadow: '0 0 20px rgba(0, 0, 0, 0.3)',
+    // 웹에서만 적용되는 스타일
+    ...(Platform.OS === 'web' && {
+      maxWidth: '100vw',
+      maxHeight: '100vh',
+      width: 'min(375px, 100vw)',
+      height: 'min(812px, 100vh)',
+    }),
+  },
+});
 
 export default App;

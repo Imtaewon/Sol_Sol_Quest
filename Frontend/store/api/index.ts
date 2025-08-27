@@ -5,6 +5,4 @@
 
 export { baseApi } from './baseApi';
 export { questApi } from './questApi';
-export { userApi } from './userApi';
-export { accountApi } from './accountApi';
 export { savingApi } from './savingApi';

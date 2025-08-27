@@ -23,6 +23,7 @@ import {
  * 적금 가입 API 엔드포인트 정의
  */
 export const savingApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     /**
      * 개인정보 조회

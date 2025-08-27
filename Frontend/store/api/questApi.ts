@@ -66,6 +66,7 @@ export interface QuestVerifyRequest {
  * RTK Query를 사용하여 퀘스트 관련 API 호출을 관리
  */
 export const questApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     /**
      * 퀘스트 목록 조회

@@ -1,35 +1,46 @@
 /**
  * env.development.ts
  * 
- * 개발 환경 설정 파일
+ * 해커톤 시연용 환경 설정 파일
  * 
  * 주요 설정:
- * - API 서버 URL
- * - 앱 정보 (이름, 버전)
- * - 개발 환경 플래그
- * - 디버그 모드 설정
- * - 로그 레벨 설정
+ * - 해커톤 서버 URL
+ * - 시연 모드 활성화
+ * - 디버그 모드 (시연용)
+ * - 오프라인 대체 데이터
+ * - 네트워크 타임아웃 설정
  * 
  * 사용법:
- * - 개발 서버에서 실행 시 이 설정이 적용됨
- * - 프로덕션 빌드 시에는 env.production.ts 사용
+ * - 해커톤 시연 시 이 설정이 적용됨
+ * - 시연 후 DEBUG_MODE만 false로 변경하면 됨
+ * - 테스트, 개발, 배포 모두 이 설정 사용
  */
 
 /**
- * 개발 환경 설정 객체
- * 개발 중에 사용되는 모든 설정값들을 정의
+ * 해커톤 시연용 설정 객체
+ * 테스트, 개발, 배포 모든 환경에서 사용
  */
 export const developmentConfig = {
-  // API 서버 기본 URL (서버 담당자가 제공한 IP)
+  // 해커톤 서버 URL (실제 배포 시 사용할 서버)
   API_BASE_URL: 'http://15.165.185.135/api/v1',
   
   // 앱 기본 정보
-  APP_NAME: 'SolSolQuest (Dev)',  // 개발용 앱 이름
-  APP_VERSION: '1.0.0',           // 앱 버전
-  NODE_ENV: 'development',        // Node.js 환경
+  APP_NAME: 'SolQuest',
+  APP_VERSION: '1.0.0',
+  NODE_ENV: 'development',
   
-  // 개발 환경 특별 설정
-  DEBUG_MODE: true,               // 디버그 모드 활성화
-  LOG_LEVEL: 'debug',             // 로그 레벨 (debug/info/warn/error)
-  MOCK_API: false,                // 실제 API 사용 (false: 실제 서버, true: 목업 데이터)
+  // 해커톤 시연용 핵심 설정
+  DEBUG_MODE: true,                // 시연용 디버그 활성화 (문제 발생 시 확인용)
+  LOG_LEVEL: 'info',               // 정보 로그 (시연 중 문제 파악용)
+  MOCK_API: false,                 // 실제 API 사용
+  
+  // 해커톤 시연용 특별 설정
+  DEMO_MODE: true,                 // 시연 모드 활성화
+  OFFLINE_FALLBACK: true,          // 오프라인 시 대체 데이터 사용
+  NETWORK_TIMEOUT: 20000,          // 네트워크 타임아웃 (20초 - 시연용 여유)
+  
+  // 시연용 추가 설정
+  SHOW_LOADING_INDICATORS: true,   // 로딩 인디케이터 표시
+  ENABLE_ERROR_BOUNDARIES: true,   // 에러 바운더리 활성화
+  AUTO_REFRESH_INTERVAL: 30000,    // 자동 새로고침 간격 (30초)
 };

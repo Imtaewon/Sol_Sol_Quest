@@ -33,7 +33,7 @@ const SHINHAN_COLORS = {
 };
 import { AppHeader } from '../../components/common/AppHeader';
 import { Skeleton } from '../../components/common/Skeleton';
-import { useGetPaymentHistoryQuery } from '../../store/api/paymentApi';
+import { useGetPaymentHistoryQuery } from '../../store/api/baseApi';
 import { formatters } from '../../utils/formatters';
 
 export const PaymentHistoryScreen: React.FC = () => {
