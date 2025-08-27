@@ -1,3 +1,32 @@
+/**
+ * HomeScreen.tsx
+ * 
+ * 앱의 메인 홈 화면
+ * 
+ * 주요 기능:
+ * - 적금 가입 여부에 따른 조건부 렌더링
+ * - 내 계좌 정보 표시 (적금/예금)
+ * - 학교 랭킹 정보 표시
+ * - 추천 퀘스트 목록 및 수령 기능
+ * 
+ * 화면 구성:
+ * - 내 계좌 섹션: 적금/예금 잔액 및 가입하기 버튼
+ * - 학교 랭킹 섹션: 내 학교 순위 및 상위 학교 목록
+ * - 추천 퀘스트 섹션: 진행중인 퀘스트 및 수령하기 버튼
+ * 
+ * API 연동:
+ * - useUserInfo: 사용자 정보 조회
+ * - useAccountInfo: 계좌 정보 조회
+ * - useMySchoolRank: 학교 랭킹 조회
+ * - useRecommendedQuests: 추천 퀘스트 조회
+ * - useClaimQuest: 퀘스트 수령
+ * 
+ * 상태 관리:
+ * - 적금 가입 여부에 따른 UI 분기
+ * - 새로고침 기능
+ * - 로딩/에러 상태 처리
+ */
+
 import React, { useState } from 'react';
 import {
   View,

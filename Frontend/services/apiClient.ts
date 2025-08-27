@@ -1,3 +1,29 @@
+/**
+ * apiClient.ts
+ * 
+ * Axios 기반 API 클라이언트 설정
+ * 
+ * 주요 기능:
+ * - HTTP 요청/응답 인터셉터 설정
+ * - 토큰 자동 추가 및 만료 처리
+ * - 전역 에러 처리 및 로깅
+ * - API 응답 타입 정의
+ * 
+ * 설정 내용:
+ * - baseURL: 환경변수 기반 API 서버 주소
+ * - timeout: 10초 요청 타임아웃
+ * - Content-Type: application/json
+ * 
+ * 인터셉터:
+ * - 요청 인터셉터: 토큰 자동 추가
+ * - 응답 인터셉터: 401 에러 시 토큰 삭제 및 로그인 리다이렉트
+ * 
+ * 에러 처리:
+ * - 토큰 만료 시 자동 로그아웃
+ * - 에러 메시지 통합 처리
+ * - 콘솔 로깅을 통한 디버깅 지원
+ */
+
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Config } from '../config/env';

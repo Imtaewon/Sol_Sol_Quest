@@ -1,3 +1,31 @@
+/**
+ * LeaderboardScreen.tsx
+ * 
+ * 학교 랭킹 리더보드 화면
+ * 
+ * 주요 기능:
+ * - 적금 가입 여부에 따른 조건부 렌더링
+ * - 내 학교 순위 정보 표시
+ * - 상위 10개 학교 목록 표시 (총점/평균 기준)
+ * - 카테고리별 랭킹 전환 (총점 ↔ 평균)
+ * 
+ * 화면 구성:
+ * - 내 학교 순위 섹션: 등수, 학교명, 누적EXP, 평균EXP, 인원수
+ * - 내 임펙트 섹션: 적금 가입자만 표시 (내 누적EXP)
+ * - 상위 10개 학교 섹션: 등수, 학교명, 누적EXP, 인원수
+ * - 카테고리 탭: 총점/평균 기준 전환
+ * 
+ * API 연동:
+ * - useMySchoolRank: 내 학교 순위 조회 (비가입자)
+ * - useMySchoolRankWithUser: 내 학교 순위 조회 (가입자)
+ * - useTopSchoolsByTotal: 총점 기준 상위 학교 조회
+ * - useTopSchoolsByAverage: 평균 기준 상위 학교 조회
+ * 
+ * 조건부 렌더링:
+ * - 적금 미가입자: 내 임펙트 섹션 숨김
+ * - 적금 가입자: 내 임펙트 섹션 표시
+ */
+
 import React, { useState } from 'react';
 import {
   View,

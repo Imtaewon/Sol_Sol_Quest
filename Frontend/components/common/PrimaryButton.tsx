@@ -1,3 +1,30 @@
+/**
+ * PrimaryButton.tsx
+ * 
+ * 재사용 가능한 기본 버튼 컴포넌트
+ * 
+ * 주요 기능:
+ * - 다양한 스타일 변형 지원 (primary, secondary, outline, success)
+ * - 크기 옵션 지원 (small, medium, large)
+ * - 로딩 상태 표시
+ * - 비활성화 상태 지원
+ * - 접근성 속성 지원
+ * 
+ * Props:
+ * - title: 버튼 텍스트
+ * - onPress: 클릭 이벤트 핸들러
+ * - variant: 버튼 스타일 (primary, secondary, outline, success)
+ * - size: 버튼 크기 (small, medium, large)
+ * - disabled: 비활성화 여부
+ * - loading: 로딩 상태
+ * - style: 추가 스타일
+ * - textStyle: 텍스트 스타일
+ * 
+ * 접근성:
+ * - accessibilityRole: 접근성 역할
+ * - accessibilityLabel: 접근성 라벨
+ */
+
 import React from 'react';
 import {
   TouchableOpacity,

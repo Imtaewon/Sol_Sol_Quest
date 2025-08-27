@@ -1,3 +1,28 @@
+/**
+ * database.ts
+ * 
+ * 데이터베이스 ERD 기반 TypeScript 타입 정의
+ * 
+ * 주요 기능:
+ * - 백엔드 데이터베이스 스키마와 일치하는 타입 정의
+ * - 프론트엔드에서 사용하는 모든 데이터 구조 정의
+ * - API 요청/응답 타입 정의
+ * 
+ * 포함된 타입들:
+ * - Identity: 회원·학교 관련 타입 (School, User, SchoolLeaderboard)
+ * - Onboarding: 가입 설문 관련 타입 (SurveyQuestion, SurveyAnswer)
+ * - Gamification: 티어·경험치 관련 타입 (Tier, UserStats)
+ * - Quests: 퀘스트 관련 타입 (Quest, QuestAttempt, QuestRecommendation)
+ * - Accounts: 계좌 관련 타입 (SavingAccount, DepositAccount)
+ * - Payments: 결제 관련 타입 (Payment, PaymentHistory)
+ * - Attendance: 출석 관련 타입 (Attendance)
+ * 
+ * 특징:
+ * - ULID 기반 고유 식별자 사용
+ * - 엄격한 타입 체크를 통한 타입 안전성 보장
+ * - 백엔드 API와 완전한 호환성
+ */
+
 // ERD 기반 데이터베이스 타입 정의
 
 // 1) Identity (회원·학교)

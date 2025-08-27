@@ -1,3 +1,29 @@
+/**
+ * useAuth.ts
+ * 
+ * 인증 관련 커스텀 훅들
+ * 
+ * 주요 기능:
+ * - 로그인/회원가입/로그아웃 API 호출
+ * - 토큰 관리 및 저장
+ * - 사용자 정보 캐시 관리
+ * - 인증 상태에 따른 UI 피드백
+ * 
+ * 포함된 훅들:
+ * - useLogin: 로그인 처리 및 토큰 저장
+ * - useSignup: 회원가입 처리 및 자동 로그인
+ * - useLogout: 로그아웃 처리 및 토큰 삭제
+ * 
+ * 상태 관리:
+ * - AsyncStorage를 통한 토큰 영구 저장
+ * - React Query 캐시를 통한 사용자 정보 관리
+ * - Toast 메시지를 통한 사용자 피드백
+ * 
+ * 에러 처리:
+ * - API 호출 실패 시 에러 로깅
+ * - 로그아웃 실패 시에도 로컬 토큰 삭제
+ */
+
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { authService, LoginRequest, FrontendSignupRequest } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';

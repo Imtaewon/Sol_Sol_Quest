@@ -1,3 +1,27 @@
+/**
+ * constants.ts
+ * 
+ * 앱 전역에서 사용하는 상수 정의
+ * 
+ * 주요 기능:
+ * - 앱 브랜딩 정보 정의
+ * - 색상 팔레트 정의
+ * - 간격 및 크기 상수 정의
+ * - 탭 및 카테고리 정의
+ * 
+ * 포함된 상수들:
+ * - APP_CONSTANTS: 앱 기본 정보 (브랜딩, 탭, 카테고리)
+ * - COLORS: 색상 팔레트 (primary, secondary, gray 등)
+ * - SPACING: 간격 상수 (xs, sm, md, lg, xl, xxl)
+ * - FONT_SIZES: 폰트 크기 상수
+ * - BORDER_RADIUS: 테두리 반경 상수
+ * 
+ * 사용 목적:
+ * - 일관된 디자인 시스템 구축
+ * - 테마 변경 시 중앙 집중식 관리
+ * - 코드 재사용성 및 유지보수성 향상
+ */
+
 export const APP_CONSTANTS = {
   BRANDING: {
     LOGO_TEXT: '헤이영',
