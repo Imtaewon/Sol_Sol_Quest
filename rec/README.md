@@ -232,6 +232,6 @@ curl -X GET "http://localhost:8000/api/test/simple-recommend/user123"
 - **협업 필터링**: 유사 사용자 그룹 기반 추천
 - **A/B 테스트**: 추천 알고리즘 성능 비교
 - **머신러닝**: 딥러닝 모델 기반 고도화
-- **SURPRISE 퀘스트**: 향후 SURPRISE 타입 퀘스트 추가 지원 가능
+
 
 
