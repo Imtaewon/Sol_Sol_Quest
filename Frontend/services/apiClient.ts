@@ -1,44 +1,34 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Config from 'react-native-config';
-import Toast from 'react-native-toast-message';
-
-const API_BASE_URL = Config.API_BASE_URL || 'https://api.solquest.com';
-const API_TIMEOUT = parseInt(Config.API_TIMEOUT || '10000');
+import { Config } from '../config/env';
 
 // API 응답 타입
 export interface ApiResponse<T = any> {
   success: boolean;
   data: T;
   message?: string;
+  error?: string;
 }
 
-// API 에러 타입
-export interface ApiError {
-  status: number;
-  message: string;
-  data?: any;
-}
-
-// axios 인스턴스 생성
+// Axios 인스턴스 생성
 const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: API_TIMEOUT,
+  baseURL: Config.API_BASE_URL, // 환경변수 사용
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// 요청 인터셉터 - 토큰 자동 주입
+// 요청 인터셉터 - 토큰 자동 추가
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await AsyncStorage.getItem('access_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error('토큰 로드 실패:', error);
+      console.error('토큰 가져오기 실패:', error);
     }
     return config;
   },
@@ -49,30 +39,30 @@ apiClient.interceptors.request.use(
 
 // 응답 인터셉터 - 에러 처리
 apiClient.interceptors.response.use(
-  (response: AxiosResponse<ApiResponse>) => {
+  (response: AxiosResponse) => {
     return response;
   },
-  async (error: AxiosError<ApiError>) => {
-    const status = error.response?.status;
-    const message = error.response?.data?.message || '알 수 없는 오류가 발생했습니다.';
-
-    // 401 Unauthorized - 토큰 만료 또는 무효
-    if (status === 401) {
+  async (error: AxiosError<ApiResponse>) => {
+    const originalRequest = error.config;
+    
+    // 401 에러 (토큰 만료) 처리
+    if (error.response?.status === 401 && originalRequest) {
       try {
-        await AsyncStorage.removeItem('auth_token');
-        // 로그인 화면으로 리디렉션 로직은 네비게이션 컨텍스트에서 처리
+        // 토큰 제거
+        await AsyncStorage.removeItem('access_token');
+        
+        // 로그인 화면으로 리다이렉트 (네비게이션 처리 필요)
+        console.log('토큰이 만료되어 로그인 화면으로 이동합니다.');
+        
       } catch (storageError) {
-        console.error('토큰 삭제 실패:', storageError);
+        console.error('토큰 제거 실패:', storageError);
       }
     }
-
-    // 에러 토스트 표시
-    Toast.show({
-      type: 'error',
-      text1: '오류',
-      text2: message,
-    });
-
+    
+    // 에러 메시지 처리
+    const errorMessage = error.response?.data?.message || error.message || '알 수 없는 오류가 발생했습니다.';
+    console.error('API 에러:', errorMessage);
+    
     return Promise.reject(error);
   }
 );

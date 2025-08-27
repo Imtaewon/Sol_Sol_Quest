@@ -21,6 +21,7 @@ import { COLORS, SPACING, FONT_SIZES, APP_CONSTANTS } from '../../utils/constant
 import { signupSchema, SignupFormData } from '../../utils/validators';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { useSignup } from '../../hooks/useAuth';
+import { FrontendSignupRequest } from '../../services/authService';
 
 type SignupScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'SignUp'>;
 
@@ -66,7 +67,7 @@ export const SignupScreen: React.FC = () => {
 
     try {
       // 1단계 데이터와 2단계 데이터를 합쳐서 API 요청
-      const finalData = {
+      const finalData: FrontendSignupRequest = {
         ...step1Data,
         ...data,
       };
@@ -197,14 +198,14 @@ export const SignupScreen: React.FC = () => {
                             <TouchableOpacity
                               style={[
                                 styles.genderButton,
-                                value === 'male' && styles.genderButtonActive,
+                                value === 'M' && styles.genderButtonActive,
                               ]}
-                              onPress={() => onChange('male')}
+                              onPress={() => onChange('M')}
                             >
                               <Text
                                 style={[
                                   styles.genderButtonText,
-                                  value === 'male' && styles.genderButtonTextActive,
+                                  value === 'M' && styles.genderButtonTextActive,
                                 ]}
                               >
                                 남성
@@ -213,14 +214,14 @@ export const SignupScreen: React.FC = () => {
                             <TouchableOpacity
                               style={[
                                 styles.genderButton,
-                                value === 'female' && styles.genderButtonActive,
+                                value === 'F' && styles.genderButtonActive,
                               ]}
-                              onPress={() => onChange('female')}
+                              onPress={() => onChange('F')}
                             >
                               <Text
                                 style={[
                                   styles.genderButtonText,
-                                  value === 'female' && styles.genderButtonTextActive,
+                                  value === 'F' && styles.genderButtonTextActive,
                                 ]}
                               >
                                 여성
@@ -462,14 +463,14 @@ export const SignupScreen: React.FC = () => {
                           <TouchableOpacity
                             style={[
                               styles.genderButton,
-                              value === 'male' && styles.genderButtonActive,
+                              value === 'M' && styles.genderButtonActive,
                             ]}
-                            onPress={() => onChange('male')}
+                            onPress={() => onChange('M')}
                           >
                             <Text
                               style={[
                                 styles.genderButtonText,
-                                value === 'male' && styles.genderButtonTextActive,
+                                value === 'M' && styles.genderButtonTextActive,
                               ]}
                             >
                               남성
@@ -478,14 +479,14 @@ export const SignupScreen: React.FC = () => {
                           <TouchableOpacity
                             style={[
                               styles.genderButton,
-                              value === 'female' && styles.genderButtonActive,
+                              value === 'F' && styles.genderButtonActive,
                             ]}
-                            onPress={() => onChange('female')}
+                            onPress={() => onChange('F')}
                           >
                             <Text
                               style={[
                                 styles.genderButtonText,
-                                value === 'female' && styles.genderButtonTextActive,
+                                value === 'F' && styles.genderButtonTextActive,
                               ]}
                             >
                               여성

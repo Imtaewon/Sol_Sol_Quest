@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { authService, LoginRequest, SignupRequest } from '../services/authService';
+import { authService, LoginRequest, FrontendSignupRequest } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 
@@ -11,13 +11,13 @@ export const useLogin = () => {
     mutationFn: (data: LoginRequest) => authService.login(data),
     onSuccess: async (response) => {
       if (response.success) {
-        // 토큰 저장
-        await AsyncStorage.setItem('auth_token', response.data.token);
+        // 토큰 저장 (access_token으로 변경)
+        await AsyncStorage.setItem('auth_token', response.data.access_token);
         
-        // 사용자 정보 캐시에 저장
+        // 사용자 정보 캐시에 저장 (Backend 응답 형식에 맞춤)
         queryClient.setQueryData(['user'], response.data.user);
-        queryClient.setQueryData(['token'], response.data.token);
-        queryClient.setQueryData(['savingStatus'], response.data.user.savingStatus);
+        queryClient.setQueryData(['token'], response.data.access_token);
+        queryClient.setQueryData(['savingStatus'], response.data.user.has_savings);
         
         Toast.show({
           type: 'success',
@@ -34,14 +34,24 @@ export const useLogin = () => {
 
 // 회원가입 훅
 export const useSignup = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: (data: SignupRequest) => authService.signup(data),
-    onSuccess: (response) => {
+    mutationFn: (data: FrontendSignupRequest) => authService.signup(data),
+    onSuccess: async (response) => {
       if (response.success) {
+        // 회원가입 성공 시 자동 로그인 처리
+        await AsyncStorage.setItem('auth_token', response.data.access_token);
+        
+        // 사용자 정보 캐시에 저장
+        queryClient.setQueryData(['user'], response.data.user);
+        queryClient.setQueryData(['token'], response.data.access_token);
+        queryClient.setQueryData(['savingStatus'], response.data.user.has_savings);
+        
         Toast.show({
           type: 'success',
           text1: '회원가입 성공',
-          text2: '로그인 화면으로 이동합니다.',
+          text2: '자동으로 로그인되었습니다.',
         });
       }
     },

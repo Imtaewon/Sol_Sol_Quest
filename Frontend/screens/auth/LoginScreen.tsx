@@ -35,7 +35,7 @@ export const LoginScreen: React.FC = () => {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: '',
+      login_id: '',  // username → login_id로 변경
       password: '',
     },
   });
@@ -44,8 +44,8 @@ export const LoginScreen: React.FC = () => {
     try {
       const result = await loginMutation.mutateAsync(data);
       if (result.success) {
-        // Redux 상태 업데이트
-        dispatch(loginSuccess({ token: result.data.token }));
+        // Redux 상태 업데이트 (Backend 응답 형식에 맞춤)
+        dispatch(loginSuccess({ token: result.data.access_token }));
         dispatch(setUser(result.data.user));
         // 로그인 성공 후 메인 화면으로 이동
         console.log('로그인 성공:', result.data);
@@ -78,14 +78,14 @@ export const LoginScreen: React.FC = () => {
           <View style={styles.form}>
             <Controller
               control={control}
-              name="username"
+              name="login_id"
               render={({ field: { onChange, value } }) => (
                 <FormTextInput
                   label="아이디"
                   placeholder="아이디를 입력해주세요"
                   value={value}
                   onChangeText={onChange}
-                  error={errors.username?.message}
+                  error={errors.login_id?.message}
                   autoCapitalize="none"
                   autoCorrect={false}
                   accessibilityRole="text"

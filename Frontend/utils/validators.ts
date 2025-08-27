@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const signupSchema = z.object({
   name: z.string().min(1, '이름을 입력해주세요'),
-  gender: z.enum(['male', 'female'] as const).refine((val) => val !== undefined, {
+  gender: z.enum(['M', 'F', 'X'] as const).refine((val) => val !== undefined, {
     message: '성별을 선택해주세요',
   }),
   birthYear: z.number().min(1990, '1990년 이후 출생자만 가입 가능합니다').max(2010, '2010년 이전 출생자만 가입 가능합니다'),
@@ -19,7 +19,7 @@ export const signupSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  username: z.string().min(1, '아이디를 입력해주세요'),
+  login_id: z.string().min(1, '아이디를 입력해주세요'),
   password: z.string().min(1, '비밀번호를 입력해주세요'),
 });
 
