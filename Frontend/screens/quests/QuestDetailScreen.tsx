@@ -1,3 +1,21 @@
+/**
+ * QuestDetailScreen.tsx
+ * 
+ * 퀘스트 상세 화면 컴포넌트
+ * 
+ * 주요 기능:
+ * - 퀘스트 상세 정보 표시
+ * - 퀘스트 진행률 표시
+ * - 퀘스트 시작/인증/제출 기능
+ * - 인증 방식별 처리 (GPS, STEPS, PAYMENT, ATTENDANCE 등)
+ * - 퀘스트 완료 상태 표시
+ * 
+ * 데이터 흐름:
+ * - QuestsScreen에서 quest 객체를 받아서 표시
+ * - 별도의 API 호출 없이 받은 데이터로 렌더링
+ * - 액션 수행 후 목록 화면으로 돌아감
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -17,7 +35,6 @@ import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
 import { QuestWithAttempt, QuestAttempt } from '../../types/database';
 import { 
-  useGetQuestDetailQuery,
   useStartQuestMutation,
   useSubmitQuestMutation,
   useVerifyQuestMutation,
@@ -30,24 +47,35 @@ type QuestDetailNavigationProp = StackNavigationProp<HomeStackParamList, 'QuestD
 
 const { width } = Dimensions.get('window');
 
-// 퀘스트 타입별 색상
+/**
+ * 퀘스트 타입별 색상 정의
+ * - life: 일상 퀘스트 (파란색)
+ * - growth: 성장 퀘스트 (주황색)
+ * - surprise: 돌발 퀘스트 (하늘색)
+ */
 const QUEST_TYPE_COLORS = {
   life: COLORS.primary,
   growth: COLORS.secondary,
   surprise: COLORS.accent,
 };
 
-// 퀘스트 카테고리별 아이콘
+/**
+ * 퀘스트 카테고리별 아이콘 정의
+ * 각 카테고리에 맞는 Ionicons 아이콘명
+ */
 const QUEST_CATEGORY_ICONS = {
-  STUDY: 'school',
-  HEALTH: 'fitness',
-  ECON: 'trending-up',
-  LIFE: 'home',
-  ENT: 'game-controller',
-  SAVING: 'wallet',
+  STUDY: 'school',      // 학업
+  HEALTH: 'fitness',    // 건강
+  ECON: 'trending-up',  // 경제
+  LIFE: 'home',         // 일상
+  ENT: 'game-controller', // 엔터테인먼트
+  SAVING: 'wallet',     // 저축
 };
 
-// 인증 방식별 설명
+/**
+ * 인증 방식별 설명 텍스트
+ * 각 인증 방식에 대한 사용자 안내 메시지
+ */
 const VERIFY_METHOD_DESCRIPTIONS = {
   GPS: '지정된 위치에 방문하여 인증하세요',
   STEPS: '목표 걸음 수를 달성하세요',
@@ -59,57 +87,39 @@ const VERIFY_METHOD_DESCRIPTIONS = {
   CONTEST: '대회 참여를 통해 인증하세요',
 };
 
+/**
+ * 퀘스트 상세 화면 메인 컴포넌트
+ */
 export const QuestDetailScreen: React.FC = () => {
+  // 네비게이션 관련 훅들
   const route = useRoute<QuestDetailRouteProp>();
   const navigation = useNavigation<QuestDetailNavigationProp>();
-  const { questId } = route.params;
+  
+  // QuestsScreen에서 전달받은 퀘스트 객체 (별도 API 호출 없음)
+  const { quest } = route.params;
 
+  // 퀘스트 제출 중 로딩 상태 관리
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // API 호출
-  const { 
-    data: quest, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useGetQuestDetailQuery(questId);
+  // 퀘스트 관련 API 뮤테이션 훅들
+  const [startQuest] = useStartQuestMutation();        // 퀘스트 시작
+  const [submitQuest] = useSubmitQuestMutation();      // 퀘스트 제출
+  const [verifyQuest] = useVerifyQuestMutation();      // 퀘스트 인증
+  const [logQuestInteraction] = useLogQuestInteractionMutation(); // 상호작용 로그
 
-  const [startQuest] = useStartQuestMutation();
-  const [submitQuest] = useSubmitQuestMutation();
-  const [verifyQuest] = useVerifyQuestMutation();
-  const [logQuestInteraction] = useLogQuestInteractionMutation();
-
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <AppHeader title="퀘스트 상세" showBackButton />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>퀘스트 정보를 불러오는 중...</Text>
-        </View>
-      </View>
-    );
-  }
-
-  if (error || !quest) {
-    return (
-      <View style={styles.container}>
-        <AppHeader title="퀘스트 상세" showBackButton />
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={48} color={COLORS.error} />
-          <Text style={styles.errorText}>퀘스트 정보를 불러오는데 실패했습니다</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-            <Text style={styles.retryButtonText}>다시 시도</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
-
+  /**
+   * 퀘스트 진행률 계산 함수
+   * @returns 진행률 퍼센트 (0-100)
+   */
   const getQuestProgress = () => {
     if (!quest.attempt) return 0;
     return Math.min((quest.attempt.progress_count / quest.attempt.target_count) * 100, 100);
   };
 
+  /**
+   * 퀘스트 상태 텍스트 반환 함수
+   * @returns 상태에 따른 한글 텍스트
+   */
   const getQuestStatusText = () => {
     if (!quest.attempt) return '미시작';
     
@@ -122,6 +132,10 @@ export const QuestDetailScreen: React.FC = () => {
     }
   };
 
+  /**
+   * 퀘스트 상태 색상 반환 함수
+   * @returns 상태에 따른 색상
+   */
   const getQuestStatusColor = () => {
     if (!quest.attempt) return COLORS.gray[400];
     
@@ -145,7 +159,8 @@ export const QuestDetailScreen: React.FC = () => {
       });
 
       Alert.alert('퀘스트 시작', `${quest.title} 퀘스트를 시작했습니다!`);
-      refetch();
+      // 상세 화면에서 데이터 갱신이 필요하면 목록 화면으로 돌아가서 새로고침하도록 안내
+      navigation.goBack();
     } catch (error) {
       Alert.alert('오류', '퀘스트 시작에 실패했습니다.');
     }
@@ -163,7 +178,8 @@ export const QuestDetailScreen: React.FC = () => {
       });
 
       Alert.alert('퀘스트 제출', '퀘스트가 성공적으로 제출되었습니다!');
-      refetch();
+      // 상세 화면에서 데이터 갱신이 필요하면 목록 화면으로 돌아가서 새로고침하도록 안내
+      navigation.goBack();
     } catch (error) {
       Alert.alert('오류', '퀘스트 제출에 실패했습니다.');
     } finally {
@@ -203,7 +219,8 @@ export const QuestDetailScreen: React.FC = () => {
       });
 
       Alert.alert('인증 완료', '퀘스트 인증이 완료되었습니다!');
-      refetch();
+      // 상세 화면에서 데이터 갱신이 필요하면 목록 화면으로 돌아가서 새로고침하도록 안내
+      navigation.goBack();
     } catch (error) {
       Alert.alert('오류', '퀘스트 인증에 실패했습니다.');
     }

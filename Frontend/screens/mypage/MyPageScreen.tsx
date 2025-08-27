@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Dimensions,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
@@ -19,7 +18,8 @@ import { RootState } from '../../store';
 import { MyPageStackParamList } from '../../navigation/MyPageStack';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-const { width } = Dimensions.get('window');
+// 카드 너비를 고정값으로 설정 (Dimensions 제거)
+const CARD_WIDTH = 300;
 
 type MyPageScreenNavigationProp = StackNavigationProp<MyPageStackParamList, 'MyPage'>;
 
@@ -84,7 +84,8 @@ export const MyPageScreen: React.FC = () => {
           onPress: () => {
             dispatch(logout());
             dispatch(clearUser());
-            // 로그인 화면으로 이동
+            // 로그인 화면으로 이동 (AuthStack의 Landing으로 이동)
+            // TODO: 실제 구현에서는 AuthStack으로 네비게이션해야 함
             navigation.reset({
               index: 0,
               routes: [{ name: 'Landing' }],
@@ -377,7 +378,7 @@ const styles = StyleSheet.create({
     paddingRight: SPACING.lg,
   },
   accountCard: {
-    width: width * 0.8,
+    width: CARD_WIDTH,
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,

@@ -16,7 +16,10 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "QR 코드를 스캔하기 위해 카메라 접근 권한이 필요합니다.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
       },
       "bundleIdentifier": "com.anonymous.SolQuest"
     },
@@ -30,7 +33,8 @@
         "CAMERA",
         "android.permission.CAMERA"
       ],
-      "package": "com.anonymous.SolQuest"
+      "package": "com.anonymous.SolQuest",
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png"

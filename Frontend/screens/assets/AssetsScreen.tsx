@@ -158,7 +158,7 @@ export const AssetsScreen: React.FC = () => {
           />
           <PrimaryButton
             title="적금 가입하기"
-            onPress={() => navigation.navigate('SavingsSignup')}
+            onPress={() => navigation.navigate('SavingOpen')}
             size="medium"
             style={styles.emptyButton}
           />

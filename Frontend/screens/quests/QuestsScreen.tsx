@@ -1,4 +1,25 @@
-import React, { useState, useEffect } from 'react';
+/**
+ * QuestsScreen.tsx
+ * 
+ * 퀘스트 목록 화면 컴포넌트
+ * 
+ * 주요 기능:
+ * - 퀘스트 목록 조회 및 표시
+ * - 퀘스트 타입별 필터링 (일상/성장/돌발)
+ * - 퀘스트 상태별 정렬 (진행중 > 완료가능 > 미시작 > 완료)
+ * - 퀘스트 시작/완료 기능
+ * - 퀘스트 상세 화면으로 이동
+ * - 당겨서 새로고침 기능
+ * 
+ * 퀘스트 상태:
+ * - deactive: 미시작 (시작하기 버튼)
+ * - in_progress: 진행중 (계속하기 버튼)
+ * - clear: 목표달성 (완료하기 버튼)
+ * - submitted: 제출됨 (대기중)
+ * - approved: 완료 (완료 배지)
+ */
+
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +40,7 @@ import { QuestWithAttempt, QuestAttempt } from '../../types/database';
 import { 
   useGetQuestsQuery, 
   useStartQuestMutation,
+  useSubmitQuestMutation,
   useLogQuestClickMutation,
   useLogQuestInteractionMutation 
 } from '../../store/api/questApi';
@@ -27,39 +49,63 @@ import { HomeStackParamList } from '../../navigation/HomeStack';
 
 type QuestsScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'Quests'>;
 
-// 퀘스트 타입별 색상
+/**
+ * 퀘스트 타입별 색상 정의
+ * - life: 일상 퀘스트 (파란색)
+ * - growth: 성장 퀘스트 (주황색)
+ * - surprise: 돌발 퀘스트 (하늘색)
+ */
 const QUEST_TYPE_COLORS = {
   life: COLORS.primary,
   growth: COLORS.secondary,
   surprise: COLORS.accent,
 };
 
-// 퀘스트 카테고리별 아이콘
+/**
+ * 퀘스트 카테고리별 아이콘 정의
+ * 각 카테고리에 맞는 Ionicons 아이콘명
+ */
 const QUEST_CATEGORY_ICONS = {
-  STUDY: 'school',
-  HEALTH: 'fitness',
-  ECON: 'trending-up',
-  LIFE: 'home',
-  ENT: 'game-controller',
-  SAVING: 'wallet',
+  STUDY: 'school',      // 학업
+  HEALTH: 'fitness',    // 건강
+  ECON: 'trending-up',  // 경제
+  LIFE: 'home',         // 일상
+  ENT: 'game-controller', // 엔터테인먼트
+  SAVING: 'wallet',     // 저축
 };
 
-// 퀘스트 상태별 색상
+/**
+ * 퀘스트 상태별 색상 정의
+ * 상태에 따라 다른 색상으로 시각적 구분
+ */
 const QUEST_STATUS_COLORS = {
-  deactive: COLORS.gray[400],
-  in_progress: COLORS.primary,
-  clear: COLORS.success,
-  submitted: COLORS.warning,
-  approved: COLORS.success,
+  deactive: COLORS.gray[400],   // 미시작: 회색
+  in_progress: COLORS.primary,  // 진행중: 파란색
+  clear: COLORS.success,        // 목표달성: 초록색
+  submitted: COLORS.warning,    // 제출됨: 주황색
+  approved: COLORS.success,     // 완료: 초록색
 };
 
+/**
+ * 퀘스트 목록 화면 메인 컴포넌트
+ */
 export const QuestsScreen: React.FC = () => {
+  // 네비게이션 훅
   const navigation = useNavigation<QuestsScreenNavigationProp>();
+  
+  // Redux에서 사용자 정보 가져오기
   const user = useSelector((state: RootState) => state.user.user);
+  
+  // 선택된 퀘스트 타입 (일상/성장/돌발)
   const [selectedType, setSelectedType] = useState<'life' | 'growth' | 'surprise'>('life');
+  
+  // 새로고침 상태 관리
   const [refreshing, setRefreshing] = useState(false);
 
-  // API 호출
+  /**
+   * 퀘스트 목록 조회 API 호출
+   * 선택된 타입에 따라 퀘스트 목록을 가져옴
+   */
   const { 
     data: questsData, 
     isLoading, 
@@ -70,22 +116,32 @@ export const QuestsScreen: React.FC = () => {
     limit: 50 
   });
 
-  const [startQuest] = useStartQuestMutation();
-  const [logQuestClick] = useLogQuestClickMutation();
-  const [logQuestInteraction] = useLogQuestInteractionMutation();
+  // 퀘스트 관련 API 뮤테이션 훅들
+  const [startQuest] = useStartQuestMutation();        // 퀘스트 시작
+  const [submitQuest] = useSubmitQuestMutation();      // 퀘스트 완료
+  const [logQuestClick] = useLogQuestClickMutation();  // 퀘스트 클릭 로그
+  const [logQuestInteraction] = useLogQuestInteractionMutation(); // 퀘스트 상호작용 로그
 
+  // API에서 받아온 퀘스트 데이터
   const quests = questsData?.data || [];
 
-  // 퀘스트 타입별 필터링
+  /**
+   * 퀘스트 타입별 필터링
+   * 선택된 타입(일상/성장/돌발)에 맞는 퀘스트만 필터링
+   */
   const filteredQuests = quests.filter(quest => quest.type === selectedType);
 
-  // 퀘스트 상태별 정렬 (진행중 > 미시작 > 완료)
+  /**
+   * 퀘스트 상태별 정렬
+   * 우선순위: 진행중 > 완료가능 > 미시작 > 완료
+   * 사용자가 먼저 해야 할 퀘스트를 상단에 배치
+   */
   const sortedQuests = [...filteredQuests].sort((a, b) => {
     const getStatusPriority = (status: QuestAttempt['status']) => {
       switch (status) {
         case 'in_progress': return 0;
-        case 'deactive': return 1;
-        case 'clear': return 2;
+        case 'clear': return 1; // 완료 가능한 상태를 높은 우선순위로
+        case 'deactive': return 2;
         case 'submitted': return 3;
         case 'approved': return 4;
         default: return 5;
@@ -98,39 +154,52 @@ export const QuestsScreen: React.FC = () => {
     return getStatusPriority(aStatus) - getStatusPriority(bStatus);
   });
 
+  /**
+   * 새로고침 처리 함수
+   * 당겨서 새로고침 시 퀘스트 목록을 다시 불러옴
+   */
   const handleRefresh = async () => {
     setRefreshing(true);
     await refetch();
     setRefreshing(false);
   };
 
+  /**
+   * 퀘스트 카드 클릭 처리 함수
+   * 퀘스트 상세 화면으로 이동하며 로그 기록
+   */
   const handleQuestPress = async (quest: QuestWithAttempt) => {
     try {
-      // 퀘스트 클릭 로그
+      // 퀘스트 클릭 로그 기록
       await logQuestClick({ 
         quest_id: quest.id,
         context: `quests_screen_${selectedType}`
       });
 
-      // 상호작용 로그
+      // 퀘스트 상세 클릭 상호작용 로그 기록
       await logQuestInteraction({
         quest_id: quest.id,
         event: 'detail_click',
         context: `quests_screen_${selectedType}`
       });
 
-      // 퀘스트 상세 화면으로 이동
-      navigation.navigate('QuestDetail', { questId: quest.id });
+      // 퀘스트 상세 화면으로 이동 (quest 객체 전체 전달)
+      navigation.navigate('QuestDetail', { quest: quest });
     } catch (error) {
       console.error('퀘스트 클릭 로그 실패:', error);
     }
   };
 
+  /**
+   * 퀘스트 시작 처리 함수
+   * 퀘스트를 시작하고 상호작용 로그 기록
+   */
   const handleStartQuest = async (quest: QuestWithAttempt) => {
     try {
+      // 퀘스트 시작 API 호출
       await startQuest({ quest_id: quest.id });
       
-      // 상호작용 로그
+      // 퀘스트 시작 상호작용 로그 기록
       await logQuestInteraction({
         quest_id: quest.id,
         event: 'start',
@@ -143,11 +212,43 @@ export const QuestsScreen: React.FC = () => {
     }
   };
 
+  /**
+   * 퀘스트 완료 처리 함수
+   * 퀘스트를 완료하고 경험치를 획득하며 로그 기록
+   */
+  const handleCompleteQuest = async (quest: QuestWithAttempt) => {
+    try {
+      // 퀘스트 완료 API 호출 (백엔드에서 검증 후 완료 처리)
+      await submitQuest({ quest_id: quest.id });
+      
+      // 퀘스트 완료 상호작용 로그 기록
+      await logQuestInteraction({
+        quest_id: quest.id,
+        event: 'complete',
+        context: `quests_screen_${selectedType}`
+      });
+
+      Alert.alert('퀘스트 완료', `${quest.title} 퀘스트가 완료되었습니다! ${quest.reward_exp} EXP를 획득했습니다!`);
+    } catch (error) {
+      Alert.alert('오류', '퀘스트 완료에 실패했습니다.');
+    }
+  };
+
+  /**
+   * 퀘스트 진행률 계산 함수
+   * @param quest 퀘스트 객체
+   * @returns 진행률 퍼센트 (0-100)
+   */
   const getQuestProgress = (quest: QuestWithAttempt) => {
     if (!quest.attempt) return 0;
     return Math.min((quest.attempt.progress_count / quest.attempt.target_count) * 100, 100);
   };
 
+  /**
+   * 퀘스트 상태 텍스트 반환 함수
+   * @param quest 퀘스트 객체
+   * @returns 상태에 따른 한글 텍스트
+   */
   const getQuestStatusText = (quest: QuestWithAttempt) => {
     if (!quest.attempt) return '미시작';
     
@@ -160,12 +261,20 @@ export const QuestsScreen: React.FC = () => {
     }
   };
 
+  /**
+   * 퀘스트 카드 렌더링 함수
+   * 각 퀘스트의 정보를 카드 형태로 표시
+   */
   const renderQuestCard = ({ item: quest }: { item: QuestWithAttempt }) => {
+    // 퀘스트 진행률 및 상태 정보 계산
     const progress = getQuestProgress(quest);
     const statusText = getQuestStatusText(quest);
-    const isInProgress = quest.attempt?.status === 'in_progress';
-    const isCompleted = quest.attempt?.status === 'approved';
-    const canStart = !quest.attempt || quest.attempt.status === 'deactive';
+    
+    // 퀘스트 상태별 버튼 표시 조건
+    const isInProgress = quest.attempt?.status === 'in_progress';  // 진행중
+    const canStart = !quest.attempt || quest.attempt.status === 'deactive';  // 시작 가능
+    const canComplete = quest.attempt?.status === 'clear';  // 완료 가능
+    const isApproved = quest.attempt?.status === 'approved';  // 완료됨
 
     return (
       <TouchableOpacity 
@@ -208,7 +317,7 @@ export const QuestsScreen: React.FC = () => {
                   styles.progressFill, 
                   { 
                     width: `${progress}%`,
-                    backgroundColor: isCompleted ? COLORS.success : QUEST_TYPE_COLORS[quest.type]
+                    backgroundColor: isApproved ? COLORS.success : QUEST_TYPE_COLORS[quest.type]
                   }
                 ]} 
               />
@@ -246,12 +355,32 @@ export const QuestsScreen: React.FC = () => {
                 <Text style={styles.startButtonText}>계속하기</Text>
               </TouchableOpacity>
             )}
+
+            {canComplete && (
+              <TouchableOpacity
+                style={[styles.startButton, styles.completeButton]}
+                onPress={() => handleCompleteQuest(quest)}
+              >
+                <Text style={styles.startButtonText}>완료하기</Text>
+              </TouchableOpacity>
+            )}
+
+            {isApproved && (
+              <View style={styles.completedBadge}>
+                <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+                <Text style={styles.completedText}>완료</Text>
+              </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
     );
   };
 
+  /**
+   * 퀘스트 타입 탭 렌더링 함수
+   * 일상/성장/돌발 탭을 생성
+   */
   const renderTypeTab = (type: 'life' | 'growth' | 'surprise', label: string) => (
     <TouchableOpacity
       style={[
@@ -468,10 +597,29 @@ const styles = StyleSheet.create({
   continueButton: {
     backgroundColor: COLORS.secondary,
   },
+  completeButton: {
+    backgroundColor: COLORS.success,
+  },
   startButtonText: {
     color: COLORS.white,
     fontSize: FONT_SIZES.sm,
     fontWeight: '600',
+  },
+  completedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.success + '10',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    borderWidth: 1,
+    borderColor: COLORS.success + '30',
+  },
+  completedText: {
+    color: COLORS.success,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '600',
+    marginLeft: SPACING.xs,
   },
   loadingContainer: {
     gap: SPACING.md,
