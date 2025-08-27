@@ -1,11 +1,21 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+from typing import Dict
 import uvicorn
 
 from .database import get_db, test_database_connection, get_current_user_simple
 from .api_router import recommendation_router
 from .recommendation_system import QuestRecommendationSystem
+
+# Backend에서 import하는 get_current_user
+try:
+    from Sol_Sol_QUEST.backend.app.auth.deps import get_current_user
+except ImportError:
+    # 개발 환경 대비용 임시 함수
+    async def get_current_user() -> Dict:
+        """임시 get_current_user 함수 - 실제 환경에서는 backend에서 import됨"""
+        return {"id": "test_user", "name": "Test User"}
 
 # FastAPI 애플리케이션 생성
 app = FastAPI(
@@ -51,15 +61,45 @@ async def root():
         "health_check": "/health"
     }
 
-# 개발/테스트용 간단한 추천 엔드포인트
-@app.get("/api/simple-recommend/{user_id}")
-async def simple_recommend(
+# 현재 로그인된 사용자의 추천 엔드포인트
+@app.get("/api/my-recommendations")
+async def get_my_recommendations(
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    현재 로그인한 사용자의 퀘스트 추천
+    JWT 토큰을 통해 인증된 사용자만 접근 가능
+    """
+    try:
+        # current_user 객체에서 user_id 추출
+        user_id = current_user.get("id") if isinstance(current_user, dict) else str(current_user)
+        
+        recommendation_system = QuestRecommendationSystem()
+        quest_ids = recommendation_system.recommend_quests(db, user_id)
+        
+        return {
+            "user_id": user_id,
+            "recommended_quest_ids": quest_ids,
+            "count": len(quest_ids),
+            "message": "추천 성공"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 개발/테스트용 간단한 추천 엔드포인트 (인증 없이)
+@app.get("/api/test/simple-recommend/{user_id}")
+async def simple_recommend_test(
     user_id: str,
     db: Session = Depends(get_db)
 ):
     """
-    개발/테스트용 간단한 퀘스트 추천 엔드포인트
+    [개발/테스트용] 간단한 퀘스트 추천 엔드포인트
     인증 없이 user_id만으로 추천 결과를 받을 수 있습니다.
+    실제 프로덕션에서는 사용하지 마세요.
     """
     try:
         recommendation_system = QuestRecommendationSystem()
@@ -77,14 +117,50 @@ async def simple_recommend(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 설문조사 답변 확인용 엔드포인트
-@app.get("/api/debug/user/{user_id}/survey")
-async def debug_user_survey(
+# 설문조사 답변 확인용 엔드포인트 (인증 필요)
+@app.get("/api/my-survey")
+async def get_my_survey(
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
+    """
+    현재 로그인한 사용자의 설문조사 답변 확인
+    """
+    try:
+        # current_user 객체에서 user_id 추출
+        user_id = current_user.get("id") if isinstance(current_user, dict) else str(current_user)
+        
+        recommendation_system = QuestRecommendationSystem()
+        user_info = recommendation_system.get_user_info(db, user_id)
+        survey_answers = recommendation_system.get_survey_answers(db, user_id)
+        
+        if survey_answers:
+            category_scores = recommendation_system.analyze_user_preferences(user_info, survey_answers)
+        else:
+            category_scores = {}
+        
+        return {
+            "user_id": user_id,
+            "user_info": user_info,
+            "survey_answers": survey_answers,
+            "category_scores": category_scores,
+            "survey_completed": len(survey_answers) > 0
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# 개발/테스트용 설문조사 확인 엔드포인트
+@app.get("/api/test/debug/user/{user_id}/survey")
+async def debug_user_survey_test(
     user_id: str,
     db: Session = Depends(get_db)
 ):
     """
-    디버깅용: 특정 사용자의 설문조사 답변 확인
+    [디버깅용] 특정 사용자의 설문조사 답변 확인
+    인증 없이 사용 가능
     """
     try:
         recommendation_system = QuestRecommendationSystem()
@@ -109,11 +185,15 @@ async def debug_user_survey(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 전체 퀘스트 목록 조회 (디버깅용)
-@app.get("/api/debug/quests")
-async def debug_available_quests(db: Session = Depends(get_db)):
+# 전체 퀘스트 목록 조회 (인증 필요)
+@app.get("/api/available-quests")
+async def get_available_quests(
+    db: Session = Depends(get_db),
+    current_user: Dict = Depends(get_current_user)
+):
     """
-    디버깅용: 추천 가능한 모든 퀘스트 목록 조회
+    추천 가능한 모든 퀘스트 목록 조회
+    JWT 토큰 인증 필요
     """
     try:
         recommendation_system = QuestRecommendationSystem()

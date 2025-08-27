@@ -9,13 +9,15 @@ __version__ = "1.0.0"
 __author__ = "Sol Sol Quest Team"
 
 from .recommendation_system import QuestRecommendationSystem
-from .database import get_db, get_current_user, get_current_user_simple
+from .database import get_db, get_current_user_simple
 from .api_router import recommendation_router
+
+# get_current_user는 Sol_Sol_QUEST.backend.app.auth.deps에서 import
+# 각 모듈에서 필요시 직접 import하여 사용
 
 __all__ = [
     "QuestRecommendationSystem",
     "get_db",
-    "get_current_user", 
     "get_current_user_simple",
     "recommendation_router"
 ]

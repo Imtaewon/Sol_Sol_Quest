@@ -1,6 +1,6 @@
 # Quest Recommendation System
 
-대학생을 위한 개인화된 퀘스트 추천 시스템입니다. 사용자의 개인정보와 설문조사 답변을 분석하여 LIFE와 GROWTH 타입의 퀘스트 중에서 가장 적합한 3개를 추천합니다.
+대학생을 위한 개인화된 퀘스트 추천 시스템입니다. 사용자의 개인정보와 설문조사 답변을 분석하여 LIFE와 GROWTH 타입의 퀘스트 중에서 가장 적합한 3개를 추천합니다. (SURPRISE 타입은 추천에서 제외됩니다)
 
 ## 🚀 주요 기능
 
@@ -57,46 +57,59 @@ python -m rec.main
 
 ## 📡 API 엔드포인트
 
-### 인증이 필요한 엔드포인트
+### ✅ 인증이 필요한 엔드포인트 (JWT 토큰 필요)
+모든 인증 필요 엔드포인트는 `Sol_Sol_QUEST.backend.app.auth.deps.get_current_user`를 통해 인증됩니다.
 
 #### 1. 퀘스트 추천
 ```http
 GET /api/recommendations/quests
-Headers: 
-  Authorization: Bearer {token}
-  # 또는 개발시: X-User-ID: {user_id}
+Headers: Authorization: Bearer {jwt_token}
 ```
 
 #### 2. 상세 추천 정보
 ```http
 GET /api/recommendations/quests/detailed
-Headers: Authorization: Bearer {token}
+Headers: Authorization: Bearer {jwt_token}
 ```
 
 #### 3. 사용자 선호도 분석
 ```http
 GET /api/recommendations/user/preferences  
-Headers: Authorization: Bearer {token}
+Headers: Authorization: Bearer {jwt_token}
 ```
 
-### 개발/디버깅용 엔드포인트
-
-#### 1. 간단 추천 (인증 불필요)
+#### 4. 내 추천 조회
 ```http
-GET /api/simple-recommend/{user_id}
+GET /api/my-recommendations
+Headers: Authorization: Bearer {jwt_token}
 ```
 
-#### 2. 사용자 설문조사 정보 확인
+#### 5. 내 설문조사 조회
 ```http
-GET /api/debug/user/{user_id}/survey
+GET /api/my-survey
+Headers: Authorization: Bearer {jwt_token}
 ```
 
-#### 3. 전체 퀘스트 목록
+#### 6. 사용 가능한 퀘스트 목록
 ```http
-GET /api/debug/quests
+GET /api/available-quests
+Headers: Authorization: Bearer {jwt_token}
 ```
 
-#### 4. 헬스 체크
+### 🔧 개발/테스트용 엔드포인트 (인증 불필요)
+실제 프로덕션에서는 사용하지 마세요.
+
+#### 1. 테스트용 간단 추천
+```http
+GET /api/test/simple-recommend/{user_id}
+```
+
+#### 2. 테스트용 설문조사 정보
+```http
+GET /api/test/debug/user/{user_id}/survey
+```
+
+#### 3. 헬스 체크
 ```http
 GET /health
 ```
@@ -115,13 +128,14 @@ GET /health
 - ECON: 경제, 결제, 투자정보
 - LIFE: 생활, 출석, 일상활동
 - HEALTH: 건강, 운동, 웰니스
-- ENT: 엔터테인먼트 (현재 LIFE/GROWTH 타입에 없음)
+- ENT: 엔터테인먼트
+
+모든 퀘스트는 타입(LIFE/GROWTH)이나 보상, 주기에 관계없이 동등하게 평가됩니다.
 
 ### 3. 점수 계산 요소
-- **카테고리 매칭**: 설문 기반 선호도 점수
-- **퀘스트 타입**: GROWTH 퀘스트에 보너스
-- **보상 경험치**: 높은 보상일수록 가산점
-- **주기성**: daily(접근성), any(자유도) 가산점
+- **카테고리 매칭**: 설문 기반 선호도 점수만 사용
+- 사용자의 설문조사 답변과 개인정보를 분석하여 카테고리별 선호도 점수를 계산
+- 퀘스트의 카테고리와 사용자 선호도가 일치하는 정도로만 점수 산정
 
 ### 4. 다양성 보장
 - 1차: 서로 다른 카테고리에서 선택
@@ -158,16 +172,16 @@ finally:
 
 ### cURL을 통한 API 호출
 ```bash
-# 간단 추천 (개발용)
-curl -X GET "http://localhost:8000/api/simple-recommend/user123"
-
-# 인증된 추천
+# JWT 토큰을 사용한 인증된 요청
 curl -X GET "http://localhost:8000/api/recommendations/quests" \
-     -H "Authorization: Bearer user123"
+     -H "Authorization: Bearer {jwt_token}"
 
-# 또는 개발용 헤더
-curl -X GET "http://localhost:8000/api/recommendations/quests" \
-     -H "X-User-ID: user123"
+# 내 추천 조회
+curl -X GET "http://localhost:8000/api/my-recommendations" \
+     -H "Authorization: Bearer {jwt_token}"
+
+# 개발/테스트용 (인증 불필요)
+curl -X GET "http://localhost:8000/api/test/simple-recommend/user123"
 ```
 
 ## 📊 응답 예시
@@ -204,9 +218,13 @@ curl -X GET "http://localhost:8000/api/recommendations/quests" \
 ## 🚨 주의사항
 
 1. **데이터베이스 연결**: DATABASE_URL 환경변수 필수 설정
-2. **인증 구현**: 실제 운영에서는 JWT 토큰 검증 로직 구현 필요
+2. **인증 시스템**: 
+   - 모든 프로덕션 엔드포인트는 `Depends(get_current_user)` 사용
+   - JWT 토큰은 `Sol_Sol_QUEST.backend.app.auth.deps`에서 검증
+   - 테스트 엔드포인트(`/api/test/*`)는 개발 환경에서만 사용
 3. **에러 처리**: 설문조사 답변이 없는 경우 기본 추천 제공
 4. **성능**: 대용량 사용자 대응시 캐싱 및 최적화 필요
+5. **테이블 구조**: 새로운 quests 테이블 스키마에 맞춰 업데이트됨
 
 ## 🔄 확장 가능성
 
@@ -214,5 +232,6 @@ curl -X GET "http://localhost:8000/api/recommendations/quests" \
 - **협업 필터링**: 유사 사용자 그룹 기반 추천
 - **A/B 테스트**: 추천 알고리즘 성능 비교
 - **머신러닝**: 딥러닝 모델 기반 고도화
+- **SURPRISE 퀘스트**: 향후 SURPRISE 타입 퀘스트 추가 지원 가능
 
 

@@ -7,6 +7,12 @@ from datetime import datetime
 
 # 추천 시스템 클래스
 class QuestRecommendationSystem:
+    """
+    진화하는 퀘스트 추천 시스템
+    
+    사용자의 개인정보와 설문조사 답변을 기반으로
+    LIFE와 GROWTH 타입의 퀘스트 중에서 개인화된 추천을 제공합니다.
+    """
     def __init__(self):
         # 설문조사 질문별 매핑 정의
         self.category_mapping = {
@@ -83,15 +89,19 @@ class QuestRecommendationSystem:
             "q12_minimal": ["LIFE"]
         }
         
-        # 퀘스트 카테고리별 우선순위 매핑
+        # 퀘스트 카테고리별 우선순위 매핑 (업데이트된 퀘스트 ID - LIFE와 GROWTH만 포함)
         self.quest_category_priority = {
-            "STUDY": ["quest_growth_001", "quest_growth_002", "quest_growth_003", "quest_growth_004", "quest_growth_015"],
+            "STUDY": ["quest_growth_001", "quest_growth_002", "quest_growth_003", "quest_growth_004", "quest_growth_015", 
+                      "quest_daily_035"],
             "SAVING": ["quest_growth_005", "quest_growth_006", "quest_growth_007", "quest_growth_008", "quest_growth_009", 
-                      "quest_growth_010", "quest_growth_011", "quest_growth_012", "quest_growth_013", "quest_growth_014"],
-            "ECON": ["quest_growth_015", "quest_daily_018", "quest_daily_019", "quest_daily_020"],
-            "LIFE": ["quest_daily_016", "quest_daily_017"],
-            "HEALTH": ["quest_daily_021", "quest_daily_022"],
-            "ENT": []  # ENT 카테고리는 LIFE나 GROWTH 타입에 없음
+                      "quest_growth_010", "quest_growth_011", "quest_growth_012", "quest_growth_013", "quest_growth_014", 
+                      "quest_daily_016", "quest_daily_025", "quest_daily_026", "quest_daily_027", "quest_daily_032"],
+            "ECON": ["quest_growth_015", "quest_daily_020", "quest_daily_021", "quest_daily_022", "quest_daily_033", 
+                      "quest_daily_034"],
+            "LIFE": ["quest_daily_017", "quest_daily_018", "quest_daily_019", "quest_daily_028", "quest_daily_029", 
+                      "quest_daily_030", "quest_daily_031"],
+            "HEALTH": ["quest_daily_023", "quest_daily_024"],
+            "ENT": []  # ENT 카테고리는 현재 LIFE/GROWTH 타입에 없음 (SURPRISE 제외)
         }
 
     def get_user_info(self, db: Session, user_id: str) -> Dict:
@@ -135,12 +145,12 @@ class QuestRecommendationSystem:
         ]
 
     def get_available_quests(self, db: Session) -> List[Dict]:
-        """LIFE, GROWTH 타입 퀘스트 조회"""
+        """LIFE, GROWTH 타입 퀘스트만 조회 (SURPRISE 제외)"""
         query = text("""
             SELECT id, type, title, category, verify_method, reward_exp, 
-                   target_count, period_scope, active
+                   target_count, period_scope
             FROM quests 
-            WHERE type IN ('LIFE', 'GROWTH') AND active = 1
+            WHERE type IN ('life', 'growth')
         """)
         results = db.execute(query).fetchall()
         
@@ -153,8 +163,7 @@ class QuestRecommendationSystem:
                 "verify_method": result.verify_method,
                 "reward_exp": result.reward_exp,
                 "target_count": result.target_count,
-                "period_scope": result.period_scope,
-                "active": result.active
+                "period_scope": result.period_scope
             }
             for result in results
         ]
@@ -291,28 +300,10 @@ class QuestRecommendationSystem:
         for quest in quests:
             score = 0
             
-            # 카테고리 매칭 점수
+            # 카테고리 매칭 점수만 사용 (설문 기반 선호도)
             quest_category = quest["category"]
             if quest_category in category_scores:
-                score += category_scores[quest_category]
-            
-            # 퀘스트 타입별 보너스 점수
-            if quest["type"] == "GROWTH":
-                score += 2  # GROWTH 퀘스트에 약간의 보너스
-            
-            # 보상 경험치 기반 점수 (높은 보상 = 더 가치 있는 퀘스트)
-            if quest["reward_exp"] >= 100:
-                score += 3
-            elif quest["reward_exp"] >= 50:
-                score += 2
-            elif quest["reward_exp"] >= 20:
-                score += 1
-            
-            # 주기별 점수 조정 (일일 퀘스트는 접근성이 좋음)
-            if quest["period_scope"] == "daily":
-                score += 1
-            elif quest["period_scope"] == "any":
-                score += 2  # 언제든 할 수 있는 퀘스트
+                score = category_scores[quest_category]
             
             scored_quests.append({
                 **quest,
@@ -382,13 +373,13 @@ class QuestRecommendationSystem:
         default_quest_ids = [
             "quest_growth_008",  # 신한 계좌 등록 (진입 장벽 낮음)
             "quest_growth_012",  # 1만원 저축 (접근성 좋음)  
-            "quest_daily_016"    # 출석 (습관 형성)
+            "quest_daily_017"    # 쏠쏠한 적금 일일 출석 (습관 형성)
         ]
         
-        # DB에서 실제 존재하는 퀘스트만 반환
+        # DB에서 실제 존재하는 퀘스트만 반환 (SURPRISE 제외)
         query = text("""
             SELECT id FROM quests 
-            WHERE id IN :quest_ids AND type IN ('LIFE', 'GROWTH') AND active = 1
+            WHERE id IN :quest_ids AND type IN ('life', 'growth')
             LIMIT 3
         """)
         results = db.execute(query, {"quest_ids": tuple(default_quest_ids)}).fetchall()
@@ -400,8 +391,11 @@ class QuestRecommendationSystem:
 # 실제 사용시에는 database.py에서 의존성을 import하여 사용
 def recommend_quests_for_user(
     db: Session,  # Depends(get_db)로 주입
-    current_user_id: str  # Depends(get_current_user)로 주입
+    current_user: Dict  # Depends(get_current_user)로 주입 - Dict형태로 받음
 ) -> List[str]:
     """사용자를 위한 퀘스트 추천 엔드포인트 예시"""
+    # current_user 객체에서 user_id 추출
+    user_id = current_user.get("id") if isinstance(current_user, dict) else str(current_user)
+    
     recommendation_system = QuestRecommendationSystem()
-    return recommendation_system.recommend_quests(db, current_user_id)
+    return recommendation_system.recommend_quests(db, user_id)

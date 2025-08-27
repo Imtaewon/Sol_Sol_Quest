@@ -1,10 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict
 from pydantic import BaseModel
 
 from .recommendation_system import QuestRecommendationSystem
-from .database import get_db, get_current_user
+from .database import get_db
+
+# Backend에서 import하는 get_current_user
+# 실제 환경에서는 Sol_Sol_QUEST.backend.app.auth.deps에서 가져옴
+try:
+    from Sol_Sol_QUEST.backend.app.auth.deps import get_current_user
+except ImportError:
+    # 개발 환경 대비용 임시 함수
+    async def get_current_user() -> Dict:
+        """임시 get_current_user 함수 - 실제 환경에서는 backend에서 import됨"""
+        return {"id": "test_user", "name": "Test User"}
 
 # 응답 모델 정의
 class QuestRecommendationResponse(BaseModel):
@@ -28,22 +38,25 @@ recommendation_router = APIRouter(prefix="/api/recommendations", tags=["recommen
 @recommendation_router.get("/quests", response_model=QuestRecommendationResponse)
 async def get_recommended_quests(
     db: Session = Depends(get_db),
-    current_user_id: str = Depends(get_current_user)
+    current_user: Dict = Depends(get_current_user)
 ):
     """
     현재 사용자를 위한 퀘스트 추천
     
     - 사용자의 개인정보와 설문조사 답변을 분석하여 맞춤형 퀘스트 3개를 추천합니다.
-    - LIFE와 GROWTH 타입의 퀘스트만 추천합니다.
+    - LIFE, GROWTH 타입의 퀘스트를 추천합니다. (SURPRISE 타입은 제외)
     - 1회성 추천으로, 사용자의 시도 이력은 고려하지 않습니다.
     """
     try:
+        # current_user 객체에서 user_id 추출
+        user_id = current_user.get("id") if isinstance(current_user, dict) else str(current_user)
+        
         recommendation_system = QuestRecommendationSystem()
-        quest_ids = recommendation_system.recommend_quests(db, current_user_id)
+        quest_ids = recommendation_system.recommend_quests(db, user_id)
         
         return QuestRecommendationResponse(
             quest_ids=quest_ids,
-            message=f"사용자 {current_user_id}를 위한 {len(quest_ids)}개의 맞춤 퀘스트를 추천했습니다."
+            message=f"사용자 {user_id}를 위한 {len(quest_ids)}개의 맞춤 퀘스트를 추천했습니다."
         )
     
     except HTTPException:
@@ -54,7 +67,7 @@ async def get_recommended_quests(
 @recommendation_router.get("/quests/detailed", response_model=List[QuestDetailResponse])
 async def get_recommended_quests_with_details(
     db: Session = Depends(get_db),
-    current_user_id: str = Depends(get_current_user)
+    current_user: Dict = Depends(get_current_user)
 ):
     """
     현재 사용자를 위한 상세 정보가 포함된 퀘스트 추천
@@ -62,11 +75,14 @@ async def get_recommended_quests_with_details(
     - 추천된 퀘스트의 상세 정보와 추천 점수를 함께 반환합니다.
     """
     try:
+        # current_user 객체에서 user_id 추출
+        user_id = current_user.get("id") if isinstance(current_user, dict) else str(current_user)
+        
         recommendation_system = QuestRecommendationSystem()
         
         # 사용자 정보 및 설문조사 답변 조회
-        user_info = recommendation_system.get_user_info(db, current_user_id)
-        survey_answers = recommendation_system.get_survey_answers(db, current_user_id)
+        user_info = recommendation_system.get_user_info(db, user_id)
+        survey_answers = recommendation_system.get_survey_answers(db, user_id)
         available_quests = recommendation_system.get_available_quests(db)
         
         if survey_answers:
@@ -102,7 +118,7 @@ async def get_recommended_quests_with_details(
 @recommendation_router.get("/user/preferences")
 async def get_user_preferences(
     db: Session = Depends(get_db),
-    current_user_id: str = Depends(get_current_user)
+    current_user: Dict = Depends(get_current_user)
 ):
     """
     사용자의 선호도 분석 결과 조회
@@ -110,9 +126,12 @@ async def get_user_preferences(
     - 디버깅 및 분석 목적으로 사용자의 카테고리별 선호도 점수를 반환합니다.
     """
     try:
+        # current_user 객체에서 user_id 추출
+        user_id = current_user.get("id") if isinstance(current_user, dict) else str(current_user)
+        
         recommendation_system = QuestRecommendationSystem()
-        user_info = recommendation_system.get_user_info(db, current_user_id)
-        survey_answers = recommendation_system.get_survey_answers(db, current_user_id)
+        user_info = recommendation_system.get_user_info(db, user_id)
+        survey_answers = recommendation_system.get_survey_answers(db, user_id)
         
         if not survey_answers:
             raise HTTPException(status_code=404, detail="설문조사 답변을 찾을 수 없습니다.")
@@ -120,7 +139,7 @@ async def get_user_preferences(
         category_scores = recommendation_system.analyze_user_preferences(user_info, survey_answers)
         
         return {
-            "user_id": current_user_id,
+            "user_id": user_id,
             "user_info": user_info,
             "survey_answers_count": len(survey_answers),
             "category_scores": category_scores,
