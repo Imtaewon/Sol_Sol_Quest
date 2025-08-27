@@ -2,10 +2,22 @@
 from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime
+from zoneinfo import ZoneInfo
+import uuid
+
 
 from app.models import (
-    User, UserStat, Tier, Quest, SchoolLeaderboard, TierNameEnum
+    User, UserStat, Tier, 
+    Quest, QuestAttempt, QuestAttemptStatusEnum, 
+    SchoolLeaderboard, TierNameEnum, PeriodScopeEnum
 )
+
+def _now_kst() -> datetime:
+    return datetime.now(ZoneInfo("Asia/Seoul"))
+
+def _gen_id() -> str:
+    return uuid.uuid4().hex[:26].upper()  # 26자
 
 # --- helpers --------------------------------------------------------------
 
@@ -107,3 +119,57 @@ def complete_quest(db: Session, user_id: str, quest_id: str):
     except (SQLAlchemyError, ValueError) as e:
         db.rollback()
         return {"success": False, "message": str(e)}
+
+
+# (시현용) 단일 퀘스트 즉시 완료
+def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
+    """
+    단일(시현용) 퀘스트: 버튼 클릭 → 즉시 완료로 기록 + EXP/티어 반영
+    - period_scope/key 고정(ANY, '-')
+    - 중복 클릭 고려 X (데모용)
+    """
+
+
+    try:
+        quest = db.query(Quest).filter(Quest.id == quest_id, Quest.active == True).first()
+        if not quest:
+            raise ValueError("존재하지 않거나 비활성화된 퀘스트입니다.")
+
+        # 만약 quest state == 'APPROVED'라면
+        if quest.state == 'APPROVED':
+            raise ValueError("이미 완료된 퀘스트입니다.")
+
+
+        # 즉시 완료 기록
+        now = _now_kst()
+        attempt = QuestAttempt(
+            id=_gen_id(),
+            quest_id=quest_id,
+            user_id=user_id,
+            status=QuestAttemptStatusEnum.APPROVED,   # 바로 완료 처리
+            progress_count=quest.target_count or 1,
+            target_count=quest.target_count or 1,
+            proof_url=None,
+            period_scope=PeriodScopeEnum.ANY,         # 시현 간소화
+            period_key="-",
+            started_at=now,
+            submitted_at=now,
+            approved_at=now,
+        )
+        db.add(attempt)
+        db.flush()  # attempt.id 확보
+
+        reward = complete_quest(db, user_id=user_id, quest_id=quest_id)  # 내부에서 commit
+
+        return {
+            "success": True,
+            "data": {
+                "attempt_id": attempt.id,
+                "attempt_status": attempt.status,
+                "reward": reward.get("data"),
+            },
+        }
+    except (SQLAlchemyError, ValueError) as e:
+        db.rollback()
+        return {"success": False, "message": str(e)}
+

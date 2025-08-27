@@ -73,7 +73,7 @@ def create_ssafy_member(user_email: str) -> str:
     return user_key
 
 
-@router.post("/register")
+@router.post("/register", summary="회원가입")
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
     # 대학 확인
     school = db.query(School).filter(School.code == req.university_code).first()
@@ -132,7 +132,7 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         "message": "회원가입이 완료되었습니다."
     }
 
-@router.post("/login")
+@router.post("/login", summary="로그인")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     # login_id 필드 확인
     login_id = getattr(req, 'login_id', None) or getattr(req, 'email', None)
@@ -165,7 +165,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         }
     }
 
-@router.post("/logout")
+@router.post("/logout", summary="로그아웃")
 def logout(creds=Depends(bearer), current_user=Depends(get_current_user)):
     payload = decode_access_token(creds.credentials)
     jti = payload.get("jti")

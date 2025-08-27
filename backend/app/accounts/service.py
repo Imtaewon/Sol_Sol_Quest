@@ -13,7 +13,7 @@ from math import ceil
 from app.ENV import API_KEY as apiKey, DEPOSIT_ACCOUNT_UNIQUE_NO, SAVINGS_ACCOUNT_UNIQUE_NO  # <-- 고정값 사용
 from app.models import User, InstallmentSavingsAccount
 import app.models as models
-from app.models import User, InstallmentSavingsAccount, SchoolLeaderboard
+from app.models import User, InstallmentSavingsAccount, SchoolLeaderboard, Quest, QuestAttempt, QuestAttemptStatusEnum, PeriodScopeEnum
 
 
 BASE_URL = "https://finopenapi.ssafy.io/ssafy/api/v1/edu/"
@@ -197,7 +197,7 @@ def _to_term_months(subscription_period: str | int | None) -> int:
     except Exception:
         return 1
 
-# --- 적금 계좌 생성 (영속화 포함) ---
+# --- 적금 계좌 생성 (영속화 포함, 퀘스트 클리어) ---
 async def create_savings_account(*, db: Session, user_id: str, deposit_balance: int, timeout: float = 10.0) -> dict:
     # 1) 사용자 및 userKey 확보
     user: User | None = db.query(User).filter(User.id == user_id).first()
@@ -303,6 +303,32 @@ async def create_savings_account(*, db: Session, user_id: str, deposit_balance: 
             _recalc_avg(lb)  # avg_exp = total_exp / savings_students
             db.add(lb)
             db.commit()
+        
+         # ---- ✅ 적금 개설 성공 시: quest_daily_016 → quest_attempt에 CLEAR 삽입 ----
+        q = (
+            db.query(Quest)
+              .filter(Quest.id == "quest_daily_016", Quest.active == True)
+              .first()
+        )
+        if q:
+            now = _now_kst()
+            qa = QuestAttempt(
+                id=_gen_id_26(),
+                quest_id=q.id,
+                user_id=user_id,
+                status=QuestAttemptStatusEnum.CLEAR,          # ← 요구사항
+                progress_count=q.target_count or 1,
+                target_count=q.target_count or 1,
+                proof_url=None,
+                period_scope=q.period_scope or PeriodScopeEnum.ANY,
+                period_key="-",
+                started_at=now,
+                submitted_at=now,
+                approved_at=None,                              # CLEAR 단계
+            )
+            db.add(qa)
+            db.commit()
+        # ---------------------------------------------------------------
 
     except Exception as e:
         db.rollback()
@@ -338,3 +364,4 @@ def _recalc_avg(lb: SchoolLeaderboard) -> None:
     s = int(lb.savings_students or 0)
     t = int(lb.total_exp or 0)
     lb.avg_exp = (Decimal(t) / Decimal(s)) if s > 0 else Decimal("0")
+

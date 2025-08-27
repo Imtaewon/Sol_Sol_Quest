@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, String, Integer, SmallInteger, Boolean,
+    Column, String, Integer, SmallInteger, Boolean, UniqueConstraint,
     DateTime, Date, DECIMAL, Text, ForeignKey, Enum as SQLEnum, BigInteger
 )
 from sqlalchemy.ext.declarative import declarative_base
@@ -215,6 +215,19 @@ class QuestAttempt(Base):
     quest = relationship("Quest", back_populates="quest_attempts")
     user = relationship("User", back_populates="quest_attempts")
 
+
+class Attendance(Base):
+    __tablename__ = "attendances"
+
+    id = Column(String(26), primary_key=True)
+    user_id = Column(String(26), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    is_attend = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "date", name="uq_attendance_user_date"),
+    )
 
 # ---------- Recommendations / Logging ----------
 
