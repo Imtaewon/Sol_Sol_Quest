@@ -136,7 +136,7 @@ export const LeaderboardScreen: React.FC = () => {
       <Text style={styles.sectionTitle}>상위 10개 학교</Text>
       
       {topSchools?.data?.map((school, index) => (
-        <View key={school.university_code} style={[
+        <View key={school.school} style={[
           styles.schoolCard,
           index >= 3 && styles.schoolCardSmall
         ]}>
@@ -145,12 +145,12 @@ export const LeaderboardScreen: React.FC = () => {
           </View>
           
           <View style={styles.schoolInfo}>
-            <Text style={styles.schoolName}>{school.university_name}</Text>
+            <Text style={styles.schoolName}>{school.school}</Text>
             <Text style={styles.schoolStats}>
-              {selectedCategory === 'total' 
-                ? `총 EXP: ${formatNumber(school.total_exp)} • ${school.savings_students}명`
-                : `평균 EXP: ${school.avg_exp} • ${school.savings_students}명`
-              }
+                              {selectedCategory === 'total' 
+                  ? `총 EXP: ${formatNumber(school.totalExp)} • ${school.memberCount}명`     
+                  : `평균 EXP: ${school.averageExp} • ${school.memberCount}명`
+                }
             </Text>
           </View>
         </View>
@@ -184,24 +184,25 @@ export const LeaderboardScreen: React.FC = () => {
               <View style={styles.impactRight}>
                 <Text style={styles.expAmount}>{formatNumber(mySchoolRank.data.myTotalExp)} EXP</Text>
                 <Text style={styles.expLabel}>내 기여도</Text>
-             </View>
-           </View>
-         </View>
-         
-         <View style={styles.mySchoolStats}>
-           <View style={styles.statItem}>
-             <Text style={styles.statLabel}>총점</Text>
-             <Text style={styles.statValue}>{formatNumber(mySchoolRank?.data?.totalExp || 0)}점</Text>
-           </View>
-           <View style={styles.statItem}>
-             <Text style={styles.statLabel}>평균</Text>
-             <Text style={styles.statValue}>{mySchoolRank?.data?.averageExp || 0}점</Text>
-           </View>
-                    <View style={styles.statItem}>
-           <Text style={styles.statLabel}>참여자</Text>
-           <Text style={styles.statValue}>{mySchoolRank?.data?.memberCount || 0}명</Text>
-         </View>
-         </View>
+              </View>
+            </View>
+          </View>
+        )}
+        
+        <View style={styles.mySchoolStats}>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>총점</Text>
+            <Text style={styles.statValue}>{formatNumber(mySchoolRank?.data?.totalExp || 0)}점</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>평균</Text>
+            <Text style={styles.statValue}>{mySchoolRank?.data?.averageExp || 0}점</Text>
+          </View>
+          <View style={styles.statItem}>
+            <Text style={styles.statLabel}>참여자</Text>
+            <Text style={styles.statValue}>{mySchoolRank?.data?.memberCount || 0}명</Text>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -355,9 +356,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  mySchoolStats: {
-    marginTop: SPACING.sm,
   },
   mySchoolStatsText: {
     fontSize: FONT_SIZES.sm,

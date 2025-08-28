@@ -12,6 +12,7 @@ export interface UserInfo {
   grade: number;
   savingStatus: boolean;
   tier?: string;
+  current_tier?: string;
   totalExp?: number;
   interestRate?: number;
 }

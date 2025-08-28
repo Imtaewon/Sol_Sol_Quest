@@ -171,7 +171,6 @@ export const HomeScreen: React.FC = () => {
             {accountInfo?.data?.saving && (
               <TouchableOpacity 
                 style={styles.accountCard}
-                onPress={() => navigation.navigate('Assets')}
                 accessibilityRole="button"
                 accessibilityLabel="적금 계좌 카드"
               >
@@ -193,7 +192,6 @@ export const HomeScreen: React.FC = () => {
             {accountInfo?.data?.deposit && (
               <TouchableOpacity 
                 style={styles.accountCard}
-                onPress={() => navigation.navigate('Assets')}
                 accessibilityRole="button"
                 accessibilityLabel="예금 계좌 카드"
               >

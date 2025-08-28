@@ -24,7 +24,7 @@ export const useCheckAttendance = () => {
         Toast.show({
           type: 'success',
           text1: '출석 완료!',
-          text2: '오늘도 화이팅!',
+          text2: `${result.data?.exp_gained || 0} EXP 획득!`,
         });
       }
       return result;

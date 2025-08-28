@@ -227,7 +227,7 @@ export const baseApi = createApi({
     // 출석 내역 조회
     getAttendanceData: builder.query<any, { year: number; month: number }>({
       query: ({ year, month }) => ({
-        url: `/api/v1/attendance/${year}/${month}`,
+        url: `/api/attendance/${year}/${month}`,
         method: 'GET',
       }),
       providesTags: ['Attendance'],
@@ -236,9 +236,9 @@ export const baseApi = createApi({
     // 출석 체크
     checkAttendance: builder.mutation<any, { year: number; month: number; day: number }>({
       query: (data) => ({
-        url: '/api/v1/attendance/check-in',
+        url: '/api/attendance/check-in',
         method: 'POST',
-        body: data,
+        body: { date: `${data.year}-${data.month.toString().padStart(2, '0')}-${data.day.toString().padStart(2, '0')}` },
       }),
       invalidatesTags: ['Attendance'],
     }),

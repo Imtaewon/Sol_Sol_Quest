@@ -54,7 +54,7 @@ type QuestsScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'Quest
  * - growth: 성장 퀘스트 (주황색)
  * - surprise: 돌발 퀘스트 (하늘색)
  */
-const QUEST_TYPE_COLORS = {
+const QUEST_TYPE_COLORS: Record<string, string> = {
   life: COLORS.primary,
   growth: COLORS.secondary,
   surprise: COLORS.accent,
@@ -369,7 +369,7 @@ export const QuestsScreen: React.FC = () => {
       <FlatList
         data={sortedQuests}
         renderItem={renderQuestCard}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.questList}
         showsVerticalScrollIndicator={false}
         refreshControl={

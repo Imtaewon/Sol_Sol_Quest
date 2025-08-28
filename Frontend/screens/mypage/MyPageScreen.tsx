@@ -55,7 +55,7 @@ const CARD_WIDTH = 300;
 type MyPageScreenNavigationProp = StackNavigationProp<MyPageStackParamList, 'MyPage'>;
 
 // 티어별 색상
-const TIER_COLORS = {
+const TIER_COLORS: Record<string, string> = {
   BASIC: COLORS.gray[400],
   BRONZE: '#CD7F32',
   SILVER: '#C0C0C0',
@@ -64,7 +64,7 @@ const TIER_COLORS = {
 };
 
 // 티어별 이름
-const TIER_NAMES = {
+const TIER_NAMES: Record<string, string> = {
   BASIC: '기본',
   BRONZE: '브론즈',
   SILVER: '실버',
@@ -98,9 +98,6 @@ export const MyPageScreen: React.FC = () => {
               // 백엔드 API 호출
               await logoutMutation().unwrap();
               
-              // 로컬 토큰 삭제
-              await AsyncStorage.removeItem('auth_token');
-              
               // Redux 상태 초기화
               dispatch(logout());
               dispatch(clearUser());
@@ -108,17 +105,16 @@ export const MyPageScreen: React.FC = () => {
               // 로그인 화면으로 이동
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'Landing' }],
+                routes: [{ name: 'MyPage' }],
               });
             } catch (error) {
               console.error('로그아웃 실패:', error);
               // API 실패해도 로컬 로그아웃은 진행
-              await AsyncStorage.removeItem('auth_token');
               dispatch(logout());
               dispatch(clearUser());
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'Landing' }],
+                routes: [{ name: 'MyPage' }],
               });
             }
           },
@@ -160,7 +156,7 @@ export const MyPageScreen: React.FC = () => {
                 {TIER_NAMES[userInfo?.data?.current_tier || 'BASIC']}
               </Text>
             </View>
-            <Text style={styles.tierExp}>{userInfo?.data?.total_exp?.toLocaleString() || 0} EXP</Text>
+            <Text style={styles.tierExp}>{userInfo?.data?.totalExp?.toLocaleString() || 0} EXP</Text>
           </View>
           
           <View style={styles.tierProgress}>
@@ -181,7 +177,7 @@ export const MyPageScreen: React.FC = () => {
           <View style={styles.tierBenefits}>
             <Text style={styles.benefitsTitle}>티어 혜택</Text>
             <Text style={styles.benefitsText}>
-              적금 우대금리 {userStats.current_tier === 'SILVER' ? '0.5%' : '0.3%'} 추가
+              적금 우대금리 {(userInfo?.data?.current_tier || 'BASIC') === 'SILVER' ? '0.5%' : '0.3%'} 추가
             </Text>
           </View>
         </View>
