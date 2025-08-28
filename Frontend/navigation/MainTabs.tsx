@@ -12,7 +12,6 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../utils/constants';
 
 export type MainTabsParamList = {
   Home: undefined;
-  Assets: undefined;
   Payment: undefined;
   Quests: undefined;
   Leaderboard: undefined;
@@ -32,8 +31,6 @@ const CustomTabIcon = ({ route, focused, color, size }: any) => {
 
   if (route.name === 'Home') {
     iconName = focused ? 'home' : 'home-outline';
-  } else if (route.name === 'Assets') {
-    iconName = focused ? 'wallet' : 'wallet-outline';
   } else if (route.name === 'Quests') {
     iconName = focused ? 'trophy' : 'trophy-outline';
   } else if (route.name === 'Payment') {
@@ -107,11 +104,6 @@ export const MainTabs: React.FC = () => {
         name="Home" 
         component={HomeStack}
         options={{ tabBarLabel: '홈' }}
-      />
-      <Tab.Screen 
-        name="Assets" 
-        component={AssetsStack}
-        options={{ tabBarLabel: '자산' }}
       />
       <Tab.Screen 
         name="Quests" 

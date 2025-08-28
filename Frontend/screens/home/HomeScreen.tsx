@@ -161,13 +161,16 @@ export const HomeScreen: React.FC = () => {
         pagingEnabled
         onScroll={handleCarouselScroll}
         scrollEventThrottle={16}
+        decelerationRate="fast"
+        snapToInterval={width - SPACING.lg * 2 + SPACING.md}
+        snapToAlignment="center"
       >
         {hasSavings ? (
           // 가입자: 실제 계좌 정보 표시
           <>
             {accountInfo?.data?.saving && (
               <TouchableOpacity 
-                style={[styles.accountCard, { width: width - SPACING.lg * 2 }]}
+                style={styles.accountCard}
                 onPress={() => navigation.navigate('Assets')}
                 accessibilityRole="button"
                 accessibilityLabel="적금 계좌 카드"
@@ -189,7 +192,7 @@ export const HomeScreen: React.FC = () => {
             )}
             {accountInfo?.data?.deposit && (
               <TouchableOpacity 
-                style={[styles.accountCard, { width: width - SPACING.lg * 2 }]}
+                style={styles.accountCard}
                 onPress={() => navigation.navigate('Assets')}
                 accessibilityRole="button"
                 accessibilityLabel="예금 계좌 카드"
@@ -213,8 +216,7 @@ export const HomeScreen: React.FC = () => {
             <View 
               style={[
                 styles.accountCard, 
-                styles.savingsCTACard,
-                { width: width - SPACING.lg * 2 }
+                styles.savingsCTACard
               ]}
             >
               <View style={styles.accountHeader}>
@@ -237,8 +239,7 @@ export const HomeScreen: React.FC = () => {
             <View 
               style={[
                 styles.accountCard, 
-                styles.depositCTACard,
-                { width: width - SPACING.lg * 2 }
+                styles.depositCTACard
               ]}
             >
               <View style={styles.accountHeader}>
@@ -325,7 +326,7 @@ export const HomeScreen: React.FC = () => {
   );
 
   const renderQuestsPreview = () => (
-    <View style={[styles.questsCard, !hasSavings && styles.blurredCard]}>
+    <View style={styles.questsCard}>
       <View style={styles.questsHeader}>
         <Text style={styles.questsTitle}>추천 퀘스트</Text>
         <View style={styles.questsHeaderButtons}>
@@ -383,13 +384,13 @@ export const HomeScreen: React.FC = () => {
         ) : (
           <EmptyView message="추천 퀘스트가 없습니다." icon="🎯" />
         )
-      ) : (
-        <View style={styles.noSavingsOverlay}>
-          <Text style={styles.noSavingsText}>
-            적금 가입 후 이용 가능합니다
-          </Text>
-        </View>
-      )}
+             ) : (
+         <View style={styles.noSavingsOverlay}>
+           <Text style={[styles.noSavingsText, styles.blurredText]}>
+             적금 가입 후 이용 가능합니다
+           </Text>
+         </View>
+       )}
     </View>
   );
 
@@ -441,7 +442,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   carouselContainer: {
-    paddingRight: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    alignItems: 'center',
   },
   accountCard: {
     backgroundColor: COLORS.white,
@@ -453,6 +455,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    minWidth: width - SPACING.lg * 2,
+    maxWidth: width - SPACING.lg * 2,
   },
   accountHeader: {
     flexDirection: 'row',
@@ -560,6 +564,10 @@ const styles = StyleSheet.create({
   },
   blurredCard: {
     opacity: 0.5,
+  },
+  blurredText: {
+    opacity: 0.3,
+    filter: 'blur(1px)',
   },
   questsHeader: {
     flexDirection: 'row',

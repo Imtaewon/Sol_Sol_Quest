@@ -38,9 +38,11 @@ import { Skeleton } from '../../components/common/Skeleton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
 import { QuestWithAttempt, QuestAttempt } from '../../types/database';
 import { 
-  useGetQuestsQuery
-} from '../../store/api/questApi';
-import { useCompleteQuestMutation } from '../../store/api/baseApi';
+  useGrowthQuestsInProgress,
+  useDailyQuests,
+  useSurpriseQuests,
+  useClaimQuest
+} from '../../hooks/useQuests';
 import { RootState } from '../../store';
 import { HomeStackParamList } from '../../navigation/HomeStack';
 
@@ -104,48 +106,59 @@ export const QuestsScreen: React.FC = () => {
    * 선택된 타입에 따라 퀘스트 목록을 가져옴
    */
   const { 
-    data: questsData, 
-    isLoading, 
-    error, 
-    refetch 
-  } = useGetQuestsQuery({ 
-    type: selectedType,
-    limit: 50 
-  });
+    data: growthQuests, 
+    isLoading: growthLoading, 
+    error: growthError, 
+    refetch: refetchGrowth 
+  } = useGrowthQuestsInProgress();
 
-  // 퀘스트 관련 API 뮤테이션 훅들
-  const [completeQuest] = useCompleteQuestMutation(); // 퀘스트 즉시 완료 (시연용)
+  const { 
+    data: dailyQuests, 
+    isLoading: dailyLoading, 
+    error: dailyError, 
+    refetch: refetchDaily 
+  } = useDailyQuests();
 
-  // API에서 받아온 퀘스트 데이터
-  const quests = questsData?.data || [];
+  const { 
+    data: surpriseQuests, 
+    isLoading: surpriseLoading, 
+    error: surpriseError, 
+    refetch: refetchSurprise 
+  } = useSurpriseQuests();
 
-  /**
-   * 퀘스트 타입별 필터링
-   * 선택된 타입(일상/성장/돌발)에 맞는 퀘스트만 필터링
-   */
-  const filteredQuests = quests.filter(quest => quest.type === selectedType);
+  // 퀘스트 수령 훅
+  const claimQuestMutation = useClaimQuest();
+
+  // 선택된 타입에 따른 데이터와 로딩 상태
+  const getQuestsData = () => {
+    switch (selectedType) {
+      case 'growth':
+        return { data: growthQuests?.data || [], loading: growthLoading, error: growthError, refetch: refetchGrowth };
+      case 'life':
+        return { data: dailyQuests?.data || [], loading: dailyLoading, error: dailyError, refetch: refetchDaily };
+      case 'surprise':
+        return { data: surpriseQuests?.data || [], loading: surpriseLoading, error: surpriseError, refetch: refetchSurprise };
+      default:
+        return { data: [], loading: false, error: null, refetch: () => {} };
+    }
+  };
+
+  const { data: quests, loading: isLoading, error, refetch } = getQuestsData();
 
   /**
    * 퀘스트 상태별 정렬
    * 우선순위: 진행중 > 완료가능 > 미시작 > 완료
    * 사용자가 먼저 해야 할 퀘스트를 상단에 배치
    */
-  const sortedQuests = [...filteredQuests].sort((a, b) => {
-    const getStatusPriority = (status: QuestAttempt['status']) => {
-      switch (status) {
-        case 'in_progress': return 0;
-        case 'clear': return 1; // 완료 가능한 상태를 높은 우선순위로
-        case 'deactive': return 2;
-        case 'submitted': return 3;
-        case 'approved': return 4;
-        default: return 5;
-      }
-    };
-
-    const aStatus = a.attempt?.status || 'deactive';
-    const bStatus = b.attempt?.status || 'deactive';
+  const sortedQuests = [...quests].sort((a, b) => {
+    // 완료된 퀘스트를 뒤로, 진행중인 퀘스트를 앞으로
+    if (a.isCompleted && !b.isCompleted) return 1;
+    if (!a.isCompleted && b.isCompleted) return -1;
     
-    return getStatusPriority(aStatus) - getStatusPriority(bStatus);
+    // 진행률이 높은 퀘스트를 앞으로
+    const aProgress = a.progress || 0;
+    const bProgress = b.progress || 0;
+    return bProgress - aProgress;
   });
 
   /**
@@ -170,17 +183,17 @@ export const QuestsScreen: React.FC = () => {
 
 
   /**
-   * 퀘스트 즉시 완료 처리 함수 (시연용)
-   * 퀘스트를 즉시 완료하고 경험치를 획득
+   * 퀘스트 수령 처리 함수
+   * 완료된 퀘스트의 보상을 수령
    */
-  const handleInstantCompleteQuest = async (quest: QuestWithAttempt) => {
+  const handleClaimQuest = async (quest: any) => {
     try {
-      // 퀘스트 즉시 완료 API 호출
-      await completeQuest({ quest_id: quest.id });
-
-      Alert.alert('퀘스트 즉시 완료', `${quest.title} 퀘스트가 즉시 완료되었습니다! ${quest.reward_exp} EXP를 획득했습니다!`);
+      await claimQuestMutation.mutateAsync({ 
+        questId: quest.id, 
+        expReward: quest.expReward 
+      });
     } catch (error) {
-      Alert.alert('오류', '퀘스트 즉시 완료에 실패했습니다.');
+      console.error('퀘스트 수령 실패:', error);
     }
   };
 
@@ -189,9 +202,9 @@ export const QuestsScreen: React.FC = () => {
    * @param quest 퀘스트 객체
    * @returns 진행률 퍼센트 (0-100)
    */
-  const getQuestProgress = (quest: QuestWithAttempt) => {
-    if (!quest.attempt) return 0;
-    return Math.min((quest.attempt.progress_count / quest.attempt.target_count) * 100, 100);
+  const getQuestProgress = (quest: any) => {
+    if (!quest.progress || !quest.maxProgress) return 0;
+    return Math.min((quest.progress / quest.maxProgress) * 100, 100);
   };
 
   /**
@@ -199,32 +212,26 @@ export const QuestsScreen: React.FC = () => {
    * @param quest 퀘스트 객체
    * @returns 상태에 따른 한글 텍스트
    */
-  const getQuestStatusText = (quest: QuestWithAttempt) => {
-    if (!quest.attempt) return '미시작';
-    
-    switch (quest.attempt.status) {
-      case 'in_progress': return '진행중';
-      case 'clear': return '목표 달성';
-      case 'submitted': return '제출됨';
-      case 'approved': return '완료';
-      default: return '미시작';
-    }
+  const getQuestStatusText = (quest: any) => {
+    if (quest.isClaimed) return '완료';
+    if (quest.isCompleted) return '수령 가능';
+    if (quest.progress && quest.progress > 0) return '진행중';
+    return '미시작';
   };
 
   /**
    * 퀘스트 카드 렌더링 함수
    * 각 퀘스트의 정보를 카드 형태로 표시
    */
-  const renderQuestCard = ({ item: quest }: { item: QuestWithAttempt }) => {
+  const renderQuestCard = ({ item: quest }: { item: any }) => {
     // 퀘스트 진행률 및 상태 정보 계산
     const progress = getQuestProgress(quest);
     const statusText = getQuestStatusText(quest);
     
-         // 퀘스트 상태별 버튼 표시 조건 (적금 가입 시 모든 퀘스트가 자동 시작)
-     const isInProgress = quest.attempt?.status === 'in_progress' || !quest.attempt;  // 진행중 (미시작도 진행중으로 표시)
-     const canStart = false;  // 시작 버튼 제거 (적금 가입 시 자동 시작)
-     const canComplete = quest.attempt?.status === 'clear';  // 완료 가능
-     const isApproved = quest.attempt?.status === 'approved';  // 완료됨
+    // 퀘스트 상태별 버튼 표시 조건
+    const isInProgress = quest.progress && quest.progress > 0 && !quest.isCompleted;
+    const canClaim = quest.isCompleted && !quest.isClaimed;
+    const isCompleted = quest.isClaimed;
 
     return (
       <TouchableOpacity 
@@ -246,14 +253,14 @@ export const QuestsScreen: React.FC = () => {
           
           <View style={styles.questReward}>
             <Ionicons name="star" size={16} color={COLORS.secondary} />
-            <Text style={styles.questRewardText}>{quest.reward_exp} EXP</Text>
+            <Text style={styles.questRewardText}>{quest.expReward} EXP</Text>
           </View>
         </View>
 
         <View style={styles.questContent}>
           <View style={styles.questTitleRow}>
             <Ionicons 
-              name={QUEST_CATEGORY_ICONS[quest.category] as any} 
+              name="trophy" 
               size={20} 
               color={COLORS.gray[600]} 
             />
@@ -267,13 +274,13 @@ export const QuestsScreen: React.FC = () => {
                   styles.progressFill, 
                   { 
                     width: `${progress}%`,
-                    backgroundColor: isApproved ? COLORS.success : QUEST_TYPE_COLORS[quest.type]
+                    backgroundColor: isCompleted ? COLORS.success : QUEST_TYPE_COLORS[quest.type]
                   }
                 ]} 
               />
             </View>
             <Text style={styles.progressText}>
-              {quest.attempt?.progress_count || 0} / {quest.target_count}
+              {quest.progress || 0} / {quest.maxProgress || 1}
             </Text>
           </View>
 
@@ -282,7 +289,7 @@ export const QuestsScreen: React.FC = () => {
               <View 
                 style={[
                   styles.statusDot, 
-                  { backgroundColor: QUEST_STATUS_COLORS[quest.attempt?.status || 'deactive'] }
+                  { backgroundColor: isCompleted ? COLORS.success : isInProgress ? COLORS.primary : COLORS.gray[400] }
                 ]} 
               />
               <Text style={styles.statusText}>{statusText}</Text>
@@ -290,28 +297,16 @@ export const QuestsScreen: React.FC = () => {
 
 
 
-                         {isInProgress && (
-               <TouchableOpacity
-                 style={[styles.startButton, styles.continueButton]}
-                 onPress={() => handleQuestPress(quest)}
-               >
-                 <Text style={styles.startButtonText}>진행하기</Text>
-               </TouchableOpacity>
-             )}
-
-
-
-            {/* 시연용 퀘스트 즉시 완료 버튼 */}
-            {!isApproved && (
+            {canClaim && (
               <TouchableOpacity
-                style={[styles.startButton, styles.instantCompleteButton]}
-                onPress={() => handleInstantCompleteQuest(quest)}
+                style={[styles.startButton, styles.claimButton]}
+                onPress={() => handleClaimQuest(quest)}
               >
-                <Text style={styles.startButtonText}>즉시 완료</Text>
+                <Text style={styles.startButtonText}>수령하기</Text>
               </TouchableOpacity>
             )}
 
-            {isApproved && (
+            {isCompleted && (
               <View style={styles.completedBadge}>
                 <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
                 <Text style={styles.completedText}>완료</Text>
@@ -548,6 +543,9 @@ const styles = StyleSheet.create({
   },
   instantCompleteButton: {
     backgroundColor: COLORS.warning,
+  },
+  claimButton: {
+    backgroundColor: COLORS.success,
   },
   startButtonText: {
     color: COLORS.white,

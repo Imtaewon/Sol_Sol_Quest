@@ -39,134 +39,104 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '../../components/common/AppHeader';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, APP_CONSTANTS } from '../../utils/constants';
 import { formatNumber } from '../../utils/formatters';
-
-// 더미 데이터
-const mockTopSchools = [
-  {
-    id: '1',
-    name: '서울고등학교',
-    totalScore: 2500,
-    averageScore: 85.5,
-    memberCount: 120,
-    predictedDonation: 500000,
-  },
-  {
-    id: '2',
-    name: '부산고등학교',
-    totalScore: 2200,
-    averageScore: 82.3,
-    memberCount: 95,
-    predictedDonation: 450000,
-  },
-  {
-    id: '3',
-    name: '대구고등학교',
-    totalScore: 2000,
-    averageScore: 78.9,
-    memberCount: 88,
-    predictedDonation: 400000,
-  },
-  {
-    id: '4',
-    name: '인천고등학교',
-    totalScore: 1800,
-    averageScore: 76.2,
-    memberCount: 75,
-    predictedDonation: 350000,
-  },
-  {
-    id: '5',
-    name: '광주고등학교',
-    totalScore: 1700,
-    averageScore: 74.8,
-    memberCount: 68,
-    predictedDonation: 320000,
-  },
-  {
-    id: '6',
-    name: '대전고등학교',
-    totalScore: 1600,
-    averageScore: 73.1,
-    memberCount: 62,
-    predictedDonation: 300000,
-  },
-  {
-    id: '7',
-    name: '울산고등학교',
-    totalScore: 1500,
-    averageScore: 71.5,
-    memberCount: 58,
-    predictedDonation: 280000,
-  },
-  {
-    id: '8',
-    name: '세종고등학교',
-    totalScore: 1400,
-    averageScore: 70.2,
-    memberCount: 55,
-    predictedDonation: 260000,
-  },
-  {
-    id: '9',
-    name: '제주고등학교',
-    totalScore: 1300,
-    averageScore: 69.8,
-    memberCount: 52,
-    predictedDonation: 240000,
-  },
-  {
-    id: '10',
-    name: '강릉고등학교',
-    totalScore: 1200,
-    averageScore: 68.5,
-    memberCount: 48,
-    predictedDonation: 220000,
-  },
-];
-
-const mockMySchoolRank = {
-  rank: 15,
-  schoolName: '테스트 고등학교',
-  totalScore: 1250,
-  averageScore: 72.5,
-  memberCount: 45,
-  predictedDonation: 250000,
-  myExp: 1250,
-};
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
+import { 
+  useMySchoolRank, 
+  useMySchoolRankWithUser, 
+  useTopSchoolsByTotal, 
+  useTopSchoolsByAverage 
+} from '../../hooks/useRanks';
 
 export const LeaderboardScreen: React.FC = () => {
-  const [selectedMode, setSelectedMode] = useState<'총점' | '평균'>('총점');
+  // Redux에서 사용자 정보 가져오기
+  const user = useSelector((state: RootState) => state.user.user);
+  const hasSavings = user?.savingStatus ?? false;
+
+  // 선택된 카테고리 (총점/평균)
+  const [selectedCategory, setSelectedCategory] = useState<'total' | 'average'>('total');
+
+  // API 훅들
+  const { 
+    data: mySchoolRank, 
+    isLoading: mySchoolLoading, 
+    error: mySchoolError 
+  } = hasSavings ? useMySchoolRankWithUser() : useMySchoolRank();
+
+  const { 
+    data: topSchools, 
+    isLoading: topSchoolsLoading, 
+    error: topSchoolsError 
+  } = selectedCategory === 'total' ? useTopSchoolsByTotal() : useTopSchoolsByAverage();
+  // 로딩 상태 처리
+  if (mySchoolLoading || topSchoolsLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <AppHeader />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>랭킹 정보를 불러오는 중...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 에러 상태 처리
+  if (mySchoolError || topSchoolsError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <AppHeader />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>랭킹 정보를 불러오는데 실패했습니다.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const renderModeToggle = () => (
     <View style={styles.modeToggle}>
-      {APP_CONSTANTS.LEADERBOARD_MODES.map((mode) => (
-        <TouchableOpacity
-          key={mode}
+      <TouchableOpacity
+        style={[
+          styles.modeButton,
+          selectedCategory === 'total' && styles.modeButtonActive,
+        ]}
+        onPress={() => setSelectedCategory('total')}
+      >
+        <Text
           style={[
-            styles.modeButton,
-            selectedMode === mode && styles.modeButtonActive,
+            styles.modeButtonText,
+            selectedCategory === 'total' && styles.modeButtonTextActive,
           ]}
-          onPress={() => setSelectedMode(mode)}
         >
-          <Text
-            style={[
-              styles.modeButtonText,
-              selectedMode === mode && styles.modeButtonTextActive,
-            ]}
-          >
-            {mode}
-          </Text>
-        </TouchableOpacity>
-      ))}
+          총점
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[
+          styles.modeButton,
+          selectedCategory === 'average' && styles.modeButtonActive,
+        ]}
+        onPress={() => setSelectedCategory('average')}
+      >
+        <Text
+          style={[
+            styles.modeButtonText,
+            selectedCategory === 'average' && styles.modeButtonTextActive,
+          ]}
+        >
+          평균
+        </Text>
+      </TouchableOpacity>
     </View>
   );
+
+
 
   const renderTopSchools = () => (
     <View style={styles.topSchoolsSection}>
       <Text style={styles.sectionTitle}>상위 10개 학교</Text>
       
-      {mockTopSchools.map((school, index) => (
-        <View key={school.id} style={[
+      {topSchools?.data?.map((school, index) => (
+        <View key={school.university_code} style={[
           styles.schoolCard,
           index >= 3 && styles.schoolCardSmall
         ]}>
@@ -175,11 +145,11 @@ export const LeaderboardScreen: React.FC = () => {
           </View>
           
           <View style={styles.schoolInfo}>
-            <Text style={styles.schoolName}>{school.name}</Text>
+            <Text style={styles.schoolName}>{school.university_name}</Text>
             <Text style={styles.schoolStats}>
-              {selectedMode === '총점' 
-                ? `총 EXP: ${formatNumber(school.totalScore)} • ${school.memberCount}명`
-                : `평균 EXP: ${school.averageScore} • ${school.memberCount}명`
+              {selectedCategory === 'total' 
+                ? `총 EXP: ${formatNumber(school.total_exp)} • ${school.savings_students}명`
+                : `평균 EXP: ${school.avg_exp} • ${school.savings_students}명`
               }
             </Text>
           </View>
@@ -194,19 +164,26 @@ export const LeaderboardScreen: React.FC = () => {
       
       <View style={styles.mySchoolCard}>
         <View style={styles.mySchoolHeader}>
-          <Text style={styles.mySchoolRank}>#{mockMySchoolRank.rank}</Text>
-          <Text style={styles.mySchoolName}>{mockMySchoolRank.schoolName}</Text>
+          <Text style={styles.mySchoolRank}>#{mySchoolRank?.data?.rank}</Text>
+          <Text style={styles.mySchoolName}>{mySchoolRank?.data?.school}</Text>
         </View>
         
-                 <View style={styles.myImpactSection}>
-           <Text style={styles.impactTitle}>내 임팩트</Text>
-           <View style={styles.impactContent}>
-             <View style={styles.impactLeft}>
-               <Text style={styles.impactLabel}>내 임팩트</Text>
-             </View>
-             <View style={styles.impactRight}>
-               <Text style={styles.expAmount}>{mockMySchoolRank.myExp} EXP</Text>
-               <Text style={styles.expLabel}>내 기여도</Text>
+        <View style={styles.mySchoolStats}>
+          <Text style={styles.mySchoolStatsText}>
+            총 EXP: {formatNumber(mySchoolRank?.data?.totalExp || 0)} • 평균 EXP: {mySchoolRank?.data?.averageExp || 0} • {mySchoolRank?.data?.memberCount || 0}명
+          </Text>
+        </View>
+
+        {hasSavings && mySchoolRank?.data?.myTotalExp && (
+          <View style={styles.myImpactSection}>
+            <Text style={styles.impactTitle}>내 임팩트</Text>
+            <View style={styles.impactContent}>
+              <View style={styles.impactLeft}>
+                <Text style={styles.impactLabel}>내 임팩트</Text>
+              </View>
+              <View style={styles.impactRight}>
+                <Text style={styles.expAmount}>{formatNumber(mySchoolRank.data.myTotalExp)} EXP</Text>
+                <Text style={styles.expLabel}>내 기여도</Text>
              </View>
            </View>
          </View>
@@ -214,16 +191,16 @@ export const LeaderboardScreen: React.FC = () => {
          <View style={styles.mySchoolStats}>
            <View style={styles.statItem}>
              <Text style={styles.statLabel}>총점</Text>
-             <Text style={styles.statValue}>{formatNumber(mockMySchoolRank.totalScore)}점</Text>
+             <Text style={styles.statValue}>{formatNumber(mySchoolRank?.data?.totalExp || 0)}점</Text>
            </View>
            <View style={styles.statItem}>
              <Text style={styles.statLabel}>평균</Text>
-             <Text style={styles.statValue}>{mockMySchoolRank.averageScore}점</Text>
+             <Text style={styles.statValue}>{mySchoolRank?.data?.averageExp || 0}점</Text>
            </View>
-           <View style={styles.statItem}>
-             <Text style={styles.statLabel}>참여자</Text>
-             <Text style={styles.statValue}>{mockMySchoolRank.memberCount}명</Text>
-           </View>
+                    <View style={styles.statItem}>
+           <Text style={styles.statLabel}>참여자</Text>
+           <Text style={styles.statValue}>{mySchoolRank?.data?.memberCount || 0}명</Text>
+         </View>
          </View>
       </View>
     </View>
@@ -379,6 +356,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  mySchoolStats: {
+    marginTop: SPACING.sm,
+  },
+  mySchoolStatsText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray[600],
+  },
   mySchoolHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -453,6 +437,26 @@ const styles = StyleSheet.create({
   expLabel: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.gray[500],
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.gray[600],
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  errorText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.gray[600],
+    textAlign: 'center',
   },
 });
 

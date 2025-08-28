@@ -311,7 +311,7 @@ export const SavingOpenScreen: React.FC = () => {
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학교</Text>
-                  <Text style={styles.infoValue}>{userInfo?.school}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.university_name}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학과</Text>
@@ -336,8 +336,12 @@ export const SavingOpenScreen: React.FC = () => {
                     <FormTextInput
                       label="자동이체 금액"
                       placeholder="월 납입 금액을 입력해주세요"
-                      value={value.toString()}
-                      onChangeText={(text) => onChange(parseInt(text) || 0)}
+                      value={value ? value.toLocaleString() : ''}
+                      onChangeText={(text) => {
+                        // 콤마 제거 후 숫자만 추출
+                        const numericValue = parseInt(text.replace(/,/g, '')) || 0;
+                        onChange(numericValue);
+                      }}
                       error={errors.monthlyAmount?.message}
                       keyboardType="numeric"
                     />
@@ -346,29 +350,26 @@ export const SavingOpenScreen: React.FC = () => {
 
                 <View style={styles.accountSection}>
                   <Text style={styles.accountLabel}>자동이체 계좌</Text>
-                  <View style={styles.accountInputContainer}>
-                    <FormTextInput
-                      placeholder="계좌번호를 입력해주세요"
-                      value={accountNumber}
-                      onChangeText={(text) => {
-                        // 폼 값 업데이트
-                        const form = control._formValues;
-                        form.accountNumber = text;
-                      }}
-                      error={errors.accountNumber?.message}
-                      keyboardType="numeric"
-                      style={styles.accountInput}
-                    />
-                    <TouchableOpacity 
-                      style={styles.openAccountButton}
-                      onPress={handleCreateDemandAccount}
-                      disabled={isCreatingDemand}
-                    >
-                      <Text style={styles.openAccountButtonText}>
-                        {isCreatingDemand ? '생성 중...' : '상시입출금 계좌 만들기'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                  <FormTextInput
+                    placeholder="계좌번호를 입력해주세요"
+                    value={accountNumber}
+                    onChangeText={(text) => {
+                      // 폼 값 업데이트
+                      const form = control._formValues;
+                      form.accountNumber = text;
+                    }}
+                    error={errors.accountNumber?.message}
+                    keyboardType="numeric"
+                  />
+                  <TouchableOpacity 
+                    style={styles.openAccountButton}
+                    onPress={handleCreateDemandAccount}
+                    disabled={isCreatingDemand}
+                  >
+                    <Text style={styles.openAccountButtonText}>
+                      {isCreatingDemand ? '생성 중...' : '상시입출금 계좌 만들기'}
+                    </Text>
+                  </TouchableOpacity>
                   {demandAccountNumber && (
                     <Text style={styles.accountCreatedText}>
                       ✓ 상시입출금 계좌가 생성되었습니다: {demandAccountNumber}
@@ -588,19 +589,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: SPACING.sm,
   },
-  accountInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  accountInput: {
-    flex: 1,
-  },
   openAccountButton: {
     backgroundColor: COLORS.secondary,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.sm,
+    marginTop: SPACING.sm,
+    alignItems: 'center',
   },
   openAccountButtonText: {
     color: COLORS.white,

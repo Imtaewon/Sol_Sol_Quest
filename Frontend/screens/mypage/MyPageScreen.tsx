@@ -47,6 +47,7 @@ import { MyPageStackParamList } from '../../navigation/MyPageStack';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useLogoutMutation } from '../../store/api/baseApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUserInfo, useAccountInfo } from '../../hooks/useUser';
 
 // 카드 너비를 고정값으로 설정 (Dimensions 제거)
 const CARD_WIDTH = 300;
@@ -78,30 +79,10 @@ export const MyPageScreen: React.FC = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [logoutMutation] = useLogoutMutation();
 
-  // 더미 데이터 (실제로는 API에서 가져올 데이터)
-  const userStats = {
-    total_exp: 1250,
-    current_tier: 'SILVER' as const,
-    savings_accounts: [
-      {
-        id: '1',
-        product_name: '솔 적금',
-        balance: 500000,
-        monthly_amount: 100000,
-        interest_rate: 3.5,
-        maturity_date: '2024-12-31',
-        status: 'active' as const,
-      },
-    ],
-    deposit_accounts: [
-      {
-        id: '2',
-        account_name: '솔 입출금',
-        balance: 1500000,
-        interest_rate: 1.2,
-      },
-    ],
-  };
+  // API 훅들
+  const { data: userInfo, isLoading: userInfoLoading, error: userInfoError } = useUserInfo();
+  const { data: accountInfo, isLoading: accountInfoLoading, error: accountInfoError } = useAccountInfo();
+
 
   const handleLogout = async () => {
     Alert.alert(
@@ -170,29 +151,29 @@ export const MyPageScreen: React.FC = () => {
           <View style={styles.tierHeader}>
             <View style={[
               styles.tierBadge,
-              { backgroundColor: TIER_COLORS[userStats.current_tier] + '20' }
+              { backgroundColor: TIER_COLORS[userInfo?.data?.current_tier || 'BASIC'] + '20' }
             ]}>
               <Text style={[
                 styles.tierName,
-                { color: TIER_COLORS[userStats.current_tier] }
+                { color: TIER_COLORS[userInfo?.data?.current_tier || 'BASIC'] }
               ]}>
-                {TIER_NAMES[userStats.current_tier]}
+                {TIER_NAMES[userInfo?.data?.current_tier || 'BASIC']}
               </Text>
             </View>
-            <Text style={styles.tierExp}>{userStats.total_exp.toLocaleString()} EXP</Text>
+            <Text style={styles.tierExp}>{userInfo?.data?.total_exp?.toLocaleString() || 0} EXP</Text>
           </View>
           
           <View style={styles.tierProgress}>
             <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill,
-                  { 
-                    width: '60%',
-                    backgroundColor: TIER_COLORS[userStats.current_tier]
-                  }
-                ]} 
-              />
+                          <View 
+              style={[
+                styles.progressFill,
+                { 
+                  width: '60%',
+                  backgroundColor: TIER_COLORS[userInfo?.data?.current_tier || 'BASIC']
+                }
+              ]} 
+            />
             </View>
             <Text style={styles.progressText}>다음 티어까지 750 EXP 남음</Text>
           </View>
@@ -219,52 +200,38 @@ export const MyPageScreen: React.FC = () => {
         contentContainerStyle={styles.accountCarousel}
       >
         {/* 적금 카드 */}
-        {userStats.savings_accounts.length > 0 ? (
-          userStats.savings_accounts.map((account) => (
-            <View key={account.id} style={styles.accountCard}>
-              <View style={styles.accountHeader}>
-                <View style={styles.accountTypeContainer}>
-                  <Text style={styles.accountTypeLabel}>적금</Text>
-                  <Text style={styles.accountName}>{account.product_name}</Text>
-                </View>
-                <View style={[
-                  styles.statusBadge,
-                  { backgroundColor: account.status === 'active' ? COLORS.success + '20' : COLORS.gray[200] }
-                ]}>
-                  <Text style={[
-                    styles.statusText,
-                    { color: account.status === 'active' ? COLORS.success : COLORS.gray[600] }
-                  ]}>
-                    {account.status === 'active' ? '진행중' : '만기'}
-                  </Text>
-                </View>
+        {accountInfo?.data?.saving ? (
+          <View style={styles.accountCard}>
+            <View style={styles.accountHeader}>
+              <View style={styles.accountTypeContainer}>
+                <Text style={styles.accountTypeLabel}>적금</Text>
+                <Text style={styles.accountName}>솔 적금</Text>
               </View>
-              
-              <View style={styles.accountBalance}>
-                <Text style={styles.balanceLabel}>현재 잔액</Text>
-                <Text style={styles.balanceAmount}>
-                  {account.balance.toLocaleString()}원
-                </Text>
-              </View>
-              
-              <View style={styles.accountDetails}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>월 납입금</Text>
-                  <Text style={styles.detailValue}>
-                    {account.monthly_amount.toLocaleString()}원
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>금리</Text>
-                  <Text style={styles.detailValue}>{account.interest_rate}%</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>만기일</Text>
-                  <Text style={styles.detailValue}>{account.maturity_date}</Text>
-                </View>
+              <View style={[styles.statusBadge, { backgroundColor: COLORS.success + '20' }]}>
+                <Text style={[styles.statusText, { color: COLORS.success }]}>진행중</Text>
               </View>
             </View>
-          ))
+            
+            <View style={styles.accountBalance}>
+              <Text style={styles.balanceLabel}>현재 잔액</Text>
+              <Text style={styles.balanceAmount}>
+                {accountInfo.data.saving.currentBalance.toLocaleString()}원
+              </Text>
+            </View>
+            
+            <View style={styles.accountDetails}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>월 납입금</Text>
+                <Text style={styles.detailValue}>
+                  {accountInfo.data.saving.monthlyAmount.toLocaleString()}원
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>계좌번호</Text>
+                <Text style={styles.detailValue}>{accountInfo.data.saving.accountNumber}</Text>
+              </View>
+            </View>
+          </View>
         ) : (
           <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
             <Ionicons name="add-circle-outline" size={32} color={COLORS.primary} />
@@ -273,34 +240,32 @@ export const MyPageScreen: React.FC = () => {
         )}
 
         {/* 예금 카드 */}
-        {userStats.deposit_accounts.length > 0 ? (
-          userStats.deposit_accounts.map((account) => (
-            <View key={account.id} style={styles.accountCard}>
-              <View style={styles.accountHeader}>
-                <View style={styles.accountTypeContainer}>
-                  <Text style={styles.accountTypeLabel}>예금</Text>
-                  <Text style={styles.accountName}>{account.account_name}</Text>
-                </View>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>활성</Text>
-                </View>
+        {accountInfo?.data?.deposit ? (
+          <View style={styles.accountCard}>
+            <View style={styles.accountHeader}>
+              <View style={styles.accountTypeContainer}>
+                <Text style={styles.accountTypeLabel}>예금</Text>
+                <Text style={styles.accountName}>솔 입출금</Text>
               </View>
-              
-              <View style={styles.accountBalance}>
-                <Text style={styles.balanceLabel}>현재 잔액</Text>
-                <Text style={styles.balanceAmount}>
-                  {account.balance.toLocaleString()}원
-                </Text>
-              </View>
-              
-              <View style={styles.accountDetails}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>금리</Text>
-                  <Text style={styles.detailValue}>{account.interest_rate}%</Text>
-                </View>
+              <View style={styles.statusBadge}>
+                <Text style={styles.statusText}>활성</Text>
               </View>
             </View>
-          ))
+            
+            <View style={styles.accountBalance}>
+              <Text style={styles.balanceLabel}>현재 잔액</Text>
+              <Text style={styles.balanceAmount}>
+                {accountInfo.data.deposit.currentBalance.toLocaleString()}원
+              </Text>
+            </View>
+            
+            <View style={styles.accountDetails}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>계좌번호</Text>
+                <Text style={styles.detailValue}>{accountInfo.data.deposit.accountNumber}</Text>
+              </View>
+            </View>
+          </View>
         ) : (
           <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
             <Ionicons name="add-circle-outline" size={32} color={COLORS.primary} />
