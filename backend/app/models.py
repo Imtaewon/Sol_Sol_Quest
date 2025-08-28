@@ -113,7 +113,6 @@ class School(Base):
     id = Column(String(26), primary_key=True)
     code = Column(String(50), unique=True, nullable=False)
     name = Column(String(255), nullable=False)
-    created_at = Column(DateTime, nullable=False, default=func.current_timestamp())
 
     users = relationship("User", back_populates="school")
     leaderboard_rows = relationship("SchoolLeaderboard", back_populates="school")
@@ -185,7 +184,6 @@ class Quest(Base):
     lat = Column(DECIMAL(10, 6))
     lng = Column(DECIMAL(10, 6))
     quest_link_url = Column(String(2048))
-    created_at = Column(DateTime, nullable=False, default=func.current_timestamp())
 
     attempts = relationship("QuestAttempt", back_populates="quest")
     recos = relationship("QuestRecommendation", back_populates="quest")
@@ -282,7 +280,6 @@ class Merchant(Base):
     store_name = Column(String(200), nullable=False)
     category = Column(String(50), nullable=False)
     url = Column(String(200), nullable=False)
-    created_at = Column(DateTime, nullable=False)
 
     payments = relationship("Payment", back_populates="merchant")
 
