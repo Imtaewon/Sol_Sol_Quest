@@ -378,7 +378,7 @@ export const QuestsScreen: React.FC = () => {
       <FlatList
         data={sortedQuests}
         renderItem={renderQuestCard}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.questList}
         showsVerticalScrollIndicator={false}
         refreshControl={

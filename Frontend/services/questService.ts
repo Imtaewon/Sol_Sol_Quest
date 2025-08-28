@@ -3,7 +3,7 @@ import { ApiResponse } from './apiClient';
 
 // 백엔드 QuestListItem 구조에 맞춘 퀘스트 타입
 export interface QuestListItem {
-  id: number;
+  id: string; // 백엔드와 일치하도록 string으로 변경
   type: 'life' | 'growth' | 'surprise'; // 백엔드 QuestTypeEnum
   title: string;
   verify_method: string;
@@ -18,7 +18,7 @@ export interface QuestListItem {
   lng?: number;
   
   // 사용자 진행 상태
-  attempt_id?: number;
+  attempt_id?: string; // 백엔드와 일치하도록 string으로 변경
   user_status: 'DEACTIVE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
   progress_count: number;
   user_target_count: number;
@@ -29,7 +29,7 @@ export interface QuestListItem {
 
 // 프론트엔드에서 사용할 퀘스트 타입 (기존 호환성 유지)
 export interface Quest {
-  id: number;
+  id: string; // 백엔드와 일치하도록 string으로 변경
   title: string;
   description: string;
   category: 'growth' | 'daily' | 'surprise';
@@ -58,7 +58,7 @@ export interface RecommendedQuestsResponse {
 
 // 기존 추천 퀘스트 타입 (호환성을 위해 유지)
 export interface RecommendedQuest {
-  id: number;
+  id: string; // 백엔드와 일치하도록 string으로 변경
   title: string;
   progress: number;
   maxProgress: number;
@@ -69,7 +69,7 @@ export interface RecommendedQuest {
 
 // 퀘스트 진행 내역 타입
 export interface QuestHistory {
-  id: number;
+  id: string; // 백엔드와 일치하도록 string으로 변경
   title: string;
   category: 'growth' | 'daily' | 'surprise';
   progress: number;
@@ -81,7 +81,7 @@ export interface QuestHistory {
 
 // 퀘스트 수령 요청 타입
 export interface ClaimQuestRequest {
-  questId: number;
+  questId: string; // 백엔드와 일치하도록 string으로 변경
   expReward: number;
 }
 
@@ -104,13 +104,26 @@ export const questService = {
   // 전체 퀘스트 목록 조회 (하나의 API로 모든 퀘스트 가져오기)
   getAllQuests: async (): Promise<ApiResponse<QuestListResponse>> => {
     console.log('🌐 questService.getAllQuests HTTP 요청 시작');
+    console.log('🌐 questService.getAllQuests 요청 URL:', '/api/v1/quests');
     try {
       const response = await apiClient.get<ApiResponse<QuestListResponse>>('/api/v1/quests');
       console.log('🌐 questService.getAllQuests HTTP 요청 완료:', response.status);
+      console.log('🌐 questService.getAllQuests 응답 헤더:', response.headers);
       console.log('🌐 questService.getAllQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
+      
+      if (response.data?.data?.quests) {
+        console.log('🌐 questService.getAllQuests 퀘스트 개수:', response.data.data.quests.length);
+        console.log('🌐 questService.getAllQuests 첫 번째 퀘스트:', response.data.data.quests[0]);
+      } else {
+        console.log('🌐 questService.getAllQuests 퀘스트 데이터 없음');
+      }
+      
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('🌐 questService.getAllQuests 에러:', error);
+      console.error('🌐 questService.getAllQuests 에러 메시지:', error.message);
+      console.error('🌐 questService.getAllQuests 에러 응답:', error.response?.data);
+      console.error('🌐 questService.getAllQuests 에러 상태:', error.response?.status);
       throw error;
     }
   },
@@ -124,6 +137,27 @@ export const questService = {
 
 // 퀘스트 카테고리별 분류 함수
 export const categorizeQuests = (quests: QuestListItem[]) => {
+  console.log('📊 categorizeQuests 시작 - 전체 퀘스트 개수:', quests.length);
+  
+  if (quests.length === 0) {
+    console.log('📊 categorizeQuests - 퀘스트가 없음');
+    return {
+      growth: [],
+      daily: [],
+      surprise: []
+    };
+  }
+  
+  // 각 퀘스트의 type 필드 확인
+  quests.forEach((quest, index) => {
+    console.log(`📊 퀘스트 ${index + 1}:`, {
+      id: quest.id,
+      title: quest.title,
+      type: quest.type,
+      category: quest.category
+    });
+  });
+  
   const categorized = {
     growth: quests.filter(quest => quest.type === 'growth'),
     daily: quests.filter(quest => quest.type === 'life'), // 백엔드의 'life'를 프론트의 'daily'로 매핑
@@ -143,7 +177,7 @@ export const categorizeQuests = (quests: QuestListItem[]) => {
 // 백엔드 QuestListItem을 프론트엔드 Quest로 변환하는 함수
 export const convertQuestListItemToQuest = (questItem: QuestListItem): Quest => {
   return {
-    id: questItem.id,
+    id: questItem.id, // 이미 string이므로 그대로 사용
     title: questItem.title,
     description: questItem.title, // 백엔드에 description 필드가 없으므로 title 사용
     category: questItem.type === 'life' ? 'daily' : questItem.type as 'growth' | 'daily' | 'surprise',

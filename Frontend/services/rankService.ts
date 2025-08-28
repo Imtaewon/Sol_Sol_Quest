@@ -3,11 +3,13 @@ import { ApiResponse } from './apiClient';
 
 // 백엔드 UniversityLeaderboardResponse 구조에 맞춘 타입
 export interface UniversityItem {
-  rank: number;
-  school: string;
-  totalExp: number;
-  averageExp: number;
-  memberCount: number;
+  university_code: string;
+  university_name: string;
+  savings_students: number;
+  total_exp: number;
+  avg_exp: number;
+  rank_overall?: number;
+  rank_avg?: number;
 }
 
 export interface UniversityLeaderboardResponse {
@@ -79,11 +81,11 @@ export const rankService = {
       }
 
       const result: MySchoolRank = {
-        rank: myUniversity.rank,
-        school: myUniversity.school,
-        totalExp: myUniversity.totalExp,
-        averageExp: myUniversity.averageExp,
-        memberCount: myUniversity.memberCount
+        rank: myUniversity.rank_overall || 0,
+        school: myUniversity.university_name,
+        totalExp: myUniversity.total_exp,
+        averageExp: myUniversity.avg_exp,
+        memberCount: myUniversity.savings_students
       };
 
       console.log('🌐 rankService.getMySchoolRank 변환된 데이터:', JSON.stringify(result, null, 2));
@@ -118,11 +120,11 @@ export const rankService = {
       }
 
       const result: MySchoolRankWithUser = {
-        rank: myUniversity.rank,
-        school: myUniversity.school,
-        totalExp: myUniversity.totalExp,
-        averageExp: myUniversity.averageExp,
-        memberCount: myUniversity.memberCount,
+        rank: myUniversity.rank_overall || 0,
+        school: myUniversity.university_name,
+        totalExp: myUniversity.total_exp,
+        averageExp: myUniversity.avg_exp,
+        memberCount: myUniversity.savings_students,
         myTotalExp: 0 // 백엔드에서 제공하지 않는 경우 0으로 설정
       };
 
@@ -144,11 +146,11 @@ export const rankService = {
       // top10_overall 데이터를 SchoolRank[] 형식으로 변환
       const topSchools = response.data.data?.top10_overall || [];
       const result: SchoolRank[] = topSchools.map(school => ({
-        rank: school.rank,
-        school: school.school,
-        totalExp: school.totalExp,
-        averageExp: school.averageExp,
-        memberCount: school.memberCount
+        rank: school.rank_overall || 0,
+        school: school.university_name,
+        totalExp: school.total_exp,
+        averageExp: school.avg_exp,
+        memberCount: school.savings_students
       }));
 
       console.log('🌐 rankService.getTopSchoolsByTotal 변환된 데이터:', JSON.stringify(result, null, 2));
@@ -169,11 +171,11 @@ export const rankService = {
       // top10_avg 데이터를 SchoolRank[] 형식으로 변환
       const topSchools = response.data.data?.top10_avg || [];
       const result: SchoolRank[] = topSchools.map(school => ({
-        rank: school.rank,
-        school: school.school,
-        totalExp: school.totalExp,
-        averageExp: school.averageExp,
-        memberCount: school.memberCount
+        rank: school.rank_avg || 0,
+        school: school.university_name,
+        totalExp: school.total_exp,
+        averageExp: school.avg_exp,
+        memberCount: school.savings_students
       }));
 
       console.log('🌐 rankService.getTopSchoolsByAverage 변환된 데이터:', JSON.stringify(result, null, 2));
