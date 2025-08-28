@@ -8,7 +8,7 @@ import uuid
 
 
 from app.models import (
-    User, UserStat, Tier, 
+    User, UserStats, Tier, 
     Quest, QuestAttempt, QuestAttemptStatusEnum, 
     SchoolLeaderboard, TierNameEnum, PeriodScopeEnum
 )
@@ -74,7 +74,7 @@ def complete_quest(db: Session, user_id: str, quest_id: str):
         reward_exp = int(quest.reward_exp or 0)
 
         # 2) 유저 스탯
-        user_stat = db.query(UserStat).filter(UserStat.user_id == user_id).first()
+        user_stat = db.query(UserStats).filter(UserStats.user_id == user_id).first()
         if not user_stat:
             raise ValueError("유저 스탯이 존재하지 않습니다.")
 

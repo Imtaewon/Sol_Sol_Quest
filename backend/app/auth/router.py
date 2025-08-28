@@ -11,7 +11,7 @@ from app.auth.deps import get_current_user, bearer
 from app.auth.utils import hash_password, verify_password, create_access_token, decode_access_token
 from app.database import get_db
 from app.cache import rds
-from app.models import User, School, UserStat, UserRoleEnum, TierNameEnum
+from app.models import User, School, UserStats, UserRoleEnum, TierNameEnum
 from app.ENV import API_KEY as apiKey
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -108,7 +108,7 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     db.add(user)
     
     # 초기 통계
-    stat = UserStat(user_id=user.id, total_exp=0, current_tier=TierNameEnum.BASIC)
+    stat = UserStats(user_id=user.id, total_exp=0, current_tier=TierNameEnum.BASIC)
     db.add(stat)
     
     db.commit()
@@ -143,7 +143,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     if not user or not verify_password(req.password, user.password):
         raise HTTPException(status_code=401, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
     
-    stat = db.query(UserStat).filter(UserStat.user_id == user.id).first()
+    stat = db.query(UserStats).filter(UserStats.user_id == user.id).first()
     school = db.query(School).filter(School.id == user.school_id).first()
     
     token = create_access_token({"sub": user.id})
