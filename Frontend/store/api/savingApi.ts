@@ -23,24 +23,24 @@ export const savingApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     /**
      * 설문 문제 조회 (백엔드 개발자 요청 예정)
-     * GET /api/v1/saving/survey/{questionNumber}
+     * GET /saving/survey/{questionNumber}
      * 특정 번호의 설문 문제 조회
      */
     getSurveyQuestion: builder.query<ApiResponse<SurveyQuestion>, number>({
       query: (questionNumber) => ({
-        url: `/api/v1/saving/survey/${questionNumber}`,
+        url: `/saving/survey/${questionNumber}`,
         method: 'GET',
       }),
     }),
 
     /**
      * 설문 응답 제출 (백엔드 개발자 요청 예정)
-     * POST /api/v1/saving/survey-responses
+     * POST /saving/survey-responses
      * 설문 응답 데이터 제출
      */
     submitSurveyResponses: builder.mutation<ApiResponse<any>, SurveyResponse[]>({
       query: (data) => ({
-        url: '/api/v1/saving/survey-responses',
+        url: '/saving/survey-responses',
         method: 'POST',
         body: data,
       }),
