@@ -123,7 +123,7 @@ export const baseApi = createApi({
     // 인증 관련
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({
-        url: '/auth/login',
+        url: '/api/v1/auth/login',
         method: 'POST',
         body: credentials,
       }),
@@ -132,7 +132,7 @@ export const baseApi = createApi({
     
     signup: builder.mutation<SignupResponse, SignupRequest>({
       query: (userData) => ({
-        url: '/auth/register',
+        url: '/api/v1/auth/register',
         method: 'POST',
         body: userData,
       }),
@@ -142,7 +142,7 @@ export const baseApi = createApi({
     // 사용자 정보
     getUserInfo: builder.query<UserInfoResponse, void>({
       query: () => ({
-        url: '/users/me',
+        url: '/api/v1/users/me',
         method: 'GET',
       }),
       transformResponse: (response: { success: boolean; data: UserInfoResponse }) => {
@@ -154,7 +154,7 @@ export const baseApi = createApi({
     // 학교 목록
     getSchools: builder.query<School[], void>({
       query: () => ({
-        url: '/universities',
+        url: '/api/v1/universities',
         method: 'GET',
       }),
       transformResponse: (response: { success: boolean; data: School[] }) => {
@@ -166,7 +166,7 @@ export const baseApi = createApi({
     // 학교 리더보드
     getSchoolLeaderboard: builder.query<SchoolLeaderboardResponse, { limit?: number }>({
       query: ({ limit = 10 }) => ({
-        url: `/universities/leaderboard?limit=${limit}`,
+        url: `/api/v1/universities/leaderboard?limit=${limit}`,
         method: 'GET',
       }),
       providesTags: ['Leaderboard'],
@@ -180,7 +180,7 @@ export const baseApi = createApi({
       limit?: number;
     }>({
       query: ({ type, category, page = 1, limit = 20 }) => ({
-        url: `/quests?page=${page}&limit=${limit}${type ? `&type=${type}` : ''}${category ? `&category=${category}` : ''}`,
+        url: `/api/v1/quests?page=${page}&limit=${limit}${type ? `&type=${type}` : ''}${category ? `&category=${category}` : ''}`,
         method: 'GET',
       }),
       transformResponse: (response: { success: boolean; data: any }) => {
@@ -192,7 +192,7 @@ export const baseApi = createApi({
     // 퀘스트 즉시 완료 (시연용)
     completeQuest: builder.mutation<any, { quest_id: string }>({
       query: ({ quest_id }) => ({
-        url: `/quests/${quest_id}/complete`,
+        url: `/api/v1/quests/${quest_id}/complete`,
         method: 'POST',
       }),
       invalidatesTags: ['Quest'],
@@ -205,7 +205,7 @@ export const baseApi = createApi({
       account_no: string;
     }>({
       query: (data) => ({
-        url: '/accounts/savings',
+        url: '/api/v1/accounts/savings',
         method: 'POST',
         body: data,
       }),
@@ -217,7 +217,7 @@ export const baseApi = createApi({
       user_id: string;
     }>({
       query: (data) => ({
-        url: '/accounts/demand-deposit',
+        url: '/api/v1/accounts/demand-deposit',
         method: 'POST',
         body: data,
       }),
@@ -227,7 +227,7 @@ export const baseApi = createApi({
     // 출석 내역 조회
     getAttendanceData: builder.query<any, { year: number; month: number }>({
       query: ({ year, month }) => ({
-        url: `/attendance/${year}/${month}`,
+        url: `/api/v1/attendance/${year}/${month}`,
         method: 'GET',
       }),
       providesTags: ['Attendance'],
@@ -236,7 +236,7 @@ export const baseApi = createApi({
     // 출석 체크
     checkAttendance: builder.mutation<any, { year: number; month: number; day: number }>({
       query: (data) => ({
-        url: '/attendance/check-in',
+        url: '/api/v1/attendance/check-in',
         method: 'POST',
         body: data,
       }),
@@ -246,7 +246,7 @@ export const baseApi = createApi({
     // 로그아웃
     logout: builder.mutation<any, void>({
       query: () => ({
-        url: '/auth/logout',
+        url: '/api/v1/auth/logout',
         method: 'POST',
       }),
       invalidatesTags: ['User'],

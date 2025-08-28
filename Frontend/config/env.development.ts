@@ -22,7 +22,7 @@
  */
 export const developmentConfig = {
   // 해커톤 서버 URL (실제 배포 시 사용할 서버)
-  API_BASE_URL: 'http://15.165.185.135/api/v1',
+  API_BASE_URL: 'http://15.165.185.135',
   
   // 앱 기본 정보
   APP_NAME: 'SolQuest',

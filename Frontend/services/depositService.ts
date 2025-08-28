@@ -16,7 +16,7 @@ export interface DepositSignupResponse {
 export const depositService = {
   // 예금 가입
   signup: async (data: DepositSignupRequest): Promise<ApiResponse<DepositSignupResponse>> => {
-    const response = await apiClient.post<ApiResponse<DepositSignupResponse>>('/accounts/demand-deposit', data);
+    const response = await apiClient.post<ApiResponse<DepositSignupResponse>>('/api/v1/accounts/demand-deposit', data);
     return response.data;
   },
 };
