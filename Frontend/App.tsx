@@ -75,6 +75,29 @@ const Navigation: React.FC = () => {
     checkAuthToken();
   }, [dispatch]);
 
+  // 앱 초기화 시 더미 키 설정
+  useEffect(() => {
+    const setDummyKey = async () => {
+      await AsyncStorage.setItem('dummy_key', 'dummy_value');
+      console.log('DEBUG: AsyncStorage dummy_key 설정 완료');
+    };
+    setDummyKey();
+  }, []);
+
+  // 인증 상태가 true가 되면 토큰 재확인
+  useEffect(() => {
+    if (isAuthenticated) {
+      const checkToken = async () => {
+        const token = await AsyncStorage.getItem('auth_token');
+        console.log('✅ App.tsx - 로그인 후 AsyncStorage 토큰 재확인:', token ? '토큰 존재' : '토큰 없음', '길이:', token?.length || 0);
+        
+        const dummyValue = await AsyncStorage.getItem('dummy_key');
+        console.log('✅ App.tsx - AsyncStorage dummy_key 확인:', dummyValue);
+      };
+      checkToken();
+    }
+  }, [isAuthenticated]);
+
   useEffect(() => {
     console.log('🔄 인증 상태 변경됨:', isAuthenticated);
     console.log('현재 시간:', new Date().toISOString());

@@ -49,26 +49,37 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     try {
+      // 더미 키 확인으로 AsyncStorage 기능 테스트
+      const dummyValue = await AsyncStorage.getItem('dummy_key');
+      console.log('DEBUG: Interceptor - AsyncStorage dummy_key:', dummyValue);
+      
       const token = await AsyncStorage.getItem('auth_token');
+      const hasToken = !!token;
+      const tokenLength = token?.length || 0;
+      
       console.log('🔑 API 요청 토큰 확인:', {
         url: config.url,
         method: config.method,
-        hasToken: !!token,
-        tokenLength: token?.length || 0
+        hasToken,
+        tokenLength,
+        dummyKeyExists: !!dummyValue,
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'null'
       });
       
-      if (token) {
+      if (hasToken && token) {
         config.headers.Authorization = `Bearer ${token}`;
         console.log('✅ 토큰이 헤더에 추가됨');
       } else {
-        console.log('⚠️ 토큰이 없음');
+        console.log('⚠️ 토큰이 없음 - Authorization 헤더 추가 안됨');
       }
     } catch (error) {
-      console.error('토큰 가져오기 실패:', error);
+      console.error('❌ 토큰 가져오기 실패:', error);
     }
+    
     return config;
   },
   (error) => {
+    console.error('❌ 요청 인터셉터 에러:', error);
     return Promise.reject(error);
   }
 );
