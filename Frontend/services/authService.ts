@@ -9,7 +9,8 @@ export interface FrontendSignupRequest {
   username: string;
   password: string;
   email: string;
-  school: string;
+  school: string; // 학교 코드
+  schoolName?: string; // 학교 이름 (선택적)
   department: string;
   grade: number;
 }
@@ -82,7 +83,7 @@ export const transformSignupData = (frontendData: FrontendSignupRequest): Signup
     gender: frontendData.gender,  // 이미 Backend 형식이므로 변환 불필요
     birth_year: frontendData.birthYear,
     university_code: frontendData.school,
-    university_name: frontendData.school, // 임시로 같은 값 사용
+    university_name: frontendData.schoolName || frontendData.school, // 임시로 같은 값 사용
     department: frontendData.department,
     grade: frontendData.grade,
   };

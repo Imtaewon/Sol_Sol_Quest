@@ -61,6 +61,8 @@ export const SignupScreen: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1); // 1: 기본정보, 2: 학교정보
   // 1단계 데이터 임시저장
   const [step1Data, setStep1Data] = useState<Partial<SignupFormData>>({});
+  // 선택된 학교 정보 저장
+  const [selectedSchool, setSelectedSchool] = useState<{ code: string; name: string } | null>(null);
 
   // 학교 검색 필터링
   const filteredSchools = schools?.filter(school =>
@@ -97,12 +99,14 @@ export const SignupScreen: React.FC = () => {
       const finalData: FrontendSignupRequest = {
         ...step1Data,
         ...data,
+        school: selectedSchool?.code || data.school, // 학교 코드 사용
+        schoolName: selectedSchool?.name || data.school, // 학교 이름 사용
       };
       
       const result = await signupMutation.mutateAsync(finalData);
       if (result.success) {
-        // 회원가입 성공 후 로그인 화면으로 이동
-        navigation.navigate('SignIn');
+        // 회원가입 성공 후 랜딩 페이지로 이동
+        navigation.reset({ index: 0, routes: [{ name: 'Landing' as any }] });
       }
     } catch (error) {
       console.error('회원가입 실패:', error);
@@ -114,8 +118,13 @@ export const SignupScreen: React.FC = () => {
     setShowSchoolModal(true);
   };
 
-  const handleSchoolSelected = (selectedSchool: string) => {
-    setValue('school', selectedSchool);
+  const handleSchoolSelected = (selectedSchoolName: string) => {
+    // 학교 코드와 이름을 모두 저장
+    const schoolData = schools?.find(school => school.university_name === selectedSchoolName);
+    if (schoolData) {
+      setSelectedSchool({ code: schoolData.university_code, name: schoolData.university_name });
+      setValue('school', schoolData.university_name);
+    }
     setShowSchoolModal(false);
     setSchoolSearchText('');
   };
