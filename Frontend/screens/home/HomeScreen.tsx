@@ -73,6 +73,7 @@ export const HomeScreen: React.FC = () => {
 
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const carouselRef = React.useRef<ScrollView>(null);
 
   // API 훅들
   const { data: userInfo, isLoading: userLoading, error: userError, refetch: refetchUser } = useUserInfo();
@@ -139,8 +140,6 @@ export const HomeScreen: React.FC = () => {
     });
     setCurrentCarouselIndex(index);
   };
-
-  const carouselRef = React.useRef<ScrollView>(null);
 
   // 퀘스트 수령 처리
   const handleClaimQuest = async (questId: number, expReward: number) => {

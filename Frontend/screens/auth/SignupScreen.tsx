@@ -119,9 +119,9 @@ export const SignupScreen: React.FC = () => {
       console.log('4. signupMutation.mutateAsync 완료');
       console.log('API 응답 전체:', JSON.stringify(result, null, 2));
       
-      if (result.data?.success) {
-        console.log('✅ 회원가입 성공!');
-        console.log('성공 응답 데이터:', JSON.stringify(result.data, null, 2));
+             if (result.success) {
+                 console.log('✅ 회원가입 성공!');
+         console.log('성공 응답 데이터:', JSON.stringify(result, null, 2));
         console.log('useSignup 훅에서 자동으로 Redux store를 업데이트하여 메인 화면으로 이동합니다.');
       } else {
         console.error('❌ 회원가입 실패: API 응답에서 success가 false입니다.');
@@ -136,6 +136,13 @@ export const SignupScreen: React.FC = () => {
       if (error instanceof Error) {
         console.error('에러 메시지:', error.message);
         console.error('에러 스택:', error.stack);
+        
+        // 500 에러인 경우 사용자에게 안내
+        if (error.message.includes('500')) {
+          alert('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        } else {
+          alert(`회원가입 중 오류가 발생했습니다: ${error.message}`);
+        }
       }
     }
     
@@ -715,11 +722,12 @@ export const SignupScreen: React.FC = () => {
           {schoolsLoading ? (
             <Text style={styles.loadingText}>학교 목록을 불러오는 중...</Text>
           ) : filteredSchools.length > 0 ? (
-            <ScrollView 
-              style={styles.schoolListContainer} 
-              showsVerticalScrollIndicator={true}
-              contentContainerStyle={styles.schoolListContent}
-            >
+                         <ScrollView 
+               style={styles.schoolListContainer} 
+               showsVerticalScrollIndicator={true}
+               contentContainerStyle={styles.schoolListContent}
+               nestedScrollEnabled={true}
+             >
               {filteredSchools.map((school) => (
                 <TouchableOpacity
                   key={school.university_code}
@@ -887,9 +895,11 @@ const styles = StyleSheet.create({
   signupButton: {
     flex: 2,
   },
-  modalContent: {
-    padding: SPACING.md,
-  },
+     modalContent: {
+     padding: SPACING.md,
+     maxHeight: '80%', // 모달 최대 높이를 화면의 80%로 제한
+     overflow: 'hidden', // 내용이 넘치지 않도록 제한
+   },
   modalText: {
     fontSize: FONT_SIZES.md,
     color: COLORS.gray[600],
@@ -964,7 +974,7 @@ const styles = StyleSheet.create({
      flex: 1,
    },
    schoolListContainer: {
-     maxHeight: 300, // 모달 내 스크롤 가능한 최대 높이 증가
+     maxHeight: 200, // 모달 내 스크롤 가능한 최대 높이 제한
    },
    schoolListContent: {
      paddingBottom: SPACING.md,

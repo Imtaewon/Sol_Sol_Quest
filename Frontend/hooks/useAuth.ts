@@ -79,25 +79,25 @@ export const useSignup = () => {
       console.log('🎉 useSignup onSuccess 호출됨');
       console.log('응답 전체:', JSON.stringify(response, null, 2));
       
-      if (response.data?.success) {
+      if (response.success) {
         console.log('✅ 회원가입 성공 - 토큰 저장 및 상태 업데이트 시작');
         
         try {
           // 회원가입 성공 시 토큰 저장 (자동 로그인)
           console.log('1. AsyncStorage에 토큰 저장 중...');
-          await AsyncStorage.setItem('auth_token', response.data.data.access_token);
-          console.log('✅ 토큰 저장 완료:', response.data.data.access_token);
+          await AsyncStorage.setItem('auth_token', response.data.access_token);
+          console.log('✅ 토큰 저장 완료:', response.data.access_token);
           
           // 사용자 정보 캐시에 저장
           console.log('2. React Query 캐시 업데이트 중...');
-          queryClient.setQueryData(['user'], response.data.data.user);
-          queryClient.setQueryData(['token'], response.data.data.access_token);
-          queryClient.setQueryData(['savingStatus'], response.data.data.user.has_savings);
+          queryClient.setQueryData(['user'], response.data.user);
+          queryClient.setQueryData(['token'], response.data.access_token);
+          queryClient.setQueryData(['savingStatus'], response.data.user.has_savings);
           console.log('✅ React Query 캐시 업데이트 완료');
           
           // Redux store 업데이트
           console.log('3. Redux store 업데이트 중...');
-          dispatch(loginSuccess({ token: response.data.data.access_token }));
+          dispatch(loginSuccess({ token: response.data.access_token }));
           console.log('✅ Redux store 업데이트 완료');
           
           console.log('🎯 모든 상태 업데이트 완료 - 메인 화면으로 자동 이동 예정');
@@ -117,7 +117,7 @@ export const useSignup = () => {
         Toast.show({
           type: 'error',
           text1: '회원가입 실패',
-          text2: response.data?.message || '알 수 없는 오류가 발생했습니다.',
+          text2: response.message || '알 수 없는 오류가 발생했습니다.',
         });
       }
     },
