@@ -125,46 +125,73 @@ export const useLogin = () => {
     },
     onSuccess: async (response: any) => {
       console.log('로그인 응답:', response);
+      console.log('응답 구조 분석:', {
+        hasData: !!response.data,
+        hasSuccess: !!response.data?.success,
+        responseKeys: Object.keys(response),
+        dataKeys: response.data ? Object.keys(response.data) : []
+      });
       
-      if (response.data?.success) {
-        try {
-          // 토큰 저장 (access_token으로 변경)
-          const token = response.data.data.access_token;
-          console.log('🔐 저장할 토큰:', token ? `${token.substring(0, 20)}...` : 'null');
-          
-          await setStorageItem('access_token', token);
-          console.log('🔐 토큰 저장 완료');
-          
-          // 즉시 토큰 검증
-          const storedToken = await getStorageItem('access_token');
-          console.log('DEBUG: 로그인 후 토큰 검증:', {
-            hasToken: !!storedToken,
-            tokenLength: storedToken?.length || 0,
-            tokenPreview: storedToken ? `${storedToken.substring(0, 20)}...` : 'null'
-          });
-          
-          // 더미 키도 확인
-          const dummyValue = await getStorageItem('dummy_key');
-          console.log('DEBUG: 로그인 후 dummy_key 확인:', dummyValue);
-          
-          // 사용자 정보 캐시에 저장 (Backend 응답 형식에 맞춤)
-          queryClient.setQueryData(['user'], response.data.data.user);
-          queryClient.setQueryData(['token'], response.data.data.access_token);
-          queryClient.setQueryData(['savingStatus'], response.data.data.user.has_savings);
-          
-          // Redux store 업데이트 (AsyncStorage와 동기화)
-          dispatch(loginSuccess({ token }));
-          console.log('🔐 Redux loginSuccess 액션 호출됨');
-          console.log('토큰:', token);
-          
-          Toast.show({
-            type: 'success',
-            text1: '로그인 성공',
-            text2: '환영합니다!',
-          });
-        } catch (error) {
-          console.error('❌ 토큰 저장 중 에러:', error);
-        }
+      // response.data.success 또는 response.success 체크
+      if (response.data?.success || response.success) {
+                  try {
+            // 토큰 추출 - 여러 가능한 경로 시도
+            let token = null;
+            let user = null;
+            
+            if (response.data?.data?.access_token) {
+              token = response.data.data.access_token;
+              user = response.data.data.user;
+            } else if (response.data?.access_token) {
+              token = response.data.access_token;
+              user = response.data.user;
+            } else if (response.access_token) {
+              token = response.access_token;
+              user = response.user;
+            }
+            
+            console.log('🔐 추출된 토큰:', token ? `${token.substring(0, 20)}...` : 'null');
+            
+            if (!token) {
+              console.error('❌ 토큰을 찾을 수 없습니다. 응답 구조:', JSON.stringify(response, null, 2));
+              return;
+            }
+            
+            await setStorageItem('access_token', token);
+            console.log('🔐 토큰 저장 완료');
+            
+            // 즉시 토큰 검증
+            const storedToken = await getStorageItem('access_token');
+            console.log('DEBUG: 로그인 후 토큰 검증:', {
+              hasToken: !!storedToken,
+              tokenLength: storedToken?.length || 0,
+              tokenPreview: storedToken ? `${storedToken.substring(0, 20)}...` : 'null'
+            });
+            
+            // 더미 키도 확인
+            const dummyValue = await getStorageItem('dummy_key');
+            console.log('DEBUG: 로그인 후 dummy_key 확인:', dummyValue);
+            
+            // 사용자 정보 캐시에 저장
+            if (user) {
+              queryClient.setQueryData(['user'], user);
+              queryClient.setQueryData(['token'], token);
+              queryClient.setQueryData(['savingStatus'], user.has_savings);
+            }
+            
+            // Redux store 업데이트 (AsyncStorage와 동기화)
+            dispatch(loginSuccess({ token }));
+            console.log('🔐 Redux loginSuccess 액션 호출됨');
+            console.log('토큰:', token);
+            
+            Toast.show({
+              type: 'success',
+              text1: '로그인 성공',
+              text2: '환영합니다!',
+            });
+          } catch (error) {
+            console.error('❌ 토큰 저장 중 에러:', error);
+          }
       }
     },
     onError: (error) => {
