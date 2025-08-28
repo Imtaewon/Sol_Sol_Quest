@@ -370,6 +370,7 @@ class SurveyAnswer(Base):
     user_id = Column(String(26), ForeignKey("users.id"), nullable=False)
     question_id = Column(String(26), ForeignKey("survey_questions.id"), nullable=False)
     question_type = Column(Integer, nullable=False)
+    option_order_no = Column(Integer, nullable=True)
     option_id = Column(String(26), ForeignKey("survey_question_options.id"))
     created_at = Column(DateTime, nullable=False)
 
