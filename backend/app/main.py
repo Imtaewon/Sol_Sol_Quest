@@ -8,6 +8,7 @@ from .universities.router import router as university_router
 from .accounts.router import router as accounts_router
 from .attendance.router import router as attendance_router
 from .recommend.router import recommendation_router
+from .surveys.router import router as survey_router
 
 app = FastAPI(
     title="쏠쏠한 퀘스트 API",
@@ -29,6 +30,7 @@ app.include_router(university_router, prefix="/api/v1")
 app.include_router(accounts_router, prefix="/api/v1")
 app.include_router(attendance_router, prefix="/api/v1")
 app.include_router(recommendation_router, prefix="/api/v1")
+app.include_router(survey_router, prefix="/api/v1")
 
 @app.get("/api/v1/health")
 def health_check():

@@ -5,7 +5,7 @@ from datetime import date
 
 class CheckInRequest(BaseModel):
     # 호환성: 바디를 보낼 수도 있으나, 값이 있어도 "오늘 날짜"로 저장합니다.
-    date: Optional[date] = None
+    user_id: str
 
 class CheckInResponseData(BaseModel):
     exp_gained: int
