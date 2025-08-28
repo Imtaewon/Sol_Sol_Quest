@@ -63,7 +63,9 @@ export const LoginScreen: React.FC = () => {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
+      console.log('로그인 요청 데이터:', data);
       const result: any = await loginMutation.mutateAsync(data);
+      console.log('로그인 응답:', result);
       if (result.success) {
         // Redux 상태 업데이트 (Backend 응답 형식에 맞춤)
         dispatch(loginSuccess({ token: result.data.access_token }));
@@ -73,6 +75,7 @@ export const LoginScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('로그인 실패:', error);
+      console.error('에러 상세:', JSON.stringify(error, null, 2));
     }
   };
 

@@ -82,8 +82,8 @@ export const transformSignupData = (frontendData: FrontendSignupRequest): Signup
     real_name: frontendData.name,
     gender: frontendData.gender,  // 이미 Backend 형식이므로 변환 불필요
     birth_year: frontendData.birthYear,
-    university_code: frontendData.school,
-    university_name: frontendData.schoolName || frontendData.school, // 임시로 같은 값 사용
+    university_code: frontendData.school, // 학교 코드
+    university_name: frontendData.schoolName || '', // 학교 이름 (기본값 빈 문자열)
     department: frontendData.department,
     grade: frontendData.grade,
   };

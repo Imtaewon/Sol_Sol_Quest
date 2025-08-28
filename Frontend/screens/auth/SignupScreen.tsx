@@ -95,12 +95,18 @@ export const SignupScreen: React.FC = () => {
 
   const onSubmit = async (data: SignupFormData) => {
     try {
+      // 학교 선택 필수 검증
+      if (!selectedSchool) {
+        console.error('학교를 선택해주세요.');
+        return;
+      }
+
       // 1단계 데이터와 2단계 데이터를 합쳐서 API 요청
       const finalData: FrontendSignupRequest = {
         ...step1Data,
         ...data,
-        school: selectedSchool?.code || data.school, // 학교 코드 사용
-        schoolName: selectedSchool?.name || data.school, // 학교 이름 사용
+        school: selectedSchool.code, // 선택된 학교 코드만 사용
+        schoolName: selectedSchool.name, // 선택된 학교 이름만 사용
       };
       
       console.log('회원가입 요청 데이터:', finalData);
@@ -390,6 +396,7 @@ export const SignupScreen: React.FC = () => {
                                     style={styles.schoolResultItem}
                                     onPress={() => {
                                       onChange(school.university_name);
+                                      setSelectedSchool({ code: school.university_code, name: school.university_name });
                                       setSchoolSearchText('');
                                     }}
                                   >
@@ -676,14 +683,15 @@ export const SignupScreen: React.FC = () => {
                           <View style={styles.schoolSearchResults}>
                             {filteredSchools.length > 0 ? (
                               filteredSchools.slice(0, 5).map((school) => (
-                                <TouchableOpacity
-                                  key={school.university_code}
-                                  style={styles.schoolResultItem}
-                                  onPress={() => {
-                                    onChange(school.university_name);
-                                    setSchoolSearchText('');
-                                  }}
-                                >
+                                                                 <TouchableOpacity
+                                   key={school.university_code}
+                                   style={styles.schoolResultItem}
+                                   onPress={() => {
+                                     onChange(school.university_name);
+                                     setSelectedSchool({ code: school.university_code, name: school.university_name });
+                                     setSchoolSearchText('');
+                                   }}
+                                 >
                                   <Text style={styles.schoolResultText}>
                                     {school.university_name}
                                   </Text>
