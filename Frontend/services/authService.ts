@@ -93,20 +93,20 @@ export const transformSignupData = (frontendData: FrontendSignupRequest): Signup
 export const authService = {
   // 로그인
   login: async (data: LoginRequest): Promise<ApiResponse<LoginResponse>> => {
-    const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', data);
+    const response = await apiClient.post<ApiResponse<LoginResponse>>('/api/v1/auth/login', data);
     return response.data;
   },
 
   // 회원가입 (Frontend 형식 받아서 변환)
   signup: async (frontendData: FrontendSignupRequest): Promise<ApiResponse<SignupResponse>> => {
     const backendData = transformSignupData(frontendData);
-    const response = await apiClient.post<ApiResponse<SignupResponse>>('/auth/register', backendData);
+    const response = await apiClient.post<ApiResponse<SignupResponse>>('/api/v1/auth/register', backendData);
     return response.data;
   },
 
   // 로그아웃
   logout: async (): Promise<ApiResponse> => {
-    const response = await apiClient.post<ApiResponse>('/auth/logout');
+    const response = await apiClient.post<ApiResponse>('/api/v1/auth/logout');
     return response.data;
   },
 };
