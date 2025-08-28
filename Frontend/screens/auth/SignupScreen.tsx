@@ -57,12 +57,16 @@ export const SignupScreen: React.FC = () => {
   const signupMutation = useSignup();
   const { data: schools, isLoading: schoolsLoading } = useGetSchoolsQuery();
   const [showSchoolModal, setShowSchoolModal] = useState(false);
-  const [showEmailModal, setShowEmailModal] = useState(false);
-  const [emailCode, setEmailCode] = useState('');
-  const [emailVerified, setEmailVerified] = useState(false);
+  const [schoolSearchText, setSchoolSearchText] = useState('');
   const [currentStep, setCurrentStep] = useState(1); // 1: 기본정보, 2: 학교정보
   // 1단계 데이터 임시저장
   const [step1Data, setStep1Data] = useState<Partial<SignupFormData>>({});
+
+  // 학교 검색 필터링
+  const filteredSchools = schools?.filter(school =>
+    school.university_name.toLowerCase().includes(schoolSearchText.toLowerCase()) ||
+    school.university_code.toLowerCase().includes(schoolSearchText.toLowerCase())
+  ) || [];
 
   const {
     control,
@@ -88,11 +92,6 @@ export const SignupScreen: React.FC = () => {
   });
 
   const onSubmit = async (data: SignupFormData) => {
-    if (!emailVerified) {
-      // 이메일 인증이 필요하다는 토스트 메시지가 API 에러 인터셉터에서 표시됨
-      return;
-    }
-
     try {
       // 1단계 데이터와 2단계 데이터를 합쳐서 API 요청
       const finalData: FrontendSignupRequest = {
@@ -110,17 +109,15 @@ export const SignupScreen: React.FC = () => {
     }
   };
 
-  const handleEmailVerification = () => {
-    setShowEmailModal(true);
-  };
-
   const handleSchoolSelect = () => {
+    setSchoolSearchText('');
     setShowSchoolModal(true);
   };
 
   const handleSchoolSelected = (selectedSchool: string) => {
     setValue('school', selectedSchool);
     setShowSchoolModal(false);
+    setSchoolSearchText('');
   };
 
   const handleNextStep = () => {
@@ -341,8 +338,6 @@ export const SignupScreen: React.FC = () => {
                           keyboardType="email-address"
                           autoCapitalize="none"
                           autoCorrect={false}
-                          rightIcon="mail"
-                          onRightIconPress={handleEmailVerification}
                         />
                       )}
                     />
@@ -606,8 +601,6 @@ export const SignupScreen: React.FC = () => {
                         keyboardType="email-address"
                         autoCapitalize="none"
                         autoCorrect={false}
-                        rightIcon="mail"
-                        onRightIconPress={handleEmailVerification}
                       />
                     )}
                   />
@@ -723,10 +716,17 @@ export const SignupScreen: React.FC = () => {
       >
         <View style={styles.modalContent}>
           <Text style={styles.modalText}>대학교를 선택해주세요.</Text>
+          <FormTextInput
+            label="학교 검색"
+            placeholder="학교 이름 또는 코드를 입력해주세요"
+            value={schoolSearchText}
+            onChangeText={setSchoolSearchText}
+            style={styles.modalSearchInput}
+          />
           {schoolsLoading ? (
             <Text style={styles.loadingText}>학교 목록을 불러오는 중...</Text>
-          ) : schools && schools.length > 0 ? (
-            schools.map((school) => (
+          ) : filteredSchools.length > 0 ? (
+            filteredSchools.map((school) => (
               <PrimaryButton
                 key={school.university_code}
                 title={school.university_name}
@@ -737,33 +737,8 @@ export const SignupScreen: React.FC = () => {
               />
             ))
           ) : (
-            <Text style={styles.errorText}>학교 목록을 불러올 수 없습니다.</Text>
+            <Text style={styles.errorText}>검색 결과가 없습니다.</Text>
           )}
-        </View>
-      </ModalBase>
-
-      {/* 이메일 인증 모달 */}
-      <ModalBase
-        visible={showEmailModal}
-        onClose={() => setShowEmailModal(false)}
-        title="이메일 인증"
-      >
-        <View style={styles.modalContent}>
-          <Text style={styles.modalText}>이메일 인증 기능이 여기에 구현됩니다.</Text>
-          <FormTextInput
-            label="인증 코드"
-            placeholder="인증 코드를 입력해주세요"
-            value={emailCode}
-            onChangeText={setEmailCode}
-          />
-          <PrimaryButton
-            title="인증 확인"
-            onPress={() => {
-              setEmailVerified(true);
-              setShowEmailModal(false);
-            }}
-            style={styles.modalButton}
-          />
         </View>
       </ModalBase>
     </SafeAreaView>
@@ -925,6 +900,9 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     marginTop: SPACING.md,
+  },
+  modalSearchInput: {
+    marginBottom: SPACING.md,
   },
 });
 
