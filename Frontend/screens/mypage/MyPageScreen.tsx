@@ -83,12 +83,23 @@ export const MyPageScreen: React.FC = () => {
 
   // API 훅들
   const { data: userInfo, isLoading: userInfoLoading, error: userInfoError } = useUserInfo();
-  const { data: accountInfo, isLoading: accountInfoLoading, error: accountInfoError } = useAccountInfo();
+  
+  // has_savings가 true일 때만 계좌 정보 API 호출
+  const hasSavings = userInfo?.data?.has_savings;
+  const { data: accountInfo, isLoading: accountInfoLoading, error: accountInfoError } = useAccountInfo({
+    enabled: !!hasSavings // has_savings가 true일 때만 API 호출
+  });
 
   // API 요청 로그
   console.log('👤 MyPageScreen API 상태:', {
     userInfo: { loading: userInfoLoading, error: userInfoError, data: userInfo?.data ? '있음' : '없음' },
-    accountInfo: { loading: accountInfoLoading, error: accountInfoError, data: accountInfo?.data ? '있음' : '없음' }
+    hasSavings,
+    accountInfo: { 
+      loading: accountInfoLoading, 
+      error: accountInfoError, 
+      data: accountInfo?.data ? '있음' : '없음',
+      enabled: !!hasSavings
+    }
   });
 
   // 로딩 상태 처리
@@ -264,86 +275,101 @@ export const MyPageScreen: React.FC = () => {
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>내 적금/예금</Text>
       
-      {/* 적금/예금 통합 캐러셀 */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.accountCarousel}
-      >
-        {/* 적금 카드 */}
-        {accountInfo?.data?.saving ? (
-          <View style={styles.accountCard}>
-            <View style={styles.accountHeader}>
-              <View style={styles.accountTypeContainer}>
-                <Text style={styles.accountTypeLabel}>적금</Text>
-                <Text style={styles.accountName}>솔 적금</Text>
+      {/* has_savings가 true일 때만 실제 계좌 정보 표시 */}
+      {hasSavings ? (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.accountCarousel}
+        >
+          {/* 적금 카드 */}
+          {accountInfo?.data?.saving ? (
+            <View style={styles.accountCard}>
+              <View style={styles.accountHeader}>
+                <View style={styles.accountTypeContainer}>
+                  <Text style={styles.accountTypeLabel}>적금</Text>
+                  <Text style={styles.accountName}>솔 적금</Text>
+                </View>
+                <View style={[styles.statusBadge, { backgroundColor: COLORS.success + '20' }]}>
+                  <Text style={[styles.statusText, { color: COLORS.success }]}>진행중</Text>
+                </View>
               </View>
-              <View style={[styles.statusBadge, { backgroundColor: COLORS.success + '20' }]}>
-                <Text style={[styles.statusText, { color: COLORS.success }]}>진행중</Text>
-              </View>
-            </View>
-            
-            <View style={styles.accountBalance}>
-              <Text style={styles.balanceLabel}>현재 잔액</Text>
-              <Text style={styles.balanceAmount}>
-                {accountInfo.data.saving.currentBalance.toLocaleString()}원
-              </Text>
-            </View>
-            
-            <View style={styles.accountDetails}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>월 납입금</Text>
-                <Text style={styles.detailValue}>
-                  {accountInfo.data.saving.monthlyAmount.toLocaleString()}원
+              
+              <View style={styles.accountBalance}>
+                <Text style={styles.balanceLabel}>현재 잔액</Text>
+                <Text style={styles.balanceAmount}>
+                  {accountInfo.data.saving.currentBalance.toLocaleString()}원
                 </Text>
               </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>계좌번호</Text>
-                <Text style={styles.detailValue}>{accountInfo.data.saving.accountNumber}</Text>
+              
+              <View style={styles.accountDetails}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>월 납입금</Text>
+                  <Text style={styles.detailValue}>
+                    {accountInfo.data.saving.monthlyAmount.toLocaleString()}원
+                  </Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>계좌번호</Text>
+                  <Text style={styles.detailValue}>{accountInfo.data.saving.accountNumber}</Text>
+                </View>
               </View>
             </View>
-          </View>
-        ) : (
+          ) : null}
+
+          {/* 예금 카드 */}
+          {accountInfo?.data?.deposit ? (
+            <View style={styles.accountCard}>
+              <View style={styles.accountHeader}>
+                <View style={styles.accountTypeContainer}>
+                  <Text style={styles.accountTypeLabel}>예금</Text>
+                  <Text style={styles.accountName}>솔 입출금</Text>
+                </View>
+                <View style={styles.statusBadge}>
+                  <Text style={styles.statusText}>활성</Text>
+                </View>
+              </View>
+              
+              <View style={styles.accountBalance}>
+                <Text style={styles.balanceLabel}>현재 잔액</Text>
+                <Text style={styles.balanceAmount}>
+                  {accountInfo.data.deposit.currentBalance.toLocaleString()}원
+                </Text>
+              </View>
+              
+              <View style={styles.accountDetails}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>계좌번호</Text>
+                  <Text style={styles.detailValue}>{accountInfo.data.deposit.accountNumber}</Text>
+                </View>
+              </View>
+            </View>
+          ) : null}
+        </ScrollView>
+      ) : (
+        /* has_savings가 false일 때 가입하기 캐러셀 표시 */
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.accountCarousel}
+        >
+          {/* 적금 가입하기 카드 */}
           <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
-            <Ionicons name="add-circle-outline" size={32} color={COLORS.primary} />
+            <View style={styles.newAccountIconContainer}>
+              <Ionicons name="add-circle" size={32} color={COLORS.primary} />
+            </View>
             <Text style={styles.newAccountText}>새 적금 개설</Text>
           </TouchableOpacity>
-        )}
 
-        {/* 예금 카드 */}
-        {accountInfo?.data?.deposit ? (
-          <View style={styles.accountCard}>
-            <View style={styles.accountHeader}>
-              <View style={styles.accountTypeContainer}>
-                <Text style={styles.accountTypeLabel}>예금</Text>
-                <Text style={styles.accountName}>솔 입출금</Text>
-              </View>
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>활성</Text>
-              </View>
-            </View>
-            
-            <View style={styles.accountBalance}>
-              <Text style={styles.balanceLabel}>현재 잔액</Text>
-              <Text style={styles.balanceAmount}>
-                {accountInfo.data.deposit.currentBalance.toLocaleString()}원
-              </Text>
-            </View>
-            
-            <View style={styles.accountDetails}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>계좌번호</Text>
-                <Text style={styles.detailValue}>{accountInfo.data.deposit.accountNumber}</Text>
-              </View>
-            </View>
-          </View>
-        ) : (
+          {/* 예금 가입하기 카드 */}
           <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
-            <Ionicons name="add-circle-outline" size={32} color={COLORS.primary} />
+            <View style={styles.newAccountIconContainer}>
+              <Ionicons name="add-circle" size={32} color={COLORS.primary} />
+            </View>
             <Text style={styles.newAccountText}>새 예금 개설</Text>
           </TouchableOpacity>
-        )}
-      </ScrollView>
+        </ScrollView>
+      )}
     </View>
   );
 
@@ -657,6 +683,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.error,
     marginLeft: SPACING.sm,
+  },
+  // 새로운 계좌 가입 카드 스타일
+  newAccountIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.primary + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
   },
   loadingContainer: {
     flex: 1,

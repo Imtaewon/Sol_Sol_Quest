@@ -68,7 +68,7 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const user = useSelector((state: RootState) => state.user.user);
-  const hasSavings = user?.savingStatus ?? false;
+  const hasSavings = userInfo?.data?.has_savings ?? false;
 
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -244,52 +244,30 @@ export const HomeScreen: React.FC = () => {
         ) : (
           // 비가입자: CTA 카드
           <>
-            <View 
+            <TouchableOpacity 
               style={[
                 styles.accountCard, 
                 styles.savingsCTACard
               ]}
+              onPress={() => navigation.navigate('SavingOpen')}
             >
-              <View style={styles.accountHeader}>
-                <Text style={styles.accountType}>적금</Text>
-                <Ionicons name="trending-up" size={20} color={COLORS.secondary} />
+              <View style={styles.newAccountIconContainer}>
+                <Ionicons name="add-circle" size={32} color={COLORS.primary} />
               </View>
-              <View style={styles.savingsCTAContent}>
-                <Text style={styles.savingsCTATitle}>적금 가입하고</Text>
-                <Text style={styles.savingsCTASubtitle}>퀘스트 시작하기</Text>
-                <PrimaryButton
-                  title="적금 가입하기"
-                  onPress={() => navigation.navigate('SavingOpen')}
-                  size="small"
-                  style={styles.savingsCTAButton}
-                  accessibilityRole="button"
-                  accessibilityLabel="적금 가입하기 버튼"
-                />
-              </View>
-            </View>
-            <View 
+              <Text style={styles.newAccountText}>새 적금 개설</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
               style={[
                 styles.accountCard, 
                 styles.depositCTACard
               ]}
+              onPress={() => navigation.navigate('DepositOpen')}
             >
-              <View style={styles.accountHeader}>
-                <Text style={styles.accountType}>예금</Text>
-                <Ionicons name="wallet" size={20} color={COLORS.primary} />
+              <View style={styles.newAccountIconContainer}>
+                <Ionicons name="add-circle" size={32} color={COLORS.primary} />
               </View>
-              <View style={styles.depositCTAContent}>
-                <Text style={styles.depositCTATitle}>예금 계좌 개설하고</Text>
-                <Text style={styles.depositCTASubtitle}>자산 관리 시작하기</Text>
-                <PrimaryButton
-                  title="예금 가입하기"
-                  onPress={() => navigation.navigate('DepositOpen')}
-                  size="small"
-                  style={styles.depositCTAButton}
-                  accessibilityRole="button"
-                  accessibilityLabel="예금 가입하기 버튼"
-                />
-              </View>
-            </View>
+              <Text style={styles.newAccountText}>새 예금 개설</Text>
+            </TouchableOpacity>
           </>
         )}
       </ScrollView>
@@ -701,11 +679,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   savingsCTACard: {
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: COLORS.white,
     borderWidth: 2,
     borderColor: COLORS.gray[200],
     borderStyle: 'dashed',
     height: 200, // 고정 높이 설정
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   savingsCTAContent: {
     alignItems: 'center',
@@ -727,11 +707,13 @@ const styles = StyleSheet.create({
     width: '80%',
   },
   depositCTACard: {
-    backgroundColor: COLORS.gray[50],
+    backgroundColor: COLORS.white,
     borderWidth: 2,
     borderColor: COLORS.gray[200],
     borderStyle: 'dashed',
     height: 200, // 고정 높이 설정
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   depositCTAContent: {
     alignItems: 'center',
@@ -751,6 +733,22 @@ const styles = StyleSheet.create({
   },
   depositCTAButton: {
     width: '80%',
+  },
+  // 새로운 계좌 가입 카드 스타일
+  newAccountIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.primary + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  newAccountText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
+    color: COLORS.primary,
+    textAlign: 'center',
   },
   pageIndicator: {
     flexDirection: 'row',

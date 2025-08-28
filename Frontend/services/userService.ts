@@ -3,21 +3,49 @@ import { ApiResponse } from './apiClient';
 
 // 사용자 정보 타입
 export interface UserInfo {
-  id: number;
+  user_id: string; // 백엔드 응답과 일치
   name: string;
-  username: string;
   email: string;
-  school: string;
-  department: string;
-  grade: number;
-  savingStatus: boolean;
-  tier?: string;
+  university_code?: string;
+  university_name?: string;
+  major?: string;
+  grade?: number;
   current_tier?: string;
-  totalExp?: number;
-  interestRate?: number;
+  total_exp?: number;
+  gender?: string;
+  has_savings?: boolean; // 백엔드에서 제공하는지 확인 필요
 }
 
-// 적금 정보 타입
+// 백엔드 응답 구조에 맞춘 타입들
+export interface SavingsAccountDTO {
+  id: string;
+  product_code: string;
+  term_months: number;
+  monthly_amount: number;
+  interest_rate: number;
+  opened_at: string;
+  maturity_date?: string;
+  status: string;
+}
+
+export interface DemandDepositAccountDTO {
+  account_no: string;
+}
+
+// 백엔드 응답 타입
+export interface SavingsAccountsResponse {
+  success: boolean;
+  data: SavingsAccountDTO[];
+  message?: string;
+}
+
+export interface DemandDepositAccountsResponse {
+  success: boolean;
+  data: DemandDepositAccountDTO[];
+  message?: string;
+}
+
+// 기존 호환성을 위한 타입들 (점진적 제거 예정)
 export interface SavingInfo {
   monthlyAmount: number;
   currentBalance: number;
@@ -27,7 +55,6 @@ export interface SavingInfo {
   accountNumber: string;
 }
 
-// 예금 정보 타입
 export interface DepositInfo {
   currentBalance: number;
   accountNumber: string;
@@ -84,13 +111,21 @@ export const userService = {
   },
 
   // 적금 계좌 정보 조회
-  getSavingsAccount: async (): Promise<ApiResponse<SavingInfo>> => {
+  getSavingsAccount: async (): Promise<ApiResponse<SavingsAccountsResponse>> => {
     console.log('🌐 userService.getSavingsAccount HTTP 요청 시작');
     try {
-      const response = await apiClient.get<ApiResponse<SavingInfo>>('/api/v1/accounts/savings');
+      // user_id를 쿼리 파라미터로 전송해야 함
+      const userInfo = await this.getUserInfo();
+      const userId = userInfo.data?.user_id;
+      
+      if (!userId) {
+        throw new Error('사용자 ID를 찾을 수 없습니다.');
+      }
+      
+      const response = await apiClient.get<SavingsAccountsResponse>(`/api/v1/accounts/savings?user_id=${userId}`);
       console.log('🌐 userService.getSavingsAccount HTTP 요청 완료:', response.status);
       console.log('🌐 userService.getSavingsAccount 응답 데이터:', JSON.stringify(response.data, null, 2));
-      return response.data;
+      return { success: true, data: response.data };
     } catch (error) {
       console.error('🌐 userService.getSavingsAccount 에러:', error);
       throw error;
@@ -98,13 +133,21 @@ export const userService = {
   },
 
   // 예금 계좌 정보 조회
-  getDepositAccount: async (): Promise<ApiResponse<DepositInfo>> => {
+  getDepositAccount: async (): Promise<ApiResponse<DemandDepositAccountsResponse>> => {
     console.log('🌐 userService.getDepositAccount HTTP 요청 시작');
     try {
-      const response = await apiClient.get<ApiResponse<DepositInfo>>('/api/v1/accounts/demand-deposit');
+      // user_id를 쿼리 파라미터로 전송해야 함
+      const userInfo = await this.getUserInfo();
+      const userId = userInfo.data?.user_id;
+      
+      if (!userId) {
+        throw new Error('사용자 ID를 찾을 수 없습니다.');
+      }
+      
+      const response = await apiClient.get<DemandDepositAccountsResponse>(`/api/v1/accounts/demand-deposit?user_id=${userId}`);
       console.log('🌐 userService.getDepositAccount HTTP 요청 완료:', response.status);
       console.log('🌐 userService.getDepositAccount 응답 데이터:', JSON.stringify(response.data, null, 2));
-      return response.data;
+      return { success: true, data: response.data };
     } catch (error) {
       console.error('🌐 userService.getDepositAccount 에러:', error);
       throw error;

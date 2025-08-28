@@ -64,7 +64,7 @@ export const usePersonalInfoForDeposit = () => {
 };
 
 // 계좌 정보 조회 훅
-export const useAccountInfo = () => {
+export const useAccountInfo = (options?: { enabled?: boolean }) => {
   console.log('🔍 useAccountInfo 훅 호출됨');
   return useQuery({
     queryKey: ['account'],
@@ -76,6 +76,7 @@ export const useAccountInfo = () => {
     },
     staleTime: 1 * 60 * 1000, // 1분
     gcTime: 5 * 60 * 1000, // 5분
+    enabled: options?.enabled !== false, // 기본값은 true, false일 때만 비활성화
   });
 };
 
