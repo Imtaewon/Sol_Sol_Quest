@@ -46,7 +46,7 @@ import { clearUser } from '../../store/slices/userSlice';
 import { RootState } from '../../store';
 import { MyPageStackParamList } from '../../navigation/MyPageStack';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { useLogoutMutation } from '../../store/api/baseApi';
+import { useLogout } from '../../hooks/useAuth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserInfo, useAccountInfo } from '../../hooks/useUser';
 
@@ -78,7 +78,7 @@ export const MyPageScreen: React.FC = () => {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.user.user);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [logoutMutation] = useLogoutMutation();
+  const logoutMutation = useLogout();
 
   // API 훅들
   const { data: userInfo, isLoading: userInfoLoading, error: userInfoError } = useUserInfo();
@@ -176,27 +176,11 @@ export const MyPageScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // 백엔드 API 호출
-              await logoutMutation().unwrap();
-              
-              // Redux 상태 초기화
-              dispatch(logout());
-              dispatch(clearUser());
-              
-              // 로그인 화면으로 이동
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'MyPage' }],
-              });
+              // useLogout 훅 사용
+              await logoutMutation.mutateAsync();
+              // useLogout 훅에서 자동으로 토큰 삭제, Redux 상태 초기화, 랜딩페이지로 이동 처리
             } catch (error) {
               console.error('로그아웃 실패:', error);
-              // API 실패해도 로컬 로그아웃은 진행
-              dispatch(logout());
-              dispatch(clearUser());
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'MyPage' }],
-              });
             }
           },
         },

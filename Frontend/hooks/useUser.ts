@@ -78,3 +78,35 @@ export const useAccountInfo = () => {
     gcTime: 5 * 60 * 1000, // 5분
   });
 };
+
+// 적금 계좌 정보 조회 훅
+export const useSavingsAccount = () => {
+  console.log('🔍 useSavingsAccount 훅 호출됨');
+  return useQuery({
+    queryKey: ['savingsAccount'],
+    queryFn: async () => {
+      console.log('📡 useSavingsAccount API 호출 시작');
+      const result = await userService.getSavingsAccount();
+      console.log('📡 useSavingsAccount API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
+    staleTime: 1 * 60 * 1000, // 1분
+    gcTime: 3 * 60 * 1000, // 3분
+  });
+};
+
+// 예금 계좌 정보 조회 훅
+export const useDepositAccount = () => {
+  console.log('🔍 useDepositAccount 훅 호출됨');
+  return useQuery({
+    queryKey: ['depositAccount'],
+    queryFn: async () => {
+      console.log('📡 useDepositAccount API 호출 시작');
+      const result = await userService.getDepositAccount();
+      console.log('📡 useDepositAccount API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
+    staleTime: 1 * 60 * 1000, // 1분
+    gcTime: 3 * 60 * 1000, // 3분
+  });
+};

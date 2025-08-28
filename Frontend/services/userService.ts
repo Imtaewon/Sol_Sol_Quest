@@ -83,7 +83,35 @@ export const userService = {
     return response.data;
   },
 
-  // 계좌 정보 조회
+  // 적금 계좌 정보 조회
+  getSavingsAccount: async (): Promise<ApiResponse<SavingInfo>> => {
+    console.log('🌐 userService.getSavingsAccount HTTP 요청 시작');
+    try {
+      const response = await apiClient.get<ApiResponse<SavingInfo>>('/api/v1/accounts/savings');
+      console.log('🌐 userService.getSavingsAccount HTTP 요청 완료:', response.status);
+      console.log('🌐 userService.getSavingsAccount 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('🌐 userService.getSavingsAccount 에러:', error);
+      throw error;
+    }
+  },
+
+  // 예금 계좌 정보 조회
+  getDepositAccount: async (): Promise<ApiResponse<DepositInfo>> => {
+    console.log('🌐 userService.getDepositAccount HTTP 요청 시작');
+    try {
+      const response = await apiClient.get<ApiResponse<DepositInfo>>('/api/v1/accounts/demand-deposit');
+      console.log('🌐 userService.getDepositAccount HTTP 요청 완료:', response.status);
+      console.log('🌐 userService.getDepositAccount 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('🌐 userService.getDepositAccount 에러:', error);
+      throw error;
+    }
+  },
+
+  // 기존 계좌 정보 조회 (호환성을 위해 유지)
   getAccountInfo: async (): Promise<ApiResponse<AccountInfo>> => {
     console.log('🌐 userService.getAccountInfo HTTP 요청 시작');
     try {

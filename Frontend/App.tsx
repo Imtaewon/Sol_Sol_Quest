@@ -112,7 +112,7 @@ const Navigation: React.FC = () => {
         const token = await getStorageItem('access_token');
         if (token) {
           console.log('✅ 저장된 토큰 발견, 자동 로그인 처리');
-          // 토큰이 있으면 자동 로그인
+          // 토큰이 있으면 자동 로그인 (하지만 랜딩페이지는 거침)
           dispatch(loginSuccess({ token }));
         } else {
           console.log('❌ 저장된 토큰 없음');

@@ -33,8 +33,8 @@ import { questService, ClaimQuestRequest } from '../services/questService';
 import Toast from 'react-native-toast-message';
 
 // 추천 퀘스트 조회 훅
-export const useRecommendedQuests = () => {
-  console.log('🔍 useRecommendedQuests 훅 호출됨');
+export const useRecommendedQuests = (hasSavings: boolean = false) => {
+  console.log('🔍 useRecommendedQuests 훅 호출됨, hasSavings:', hasSavings);
   return useQuery({
     queryKey: ['quests', 'recommended'],
     queryFn: async () => {

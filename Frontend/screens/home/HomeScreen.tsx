@@ -54,8 +54,7 @@ import { formatCurrency, formatNumber } from '../../utils/formatters';
 import { RootState } from '../../store';
 import { HomeStackParamList } from '../../navigation/HomeStack';
 import { MainTabsParamList } from '../../navigation/MainTabs';
-import { useUserInfo } from '../../hooks/useUser';
-import { useAccountInfo } from '../../hooks/useUser';
+import { useUserInfo, useSavingsAccount, useDepositAccount } from '../../hooks/useUser';
 import { useMySchoolRank, useMySchoolRankWithUser } from '../../hooks/useRanks';
 import { useRecommendedQuests, useClaimQuest } from '../../hooks/useQuests';
 
@@ -77,7 +76,13 @@ export const HomeScreen: React.FC = () => {
 
   // API 훅들
   const { data: userInfo, isLoading: userLoading, error: userError, refetch: refetchUser } = useUserInfo();
-  const { data: accountInfo, isLoading: accountLoading, error: accountError, refetch: refetchAccount } = useAccountInfo();
+  
+  // has_savings가 true일 때만 계좌 정보 조회
+  const savingsQuery = hasSavings ? useSavingsAccount() : { data: undefined, isLoading: false, error: undefined, refetch: () => Promise.resolve() };
+  const depositQuery = hasSavings ? useDepositAccount() : { data: undefined, isLoading: false, error: undefined, refetch: () => Promise.resolve() };
+  
+  const { data: savingsAccount, isLoading: savingsLoading, error: savingsError, refetch: refetchSavings } = savingsQuery;
+  const { data: depositAccount, isLoading: depositLoading, error: depositError, refetch: refetchDeposit } = depositQuery;
   
   // 적금 가입 여부에 따라 다른 랭킹 API 호출
   const { 
@@ -87,17 +92,20 @@ export const HomeScreen: React.FC = () => {
     refetch: refetchRank 
   } = hasSavings ? useMySchoolRankWithUser() : useMySchoolRank();
   
+  // has_savings가 true일 때만 추천 퀘스트 조회
+  const questsQuery = hasSavings ? useRecommendedQuests(hasSavings) : { data: undefined, isLoading: false, error: undefined, refetch: () => Promise.resolve() };
   const { 
     data: recommendedQuests, 
     isLoading: questsLoading, 
     error: questsError, 
     refetch: refetchQuests 
-  } = useRecommendedQuests();
+  } = questsQuery;
 
   // API 요청 로그
   console.log('🏠 HomeScreen API 상태:', {
     userInfo: { loading: userLoading, error: userError, data: userInfo?.data ? '있음' : '없음' },
-    accountInfo: { loading: accountLoading, error: accountError, data: accountInfo?.data ? '있음' : '없음' },
+    savingsAccount: { loading: savingsLoading, error: savingsError, data: savingsAccount?.data ? '있음' : '없음' },
+    depositAccount: { loading: depositLoading, error: depositError, data: depositAccount?.data ? '있음' : '없음' },
     schoolRank: { loading: rankLoading, error: rankError, data: schoolRank?.data ? '있음' : '없음' },
     recommendedQuests: { loading: questsLoading, error: questsError, data: recommendedQuests?.data ? '있음' : '없음' }
   });
@@ -108,33 +116,41 @@ export const HomeScreen: React.FC = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        refetchUser(),
-        refetchAccount(),
-        refetchRank(),
-        refetchQuests(),
-      ]);
+      await refetchUser();
+      await refetchRank();
+      
+      // has_savings가 true일 때만 계좌 정보 새로고침
+      if (hasSavings) {
+        await refetchSavings();
+        await refetchDeposit();
+        await refetchQuests();
+      }
     } finally {
       setRefreshing(false);
     }
   };
 
-  // 로딩 상태 처리
+  // 로딩 상태 처리 - has_savings가 false면 계좌 관련 로딩은 무시
+  const isLoading = userLoading || rankLoading || (hasSavings && (savingsLoading || depositLoading || questsLoading));
+  
   console.log('🏠 HomeScreen 로딩 상태:', {
     userLoading,
-    accountLoading,
+    savingsLoading,
+    depositLoading,
     rankLoading,
     questsLoading,
-    isLoading: userLoading || accountLoading || rankLoading || questsLoading
+    hasSavings,
+    isLoading
   });
   
-  if (userLoading || accountLoading || rankLoading || questsLoading) {
+  if (isLoading) {
     console.log('🏠 HomeScreen 로딩 화면 표시');
     return <LoadingView message="데이터를 불러오는 중..." />;
   }
 
   // 에러 상태 처리
-  if (userError || accountError || rankError || questsError) {
+  const hasError = userError || rankError || (hasSavings && (savingsError || depositError || questsError));
+  if (hasError) {
     return (
       <ErrorView 
         message="데이터를 불러오는데 실패했습니다." 
@@ -185,7 +201,7 @@ export const HomeScreen: React.FC = () => {
         {hasSavings ? (
           // 가입자: 실제 계좌 정보 표시
           <>
-            {accountInfo?.data?.saving && (
+            {savingsAccount?.data && (
               <TouchableOpacity 
                 style={styles.accountCard}
                 accessibilityRole="button"
@@ -196,17 +212,17 @@ export const HomeScreen: React.FC = () => {
                   <Ionicons name="trending-up" size={20} color={COLORS.secondary} />
                 </View>
                 <Text style={styles.accountBalance}>
-                  {formatCurrency(accountInfo.data.saving.currentBalance)}
+                  {formatCurrency(savingsAccount.data.currentBalance)}
                 </Text>
                 <Text style={styles.accountNumber}>
-                  {accountInfo.data.saving.accountNumber}
+                  {savingsAccount.data.accountNumber}
                 </Text>
                 <Text style={styles.monthlyAmount}>
-                  월 {formatCurrency(accountInfo.data.saving.monthlyAmount)} 납입
+                  월 {formatCurrency(savingsAccount.data.monthlyAmount)} 납입
                 </Text>
               </TouchableOpacity>
             )}
-            {accountInfo?.data?.deposit && (
+            {depositAccount?.data && (
               <TouchableOpacity 
                 style={styles.accountCard}
                 accessibilityRole="button"
@@ -217,10 +233,10 @@ export const HomeScreen: React.FC = () => {
                   <Ionicons name="wallet" size={20} color={COLORS.primary} />
                 </View>
                 <Text style={styles.accountBalance}>
-                  {formatCurrency(accountInfo.data.deposit.currentBalance)}
+                  {formatCurrency(depositAccount.data.currentBalance)}
                 </Text>
                 <Text style={styles.accountNumber}>
-                  {accountInfo.data.deposit.accountNumber}
+                  {depositAccount.data.accountNumber}
                 </Text>
               </TouchableOpacity>
             )}
@@ -281,7 +297,7 @@ export const HomeScreen: React.FC = () => {
       {/* 페이지 인디케이터 */}
       <View style={styles.pageIndicator}>
         {hasSavings ? 
-          [accountInfo?.data?.saving, accountInfo?.data?.deposit].filter(Boolean).map((_, index) => (
+          [savingsAccount?.data, depositAccount?.data].filter(Boolean).map((_, index) => (
             <TouchableOpacity
               key={index}
               style={[
@@ -457,8 +473,8 @@ const styles = StyleSheet.create({
   },
   carouselContainer: {
     paddingHorizontal: SPACING.lg,
-    alignItems: 'flex-start',
     flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   accountCard: {
     backgroundColor: COLORS.white,
@@ -470,8 +486,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    minWidth: width - SPACING.lg * 2,
-    maxWidth: width - SPACING.lg * 2,
+    width: width - SPACING.lg * 2,
+    flexShrink: 0,
   },
   accountHeader: {
     flexDirection: 'row',
