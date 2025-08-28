@@ -34,9 +34,15 @@ import Toast from 'react-native-toast-message';
 
 // 추천 퀘스트 조회 훅
 export const useRecommendedQuests = () => {
+  console.log('🔍 useRecommendedQuests 훅 호출됨');
   return useQuery({
     queryKey: ['quests', 'recommended'],
-    queryFn: () => questService.getRecommendedQuests(),
+    queryFn: async () => {
+      console.log('📡 useRecommendedQuests API 호출 시작');
+      const result = await questService.getRecommendedQuests();
+      console.log('📡 useRecommendedQuests API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
     staleTime: 1 * 60 * 1000, // 1분
     gcTime: 3 * 60 * 1000, // 3분
   });
@@ -44,9 +50,15 @@ export const useRecommendedQuests = () => {
 
 // 성장 퀘스트 조회 훅 (진행중 최대 5개)
 export const useGrowthQuestsInProgress = () => {
+  console.log('🔍 useGrowthQuestsInProgress 훅 호출됨');
   return useQuery({
     queryKey: ['quests', 'growth', 'inProgress'],
-    queryFn: () => questService.getGrowthQuestsInProgress(),
+    queryFn: async () => {
+      console.log('📡 useGrowthQuestsInProgress API 호출 시작');
+      const result = await questService.getGrowthQuestsInProgress();
+      console.log('📡 useGrowthQuestsInProgress API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
     staleTime: 1 * 60 * 1000, // 1분
     gcTime: 3 * 60 * 1000, // 3분
   });
@@ -64,9 +76,15 @@ export const useAllGrowthQuests = () => {
 
 // 일상 퀘스트 조회 훅
 export const useDailyQuests = () => {
+  console.log('🔍 useDailyQuests 훅 호출됨');
   return useQuery({
     queryKey: ['quests', 'daily'],
-    queryFn: () => questService.getDailyQuests(),
+    queryFn: async () => {
+      console.log('📡 useDailyQuests API 호출 시작');
+      const result = await questService.getDailyQuests();
+      console.log('📡 useDailyQuests API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
     staleTime: 2 * 60 * 1000, // 2분
     gcTime: 5 * 60 * 1000, // 5분
   });
@@ -74,9 +92,15 @@ export const useDailyQuests = () => {
 
 // 돌발 퀘스트 조회 훅
 export const useSurpriseQuests = () => {
+  console.log('🔍 useSurpriseQuests 훅 호출됨');
   return useQuery({
     queryKey: ['quests', 'surprise'],
-    queryFn: () => questService.getSurpriseQuests(),
+    queryFn: async () => {
+      console.log('📡 useSurpriseQuests API 호출 시작');
+      const result = await questService.getSurpriseQuests();
+      console.log('📡 useSurpriseQuests API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
     staleTime: 2 * 60 * 1000, // 2분
     gcTime: 5 * 60 * 1000, // 5분
   });

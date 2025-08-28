@@ -40,11 +40,13 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
 import { SPACING, FONT_SIZES, BORDER_RADIUS, COLORS } from '../../utils/constants';
 import { AppHeader } from '../../components/common/AppHeader';
 import { LoadingView } from '../../components/common/LoadingView';
 import { ErrorView } from '../../components/common/ErrorView';
 import { useAttendanceData, useCheckAttendance } from '../../hooks/useAttendance';
+import { RootState } from '../../store';
 
 const { width } = Dimensions.get('window');
 
@@ -53,6 +55,9 @@ const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 export const AttendanceScreen: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [checkAnimation] = useState(new Animated.Value(1));
+  
+  // Redux에서 user 정보 가져오기
+  const user = useSelector((state: RootState) => state.user.user);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -63,6 +68,14 @@ export const AttendanceScreen: React.FC = () => {
 
   // 백엔드 API 응답 구조에 맞춰 수정
   const attendanceDays = attendanceData?.data?.attendance_dates || [];
+
+  // API 요청 로그
+  console.log('📅 AttendanceScreen API 상태:', {
+    attendanceData: { loading: isLoading, error, data: attendanceData?.data ? '있음' : '없음' },
+    year,
+    month,
+    attendanceDays: attendanceDays.length
+  });
   const isAttendedToday = attendanceDays.includes(new Date().toISOString().split('T')[0]);
 
   const handleAttendanceCheck = async () => {
@@ -85,7 +98,12 @@ export const AttendanceScreen: React.FC = () => {
     ]).start();
 
     try {
-      await checkAttendanceMutation.mutateAsync({ year, month, day });
+      await checkAttendanceMutation.mutateAsync({ 
+        year, 
+        month, 
+        day, 
+        user_id: user?.id?.toString() || '' 
+      });
       // 성공 시 데이터 리페치
       refetch();
     } catch (error) {

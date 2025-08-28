@@ -227,18 +227,21 @@ export const baseApi = createApi({
     // 출석 내역 조회
     getAttendanceData: builder.query<any, { year: number; month: number }>({
       query: ({ year, month }) => ({
-        url: `/api/attendance/${year}/${month}`,
+        url: `/api/v1/api/attendance/${year}/${month}`,
         method: 'GET',
       }),
       providesTags: ['Attendance'],
     }),
 
     // 출석 체크
-    checkAttendance: builder.mutation<any, { year: number; month: number; day: number }>({
+    checkAttendance: builder.mutation<any, { year: number; month: number; day: number; user_id: string }>({
       query: (data) => ({
-        url: '/api/attendance/check-in',
+        url: '/api/v1/api/attendance/check-in',
         method: 'POST',
-        body: { date: `${data.year}-${data.month.toString().padStart(2, '0')}-${data.day.toString().padStart(2, '0')}` },
+        body: { 
+          user_id: data.user_id,
+          date: `${data.year}-${data.month.toString().padStart(2, '0')}-${data.day.toString().padStart(2, '0')}` 
+        },
       }),
       invalidatesTags: ['Attendance'],
     }),

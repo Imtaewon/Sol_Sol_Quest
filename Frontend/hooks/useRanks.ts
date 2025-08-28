@@ -28,9 +28,15 @@ import { rankService } from '../services/rankService';
 
 // 내 학교 랭킹 조회 훅 (비가입자)
 export const useMySchoolRank = () => {
+  console.log('🔍 useMySchoolRank 훅 호출됨');
   return useQuery({
     queryKey: ['ranks', 'mySchool'],
-    queryFn: () => rankService.getMySchoolRank(),
+    queryFn: async () => {
+      console.log('📡 useMySchoolRank API 호출 시작');
+      const result = await rankService.getMySchoolRank();
+      console.log('📡 useMySchoolRank API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
     staleTime: 2 * 60 * 1000, // 2분
     gcTime: 5 * 60 * 1000, // 5분
   });
@@ -38,9 +44,15 @@ export const useMySchoolRank = () => {
 
 // 내 학교 랭킹 조회 훅 (가입자)
 export const useMySchoolRankWithUser = () => {
+  console.log('🔍 useMySchoolRankWithUser 훅 호출됨');
   return useQuery({
     queryKey: ['ranks', 'mySchoolWithUser'],
-    queryFn: () => rankService.getMySchoolRankWithUser(),
+    queryFn: async () => {
+      console.log('📡 useMySchoolRankWithUser API 호출 시작');
+      const result = await rankService.getMySchoolRankWithUser();
+      console.log('📡 useMySchoolRankWithUser API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
     staleTime: 2 * 60 * 1000, // 2분
     gcTime: 5 * 60 * 1000, // 5분
   });
@@ -48,9 +60,15 @@ export const useMySchoolRankWithUser = () => {
 
 // 상위 10개 학교 조회 훅 (총점 기준)
 export const useTopSchoolsByTotal = () => {
+  console.log('🔍 useTopSchoolsByTotal 훅 호출됨');
   return useQuery({
     queryKey: ['ranks', 'topSchools', 'total'],
-    queryFn: () => rankService.getTopSchoolsByTotal(),
+    queryFn: async () => {
+      console.log('📡 useTopSchoolsByTotal API 호출 시작');
+      const result = await rankService.getTopSchoolsByTotal();
+      console.log('📡 useTopSchoolsByTotal API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
     staleTime: 2 * 60 * 1000, // 2분
     gcTime: 5 * 60 * 1000, // 5분
   });
@@ -58,9 +76,15 @@ export const useTopSchoolsByTotal = () => {
 
 // 상위 10개 학교 조회 훅 (평균 기준)
 export const useTopSchoolsByAverage = () => {
+  console.log('🔍 useTopSchoolsByAverage 훅 호출됨');
   return useQuery({
     queryKey: ['ranks', 'topSchools', 'average'],
-    queryFn: () => rankService.getTopSchoolsByAverage(),
+    queryFn: async () => {
+      console.log('📡 useTopSchoolsByAverage API 호출 시작');
+      const result = await rankService.getTopSchoolsByAverage();
+      console.log('📡 useTopSchoolsByAverage API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
     staleTime: 2 * 60 * 1000, // 2분
     gcTime: 5 * 60 * 1000, // 5분
   });

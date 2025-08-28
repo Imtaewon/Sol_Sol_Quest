@@ -145,6 +145,15 @@ export const QuestsScreen: React.FC = () => {
 
   const { data: quests, loading: isLoading, error, refetch } = getQuestsData();
 
+  // API 요청 로그
+  console.log('🎯 QuestsScreen API 상태:', {
+    growthQuests: { loading: growthLoading, error: growthError, data: growthQuests?.data ? `${growthQuests.data.length}개` : '없음' },
+    dailyQuests: { loading: dailyLoading, error: dailyError, data: dailyQuests?.data ? `${dailyQuests.data.length}개` : '없음' },
+    surpriseQuests: { loading: surpriseLoading, error: surpriseError, data: surpriseQuests?.data ? `${surpriseQuests.data.length}개` : '없음' },
+    selectedType,
+    currentQuests: { loading: isLoading, error, data: quests ? `${quests.length}개` : '없음' }
+  });
+
   /**
    * 퀘스트 상태별 정렬
    * 우선순위: 진행중 > 완료가능 > 미시작 > 완료

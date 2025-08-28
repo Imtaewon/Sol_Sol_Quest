@@ -29,7 +29,9 @@ export interface MySchoolRankWithUser extends MySchoolRank {
 export const rankService = {
   // 내 학교 랭킹 조회 (비가입자)
   getMySchoolRank: async (): Promise<ApiResponse<MySchoolRank>> => {
+    console.log('🌐 rankService.getMySchoolRank HTTP 요청 시작');
     const response = await apiClient.get<ApiResponse<MySchoolRank>>('/ranks/my-school');
+    console.log('🌐 rankService.getMySchoolRank HTTP 요청 완료:', response.status);
     return response.data;
   },
 
@@ -41,7 +43,9 @@ export const rankService = {
 
   // 상위 10개 학교 조회 (총점 기준)
   getTopSchoolsByTotal: async (): Promise<ApiResponse<SchoolRank[]>> => {
+    console.log('🌐 rankService.getTopSchoolsByTotal HTTP 요청 시작');
     const response = await apiClient.get<ApiResponse<SchoolRank[]>>('/ranks/top-schools/total');
+    console.log('🌐 rankService.getTopSchoolsByTotal HTTP 요청 완료:', response.status);
     return response.data;
   },
 

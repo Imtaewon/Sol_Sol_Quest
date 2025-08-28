@@ -95,6 +95,14 @@ export const SavingOpenScreen: React.FC = () => {
   const [createSavingsAccount, { isLoading: isCreatingSavings }] = useCreateSavingsAccountMutation();
   const [submitSurveyResponses, { isLoading: isSubmittingSurvey }] = useSubmitSurveyResponsesMutation();
 
+  // API 요청 로그
+  console.log('💰 SavingOpenScreen API 상태:', {
+    userInfo: { loading: isUserInfoLoading, error: userInfoError, data: userInfo ? '있음' : '없음' },
+    surveyQuestion: { loading: isSurveyLoading, data: surveyQuestion?.data ? '있음' : '없음' },
+    currentStep,
+    currentQuestion: surveyState.currentQuestion
+  });
+
   // 입력된 값들 감시
   const monthlyAmount = watch('monthlyAmount');
   const accountNumber = watch('accountNumber');

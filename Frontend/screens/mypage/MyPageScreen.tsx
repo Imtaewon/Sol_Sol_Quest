@@ -34,6 +34,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  SafeAreaView,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
@@ -82,6 +83,86 @@ export const MyPageScreen: React.FC = () => {
   // API 훅들
   const { data: userInfo, isLoading: userInfoLoading, error: userInfoError } = useUserInfo();
   const { data: accountInfo, isLoading: accountInfoLoading, error: accountInfoError } = useAccountInfo();
+
+  // API 요청 로그
+  console.log('👤 MyPageScreen API 상태:', {
+    userInfo: { loading: userInfoLoading, error: userInfoError, data: userInfo?.data ? '있음' : '없음' },
+    accountInfo: { loading: accountInfoLoading, error: accountInfoError, data: accountInfo?.data ? '있음' : '없음' }
+  });
+
+  // 로딩 상태 처리
+  console.log('👤 MyPageScreen 로딩 상태:', {
+    userInfoLoading,
+    accountInfoLoading,
+    isLoading: userInfoLoading || accountInfoLoading
+  });
+  
+  if (userInfoLoading || accountInfoLoading) {
+    console.log('👤 MyPageScreen 로딩 화면 표시');
+    return (
+      <SafeAreaView style={styles.container}>
+        <AppHeader />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>사용자 정보를 불러오는 중...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 티어 계산 함수
+  const calculateTierInfo = (totalExp: number) => {
+    const tierThresholds = {
+      BASIC: 0,
+      BRONZE: 100,
+      SILVER: 250,
+      GOLD: 500,
+      SOL: 900
+    };
+
+    let currentTier = 'BASIC';
+    let nextTier = 'BRONZE';
+    let expToNextTier = 100;
+
+    if (totalExp >= 900) {
+      currentTier = 'SOL';
+      nextTier = 'SOL';
+      expToNextTier = 0;
+    } else if (totalExp >= 500) {
+      currentTier = 'GOLD';
+      nextTier = 'SOL';
+      expToNextTier = 900 - totalExp;
+    } else if (totalExp >= 250) {
+      currentTier = 'SILVER';
+      nextTier = 'GOLD';
+      expToNextTier = 500 - totalExp;
+    } else if (totalExp >= 100) {
+      currentTier = 'BRONZE';
+      nextTier = 'SILVER';
+      expToNextTier = 250 - totalExp;
+    } else {
+      currentTier = 'BASIC';
+      nextTier = 'BRONZE';
+      expToNextTier = 100 - totalExp;
+    }
+
+    return { currentTier, nextTier, expToNextTier };
+  };
+
+  // 티어 혜택 계산 함수
+  const getTierBenefit = (tier: string) => {
+    const benefits = {
+      BASIC: '0.3%',
+      BRONZE: '0.4%',
+      SILVER: '0.5%',
+      GOLD: '0.6%',
+      SOL: '0.7%'
+    };
+    return benefits[tier as keyof typeof benefits] || '0.3%';
+  };
+
+  const totalExp = userInfo?.data?.totalExp || 0;
+  const { currentTier, nextTier, expToNextTier } = calculateTierInfo(totalExp);
+  const tierBenefit = getTierBenefit(currentTier);
 
 
   const handleLogout = async () => {
@@ -147,37 +228,42 @@ export const MyPageScreen: React.FC = () => {
           <View style={styles.tierHeader}>
             <View style={[
               styles.tierBadge,
-              { backgroundColor: TIER_COLORS[userInfo?.data?.current_tier || 'BASIC'] + '20' }
+              { backgroundColor: TIER_COLORS[currentTier] + '20' }
             ]}>
               <Text style={[
                 styles.tierName,
-                { color: TIER_COLORS[userInfo?.data?.current_tier || 'BASIC'] }
+                { color: TIER_COLORS[currentTier] }
               ]}>
-                {TIER_NAMES[userInfo?.data?.current_tier || 'BASIC']}
+                {TIER_NAMES[currentTier]}
               </Text>
             </View>
-            <Text style={styles.tierExp}>{userInfo?.data?.totalExp?.toLocaleString() || 0} EXP</Text>
+            <Text style={styles.tierExp}>{totalExp.toLocaleString()} EXP</Text>
           </View>
           
           <View style={styles.tierProgress}>
             <View style={styles.progressBar}>
-                          <View 
-              style={[
-                styles.progressFill,
-                { 
-                  width: '60%',
-                  backgroundColor: TIER_COLORS[userInfo?.data?.current_tier || 'BASIC']
-                }
-              ]} 
-            />
+              <View 
+                style={[
+                  styles.progressFill,
+                  { 
+                    width: expToNextTier === 0 ? '100%' : `${Math.min((totalExp / (totalExp + expToNextTier)) * 100, 100)}%`,
+                    backgroundColor: TIER_COLORS[currentTier]
+                  }
+                ]} 
+              />
             </View>
-            <Text style={styles.progressText}>다음 티어까지 750 EXP 남음</Text>
+            <Text style={styles.progressText}>
+              {expToNextTier === 0 
+                ? '최고 티어 달성!' 
+                : `다음 티어까지 ${expToNextTier.toLocaleString()} EXP 남음`
+              }
+            </Text>
           </View>
           
           <View style={styles.tierBenefits}>
             <Text style={styles.benefitsTitle}>티어 혜택</Text>
             <Text style={styles.benefitsText}>
-              적금 우대금리 {(userInfo?.data?.current_tier || 'BASIC') === 'SILVER' ? '0.5%' : '0.3%'} 추가
+              적금 우대금리 {tierBenefit} 추가
             </Text>
           </View>
         </View>
@@ -576,6 +662,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.error,
     marginLeft: SPACING.sm,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  loadingText: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.gray[600],
+    textAlign: 'center',
   },
 });
 

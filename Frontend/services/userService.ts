@@ -59,7 +59,9 @@ export interface PersonalInfoForDeposit {
 export const userService = {
   // 사용자 정보 조회
   getUserInfo: async (): Promise<ApiResponse<UserInfo>> => {
+    console.log('🌐 userService.getUserInfo HTTP 요청 시작');
     const response = await apiClient.get<ApiResponse<UserInfo>>('/user/info');
+    console.log('🌐 userService.getUserInfo HTTP 요청 완료:', response.status);
     return response.data;
   },
 
@@ -77,7 +79,9 @@ export const userService = {
 
   // 계좌 정보 조회
   getAccountInfo: async (): Promise<ApiResponse<AccountInfo>> => {
+    console.log('🌐 userService.getAccountInfo HTTP 요청 시작');
     const response = await apiClient.get<ApiResponse<AccountInfo>>('/user/account');
+    console.log('🌐 userService.getAccountInfo HTTP 요청 완료:', response.status);
     return response.data;
   },
 };

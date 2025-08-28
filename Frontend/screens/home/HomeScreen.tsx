@@ -94,6 +94,14 @@ export const HomeScreen: React.FC = () => {
     refetch: refetchQuests 
   } = useRecommendedQuests();
 
+  // API 요청 로그
+  console.log('🏠 HomeScreen API 상태:', {
+    userInfo: { loading: userLoading, error: userError, data: userInfo?.data ? '있음' : '없음' },
+    accountInfo: { loading: accountLoading, error: accountError, data: accountInfo?.data ? '있음' : '없음' },
+    schoolRank: { loading: rankLoading, error: rankError, data: schoolRank?.data ? '있음' : '없음' },
+    recommendedQuests: { loading: questsLoading, error: questsError, data: recommendedQuests?.data ? '있음' : '없음' }
+  });
+
   const claimQuestMutation = useClaimQuest();
 
   // 새로고침 처리
@@ -112,7 +120,16 @@ export const HomeScreen: React.FC = () => {
   };
 
   // 로딩 상태 처리
+  console.log('🏠 HomeScreen 로딩 상태:', {
+    userLoading,
+    accountLoading,
+    rankLoading,
+    questsLoading,
+    isLoading: userLoading || accountLoading || rankLoading || questsLoading
+  });
+  
   if (userLoading || accountLoading || rankLoading || questsLoading) {
+    console.log('🏠 HomeScreen 로딩 화면 표시');
     return <LoadingView message="데이터를 불러오는 중..." />;
   }
 
@@ -161,9 +178,9 @@ export const HomeScreen: React.FC = () => {
         pagingEnabled
         onScroll={handleCarouselScroll}
         scrollEventThrottle={16}
-        decelerationRate="fast"
-        snapToInterval={width - SPACING.lg * 2 + SPACING.md}
-        snapToAlignment="center"
+        decelerationRate={0.8}
+        snapToInterval={width - SPACING.lg * 2}
+        snapToAlignment="start"
       >
         {hasSavings ? (
           // 가입자: 실제 계좌 정보 표시
@@ -441,7 +458,8 @@ const styles = StyleSheet.create({
   },
   carouselContainer: {
     paddingHorizontal: SPACING.lg,
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    flexDirection: 'row',
   },
   accountCard: {
     backgroundColor: COLORS.white,

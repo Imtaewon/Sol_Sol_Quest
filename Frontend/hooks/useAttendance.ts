@@ -4,17 +4,21 @@ import Toast from 'react-native-toast-message';
 
 // 출석 데이터 조회 훅
 export const useAttendanceData = (year: number, month: number) => {
+  console.log('🔍 useAttendanceData 훅 호출됨:', { year, month });
   return useGetAttendanceDataQuery({ year, month });
 };
 
 // 출석 체크 훅
 export const useCheckAttendance = () => {
+  console.log('🔍 useCheckAttendance 훅 호출됨');
   const queryClient = useQueryClient();
   const [checkAttendance] = useCheckAttendanceMutation();
 
-  const checkAttendanceWithToast = async (data: { year: number; month: number; day: number }) => {
+  const checkAttendanceWithToast = async (data: { year: number; month: number; day: number; user_id: string }) => {
+    console.log('📡 useCheckAttendance API 호출 시작:', data);
     try {
       const result = await checkAttendance(data).unwrap();
+      console.log('📡 useCheckAttendance API 호출 완료:', result.success ? '성공' : '실패');
       if (result.success) {
         // 출석 데이터 무효화하여 리페치
         queryClient.invalidateQueries({ 

@@ -68,6 +68,15 @@ export const LeaderboardScreen: React.FC = () => {
     isLoading: topSchoolsLoading, 
     error: topSchoolsError 
   } = selectedCategory === 'total' ? useTopSchoolsByTotal() : useTopSchoolsByAverage();
+
+  // API 요청 로그
+  console.log('🏆 LeaderboardScreen API 상태:', {
+    mySchoolRank: { loading: mySchoolLoading, error: mySchoolError, data: mySchoolRank?.data ? '있음' : '없음' },
+    topSchools: { loading: topSchoolsLoading, error: topSchoolsError, data: topSchools?.data ? `${topSchools.data.length}개` : '없음' },
+    selectedCategory,
+    hasSavings
+  });
+
   // 로딩 상태 처리
   if (mySchoolLoading || topSchoolsLoading) {
     return (

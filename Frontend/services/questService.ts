@@ -47,7 +47,9 @@ export interface ClaimQuestRequest {
 export const questService = {
   // 추천 퀘스트 조회
   getRecommendedQuests: async (): Promise<ApiResponse<RecommendedQuest[]>> => {
+    console.log('🌐 questService.getRecommendedQuests HTTP 요청 시작');
     const response = await apiClient.get<ApiResponse<RecommendedQuest[]>>('/quests/recommended');
+    console.log('🌐 questService.getRecommendedQuests HTTP 요청 완료:', response.status);
     return response.data;
   },
 
@@ -65,7 +67,9 @@ export const questService = {
 
   // 일상 퀘스트 조회
   getDailyQuests: async (): Promise<ApiResponse<Quest[]>> => {
+    console.log('🌐 questService.getDailyQuests HTTP 요청 시작');
     const response = await apiClient.get<ApiResponse<Quest[]>>('/quests/daily');
+    console.log('🌐 questService.getDailyQuests HTTP 요청 완료:', response.status);
     return response.data;
   },
 
