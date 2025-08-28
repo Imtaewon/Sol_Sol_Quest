@@ -4,10 +4,10 @@ import { ApiResponse } from './apiClient';
 // 백엔드 QuestListItem 구조에 맞춘 퀘스트 타입
 export interface QuestListItem {
   id: number;
-  type: string;
+  type: 'life' | 'growth' | 'surprise'; // 백엔드 QuestTypeEnum
   title: string;
   verify_method: string;
-  category: 'growth' | 'life' | 'surprise'; // 백엔드 카테고리: growth, life, surprise
+  category: 'STUDY' | 'HEALTH' | 'ECON' | 'LIFE' | 'ENT' | 'SAVING'; // 백엔드 QuestCategoryEnum
   verify_params: any;
   reward_exp: number;
   target_count: number;
@@ -125,9 +125,9 @@ export const questService = {
 // 퀘스트 카테고리별 분류 함수
 export const categorizeQuests = (quests: QuestListItem[]) => {
   const categorized = {
-    growth: quests.filter(quest => quest.category === 'growth'),
-    daily: quests.filter(quest => quest.category === 'life'), // 백엔드의 'life'를 프론트의 'daily'로 매핑
-    surprise: quests.filter(quest => quest.category === 'surprise')
+    growth: quests.filter(quest => quest.type === 'growth'),
+    daily: quests.filter(quest => quest.type === 'life'), // 백엔드의 'life'를 프론트의 'daily'로 매핑
+    surprise: quests.filter(quest => quest.type === 'surprise')
   };
   
   console.log('📊 퀘스트 카테고리별 분류 결과:', {
@@ -146,7 +146,7 @@ export const convertQuestListItemToQuest = (questItem: QuestListItem): Quest => 
     id: questItem.id,
     title: questItem.title,
     description: questItem.title, // 백엔드에 description 필드가 없으므로 title 사용
-    category: questItem.category === 'life' ? 'daily' : questItem.category as 'growth' | 'daily' | 'surprise',
+    category: questItem.type === 'life' ? 'daily' : questItem.type as 'growth' | 'daily' | 'surprise',
     expReward: questItem.reward_exp,
     progress: questItem.progress_count,
     maxProgress: questItem.user_target_count,
