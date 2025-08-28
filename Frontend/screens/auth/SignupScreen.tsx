@@ -101,11 +101,8 @@ export const SignupScreen: React.FC = () => {
       
       const result = await signupMutation.mutateAsync(finalData);
       if (result.success) {
-        // 회원가입 성공 후 랜딩페이지로 이동
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Landing' as any }],
-        });
+        // 회원가입 성공 후 로그인 화면으로 이동
+        navigation.navigate('SignIn');
       }
     } catch (error) {
       console.error('회원가입 실패:', error);
@@ -359,21 +356,49 @@ export const SignupScreen: React.FC = () => {
                       control={control}
                       name="school"
                       render={({ field: { onChange, value } }) => (
-                        <TouchableOpacity
-                          style={styles.schoolInput}
-                          onPress={handleSchoolSelect}
-                        >
+                        <View style={styles.schoolInput}>
                           <Text style={styles.label}>학교</Text>
-                          <View style={styles.schoolButton}>
-                            <Text style={value ? styles.schoolText : styles.schoolPlaceholder}>
-                              {value || '학교를 선택해주세요'}
-                            </Text>
-                            <Text style={styles.schoolArrow}>▼</Text>
-                          </View>
+                          <FormTextInput
+                            placeholder="학교명을 검색해주세요"
+                            value={schoolSearchText}
+                            onChangeText={setSchoolSearchText}
+                            style={styles.schoolSearchInput}
+                          />
+                          {schoolSearchText.length > 0 && (
+                            <View style={styles.schoolSearchResults}>
+                              {filteredSchools.length > 0 ? (
+                                filteredSchools.slice(0, 5).map((school) => (
+                                  <TouchableOpacity
+                                    key={school.university_code}
+                                    style={styles.schoolResultItem}
+                                    onPress={() => {
+                                      onChange(school.university_name);
+                                      setSchoolSearchText('');
+                                    }}
+                                  >
+                                    <Text style={styles.schoolResultText}>
+                                      {school.university_name}
+                                    </Text>
+                                  </TouchableOpacity>
+                                ))
+                              ) : (
+                                <Text style={styles.noResultsText}>
+                                  검색 결과가 없습니다.
+                                </Text>
+                              )}
+                            </View>
+                          )}
+                          {value && (
+                            <View style={styles.selectedSchool}>
+                              <Text style={styles.selectedSchoolText}>
+                                선택된 학교: {value}
+                              </Text>
+                            </View>
+                          )}
                           {errors.school && (
                             <Text style={styles.errorText}>{errors.school.message}</Text>
                           )}
-                        </TouchableOpacity>
+                        </View>
                       )}
                     />
 
@@ -622,21 +647,49 @@ export const SignupScreen: React.FC = () => {
                     control={control}
                     name="school"
                     render={({ field: { onChange, value } }) => (
-                      <TouchableOpacity
-                        style={styles.schoolInput}
-                        onPress={handleSchoolSelect}
-                      >
+                      <View style={styles.schoolInput}>
                         <Text style={styles.label}>학교</Text>
-                        <View style={styles.schoolButton}>
-                          <Text style={value ? styles.schoolText : styles.schoolPlaceholder}>
-                            {value || '학교를 선택해주세요'}
-                          </Text>
-                          <Text style={styles.schoolArrow}>▼</Text>
-                        </View>
+                        <FormTextInput
+                          placeholder="학교명을 검색해주세요"
+                          value={schoolSearchText}
+                          onChangeText={setSchoolSearchText}
+                          style={styles.schoolSearchInput}
+                        />
+                        {schoolSearchText.length > 0 && (
+                          <View style={styles.schoolSearchResults}>
+                            {filteredSchools.length > 0 ? (
+                              filteredSchools.slice(0, 5).map((school) => (
+                                <TouchableOpacity
+                                  key={school.university_code}
+                                  style={styles.schoolResultItem}
+                                  onPress={() => {
+                                    onChange(school.university_name);
+                                    setSchoolSearchText('');
+                                  }}
+                                >
+                                  <Text style={styles.schoolResultText}>
+                                    {school.university_name}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))
+                            ) : (
+                              <Text style={styles.noResultsText}>
+                                검색 결과가 없습니다.
+                              </Text>
+                            )}
+                          </View>
+                        )}
+                        {value && (
+                          <View style={styles.selectedSchool}>
+                            <Text style={styles.selectedSchoolText}>
+                              선택된 학교: {value}
+                            </Text>
+                          </View>
+                        )}
                         {errors.school && (
                           <Text style={styles.errorText}>{errors.school.message}</Text>
                         )}
-                      </TouchableOpacity>
+                      </View>
                     )}
                   />
 
@@ -718,10 +771,8 @@ export const SignupScreen: React.FC = () => {
         title="학교 검색"
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalText}>대학교를 선택해주세요.</Text>
           <FormTextInput
-            label="학교 검색"
-            placeholder="학교 이름 또는 코드를 입력해주세요"
+            placeholder="학교명을 검색해주세요"
             value={schoolSearchText}
             onChangeText={setSchoolSearchText}
             style={styles.modalSearchInput}
@@ -729,18 +780,23 @@ export const SignupScreen: React.FC = () => {
           {schoolsLoading ? (
             <Text style={styles.loadingText}>학교 목록을 불러오는 중...</Text>
           ) : filteredSchools.length > 0 ? (
-            filteredSchools.map((school) => (
-              <PrimaryButton
-                key={school.university_code}
-                title={school.university_name}
-                onPress={() => {
-                  handleSchoolSelected(school.university_code);
-                }}
-                style={styles.modalButton}
-              />
-            ))
+            <ScrollView style={styles.schoolListContainer} showsVerticalScrollIndicator={false}>
+              {filteredSchools.slice(0, 10).map((school) => (
+                <TouchableOpacity
+                  key={school.university_code}
+                  style={styles.schoolListItem}
+                  onPress={() => {
+                    handleSchoolSelected(school.university_name);
+                  }}
+                >
+                  <Text style={styles.schoolListItemText}>
+                    {school.university_name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           ) : (
-            <Text style={styles.errorText}>검색 결과가 없습니다.</Text>
+            <Text style={styles.noResultsText}>검색 결과가 없습니다.</Text>
           )}
         </View>
       </ModalBase>
@@ -906,6 +962,67 @@ const styles = StyleSheet.create({
   },
   modalSearchInput: {
     marginBottom: SPACING.md,
+  },
+  schoolSearchInput: {
+    marginTop: SPACING.xs,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+    borderRadius: 8,
+    backgroundColor: COLORS.white,
+  },
+  schoolSearchResults: {
+    marginTop: SPACING.xs,
+    maxHeight: 150, // 결과 목록의 최대 높이
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.gray[300],
+    borderRadius: 8,
+    backgroundColor: COLORS.white,
+  },
+  schoolResultItem: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[100],
+  },
+  schoolResultText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.dark,
+  },
+  noResultsText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.gray[400],
+    textAlign: 'center',
+    paddingVertical: SPACING.md,
+  },
+     selectedSchool: {
+     marginTop: SPACING.md,
+     paddingVertical: SPACING.md,
+     paddingHorizontal: SPACING.lg,
+     borderWidth: 1,
+     borderColor: COLORS.primary,
+     borderRadius: 8,
+     backgroundColor: COLORS.gray[100],
+   },
+  selectedSchoolText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  schoolListContainer: {
+    maxHeight: 200, // 모달 내 스크롤 가능한 최대 높이
+  },
+  schoolListItem: {
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.gray[100],
+  },
+  schoolListItemText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.dark,
   },
 });
 
