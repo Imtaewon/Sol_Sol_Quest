@@ -14,7 +14,13 @@ export interface Quest {
   isClaimed?: boolean;
 }
 
-// 추천 퀘스트 타입
+// 새로운 추천 퀘스트 응답 타입
+export interface RecommendedQuestsResponse {
+  quest_ids: string[];
+  message: string;
+}
+
+// 기존 추천 퀘스트 타입 (호환성을 위해 유지)
 export interface RecommendedQuest {
   id: number;
   title: string;
@@ -45,11 +51,11 @@ export interface ClaimQuestRequest {
 
 // 퀘스트 서비스
 export const questService = {
-  // 추천 퀘스트 조회
-  getRecommendedQuests: async (): Promise<ApiResponse<RecommendedQuest[]>> => {
+  // 추천 퀘스트 조회 (새로운 응답 형식)
+  getRecommendedQuests: async (): Promise<ApiResponse<RecommendedQuestsResponse>> => {
     console.log('🌐 questService.getRecommendedQuests HTTP 요청 시작');
     try {
-      const response = await apiClient.get<ApiResponse<RecommendedQuest[]>>('/api/recommendations/quests');
+      const response = await apiClient.get<ApiResponse<RecommendedQuestsResponse>>('/api/recommendations/quests');
       console.log('🌐 questService.getRecommendedQuests HTTP 요청 완료:', response.status);
       console.log('🌐 questService.getRecommendedQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
       return response.data;

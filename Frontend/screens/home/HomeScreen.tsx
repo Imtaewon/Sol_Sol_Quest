@@ -365,47 +365,46 @@ export const HomeScreen: React.FC = () => {
       </View>
       
       {hasSavings ? (
-        recommendedQuests?.data && recommendedQuests.data.length > 0 ? (
+        recommendedQuests?.data && recommendedQuests.data.quest_ids && recommendedQuests.data.quest_ids.length > 0 ? (
           <View style={styles.questsList}>
-            {recommendedQuests.data.slice(0, 3).map((quest) => (
-              <View key={quest.id} style={styles.questItem}>
+            {recommendedQuests.data.quest_ids.slice(0, 3).map((questId, index) => (
+              <View key={questId} style={styles.questItem}>
                 <View style={styles.questInfo}>
-                  <Text style={styles.questTitle}>{quest.title}</Text>
-                  <View style={styles.questProgress}>
-                    <Text style={styles.questProgressText}>
-                      {quest.progress}/{quest.maxProgress}
-                    </Text>
-                  </View>
+                  <Text style={styles.questTitle}>추천 퀘스트 {index + 1}</Text>
+                  <Text style={styles.questDescription}>퀘스트 ID: {questId}</Text>
                 </View>
                 <View style={styles.questReward}>
-                  <Text style={styles.questRewardText}>{quest.expReward} EXP</Text>
-                  {quest.isCompleted && !quest.isClaimed && (
-                    <PrimaryButton
-                      title="수령하기"
-                      onPress={() => handleClaimQuest(quest.id, quest.expReward)}
-                      size="small"
-                      style={styles.claimButton}
-                      accessibilityRole="button"
-                      accessibilityLabel="퀘스트 보상 수령"
-                    />
-                  )}
-                  {quest.isClaimed && (
-                    <Text style={styles.completedText}>완료</Text>
-                  )}
+                  <Text style={styles.questRewardText}>EXP 보상</Text>
+                  <PrimaryButton
+                    title="시작하기"
+                    onPress={() => {
+                      // 퀘스트 상세 페이지로 이동하거나 퀘스트 시작 로직
+                      console.log('퀘스트 시작:', questId);
+                    }}
+                    size="small"
+                    style={styles.claimButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="퀘스트 시작"
+                  />
                 </View>
               </View>
             ))}
+            {recommendedQuests.data.message && (
+              <Text style={styles.recommendationMessage}>
+                {recommendedQuests.data.message}
+              </Text>
+            )}
           </View>
         ) : (
           <EmptyView message="추천 퀘스트가 없습니다." icon="🎯" />
         )
-             ) : (
-         <View style={styles.noSavingsOverlay}>
-           <Text style={[styles.noSavingsText, styles.blurredText]}>
-             적금 가입 후 이용 가능합니다
-           </Text>
-         </View>
-       )}
+      ) : (
+        <View style={styles.noSavingsOverlay}>
+          <Text style={[styles.noSavingsText, styles.blurredText]}>
+            적금 가입 후 이용 가능합니다
+          </Text>
+        </View>
+      )}
     </View>
   );
 
@@ -640,6 +639,11 @@ const styles = StyleSheet.create({
     color: COLORS.dark,
     marginBottom: SPACING.xs,
   },
+  questDescription: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.gray[500],
+    marginTop: SPACING.xs,
+  },
   questProgress: {
     alignItems: 'flex-start',
   },
@@ -663,6 +667,12 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     color: COLORS.gray[500],
     fontStyle: 'italic',
+  },
+  recommendationMessage: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray[600],
+    marginTop: SPACING.sm,
+    textAlign: 'center',
   },
   noSavingsOverlay: {
     alignItems: 'center',
