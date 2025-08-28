@@ -106,7 +106,7 @@ apiClient.interceptors.request.use(
       const dummyValue = await getStorageItem('dummy_key');
       console.log('DEBUG: Interceptor - AsyncStorage dummy_key:', dummyValue);
       
-      const token = await getStorageItem('auth_token');
+      const token = await getStorageItem('access_token');
       const hasToken = !!token;
       const tokenLength = token?.length || 0;
       

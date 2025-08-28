@@ -137,11 +137,11 @@ export const useLogin = () => {
           const token = response.data.data.access_token;
           console.log('🔐 저장할 토큰:', token ? `${token.substring(0, 20)}...` : 'null');
           
-          await setStorageItem('auth_token', token);
+          await setStorageItem('access_token', token);
           console.log('🔐 토큰 저장 완료');
           
           // 즉시 토큰 검증
-          const storedToken = await getStorageItem('auth_token');
+          const storedToken = await getStorageItem('access_token');
           console.log('DEBUG: 로그인 후 토큰 검증:', {
             hasToken: !!storedToken,
             tokenLength: storedToken?.length || 0,

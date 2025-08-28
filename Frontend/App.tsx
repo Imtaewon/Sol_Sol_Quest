@@ -109,7 +109,7 @@ const Navigation: React.FC = () => {
     const checkAuthToken = async () => {
       console.log('🔍 앱 시작 시 토큰 확인 중...');
       try {
-        const token = await getStorageItem('auth_token');
+        const token = await getStorageItem('access_token');
         if (token) {
           console.log('✅ 저장된 토큰 발견, 자동 로그인 처리');
           // 토큰이 있으면 자동 로그인
@@ -140,7 +140,7 @@ const Navigation: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated) {
       const checkToken = async () => {
-        const token = await getStorageItem('auth_token');
+        const token = await getStorageItem('access_token');
         console.log('✅ App.tsx - 로그인 후 AsyncStorage 토큰 재확인:', token ? '토큰 존재' : '토큰 없음', '길이:', token?.length || 0);
         
         const dummyValue = await getStorageItem('dummy_key');
