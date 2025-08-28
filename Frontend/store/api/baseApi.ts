@@ -67,6 +67,9 @@ interface UserInfoResponse {
   gender?: string;
   major?: string;
   grade?: number;
+  birthYear?: number;
+  school?: string;
+  department?: string;
 }
 
 interface School {
