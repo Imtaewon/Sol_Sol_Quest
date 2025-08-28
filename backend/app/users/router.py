@@ -8,7 +8,7 @@ from app.database import get_db
 from app.auth.utils import hash_password
 
 from app.models import (
-    User, School, UserStat, TierNameEnum
+    User, School, UserStats, TierNameEnum
 )
 from .schemas import UpdateMeRequest
 
@@ -34,7 +34,7 @@ def get_school_or_400(db: Session, code: str, name: str | None = None) -> School
     return school
 
 def _safe_userstat(db: Session, user_id: str):
-    stat = db.query(UserStat).filter(UserStat.user_id == user_id).first()
+    stat = db.query(UserStats).filter(UserStats.user_id == user_id).first()
     if stat:
         return stat.current_tier, stat.total_exp
     return TierNameEnum.BRONZE, 0
