@@ -103,13 +103,21 @@ export const SignupScreen: React.FC = () => {
         schoolName: selectedSchool?.name || data.school, // 학교 이름 사용
       };
       
+      console.log('회원가입 요청 데이터:', finalData);
+      console.log('step1Data:', step1Data);
+      console.log('data:', data);
+      console.log('selectedSchool:', selectedSchool);
+      
       const result = await signupMutation.mutateAsync(finalData);
+      console.log('회원가입 응답:', result);
+      
       if (result.success) {
         // 회원가입 성공 후 랜딩 페이지로 이동
         navigation.reset({ index: 0, routes: [{ name: 'Landing' as any }] });
       }
     } catch (error) {
       console.error('회원가입 실패:', error);
+      console.error('에러 상세:', JSON.stringify(error, null, 2));
     }
   };
 

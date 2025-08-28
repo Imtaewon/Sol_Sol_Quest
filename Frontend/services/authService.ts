@@ -100,7 +100,11 @@ export const authService = {
   // 회원가입 (Frontend 형식 받아서 변환)
   signup: async (frontendData: FrontendSignupRequest): Promise<ApiResponse<SignupResponse>> => {
     const backendData = transformSignupData(frontendData);
+    console.log('Frontend 데이터:', frontendData);
+    console.log('Backend로 변환된 데이터:', backendData);
+    
     const response = await apiClient.post<ApiResponse<SignupResponse>>('/api/v1/auth/register', backendData);
+    console.log('Backend 응답:', response.data);
     return response.data;
   },
 
