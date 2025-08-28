@@ -389,6 +389,5 @@ class SchoolLeaderboard(Base):
     avg_exp = Column(DECIMAL(12, 2), nullable=False)
     rank_overall = Column(Integer)                              # NULL 허용
     rank_avg = Column(Integer)                                  # NULL 허용
-    updated_at = Column(DateTime, nullable=False)
 
     school = relationship("School", back_populates="leaderboard_rows")
