@@ -48,12 +48,14 @@ import { signupSchema, SignupFormData } from '../../utils/validators';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { useSignup } from '../../hooks/useAuth';
 import { FrontendSignupRequest } from '../../services/authService';
+import { useGetSchoolsQuery } from '../../store/api/baseApi';
 
 type SignupScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'SignUp'>;
 
 export const SignupScreen: React.FC = () => {
   const navigation = useNavigation<SignupScreenNavigationProp>();
   const signupMutation = useSignup();
+  const { data: schools, isLoading: schoolsLoading } = useGetSchoolsQuery();
   const [showSchoolModal, setShowSchoolModal] = useState(false);
   const [showEmailModal, setShowEmailModal] = useState(false);
   const [emailCode, setEmailCode] = useState('');
@@ -721,27 +723,22 @@ export const SignupScreen: React.FC = () => {
       >
         <View style={styles.modalContent}>
           <Text style={styles.modalText}>대학교를 선택해주세요.</Text>
-          <PrimaryButton
-            title="서울대학교"
-            onPress={() => {
-              handleSchoolSelected('서울대학교');
-            }}
-            style={styles.modalButton}
-          />
-          <PrimaryButton
-            title="연세대학교"
-            onPress={() => {
-              handleSchoolSelected('연세대학교');
-            }}
-            style={styles.modalButton}
-          />
-          <PrimaryButton
-            title="고려대학교"
-            onPress={() => {
-              handleSchoolSelected('고려대학교');
-            }}
-            style={styles.modalButton}
-          />
+          {schoolsLoading ? (
+            <Text style={styles.loadingText}>학교 목록을 불러오는 중...</Text>
+          ) : schools && schools.length > 0 ? (
+            schools.map((school) => (
+              <PrimaryButton
+                key={school.id}
+                title={school.name}
+                onPress={() => {
+                  handleSchoolSelected(school.name);
+                }}
+                style={styles.modalButton}
+              />
+            ))
+          ) : (
+            <Text style={styles.errorText}>학교 목록을 불러올 수 없습니다.</Text>
+          )}
         </View>
       </ModalBase>
 
@@ -896,6 +893,12 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     color: COLORS.error,
     marginTop: SPACING.xs,
+  },
+  loadingText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray[500],
+    textAlign: 'center',
+    marginVertical: SPACING.md,
   },
   nextButton: {
     marginTop: SPACING.lg,

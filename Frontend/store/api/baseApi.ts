@@ -68,6 +68,11 @@ interface PaymentHistory {
   createdAt: string;
 }
 
+interface School {
+  id: string;
+  name: string;
+}
+
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
@@ -81,7 +86,7 @@ export const baseApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['User', 'Quest', 'Leaderboard', 'Assets', 'Account', 'Survey', 'Payment', 'Saving', 'Auth'],
+  tagTypes: ['User', 'Quest', 'Leaderboard', 'Assets', 'Account', 'Survey', 'Payment', 'Saving', 'Auth', 'Schools'],
   endpoints: (builder) => ({
     // 인증 관련
     login: builder.mutation<LoginResponse, LoginRequest>({
@@ -118,6 +123,15 @@ export const baseApi = createApi({
       providesTags: ['User'],
     }),
     
+    // 학교 목록
+    getSchools: builder.query<School[], void>({
+      query: () => ({
+        url: '/schools',
+        method: 'GET',
+      }),
+      providesTags: ['Schools'],
+    }),
+    
     // 결제 관련
     getPaymentHistory: builder.query<PaymentHistory[], void>({
       query: () => '/payments/history',
@@ -151,6 +165,9 @@ export const {
   
   // 사용자
   useGetUserInfoQuery,
+  
+  // 학교
+  useGetSchoolsQuery,
   
   // 결제
   useGetPaymentHistoryQuery,

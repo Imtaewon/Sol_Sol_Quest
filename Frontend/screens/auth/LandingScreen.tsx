@@ -10,9 +10,8 @@
  * 
  * 화면 구성:
  * - 로고 섹션: 앱 이름과 태그라인
- * - 이미지 섹션: 퀘스트 관련 이미지 플레이스홀더
+ * - 캐릭터 섹션: SolCharacter.png 이미지
  * - 버튼 섹션: 로그인/회원가입 버튼
- * - 푸터: 이용약관 및 개인정보처리방침 안내
  */
 
 import React from 'react';
@@ -21,12 +20,12 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
+  Image,
+  TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
-import { APP_CONSTANTS } from '../../utils/constants';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 
 type LandingScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Landing'>;
@@ -47,50 +46,41 @@ export const LandingScreen: React.FC = () => {
       <View style={styles.content}>
         {/* 로고 영역 */}
         <View style={styles.logoSection}>
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>{APP_CONSTANTS.BRANDING.LOGO_TEXT}</Text>
-            <Text style={styles.appName}>{APP_CONSTANTS.BRANDING.APP_NAME}</Text>
-          </View>
-          <Text style={styles.tagline}>
-            적금과 함께하는 재미있는 퀘스트
+          <Text style={styles.mainTitle}>헤이영</Text>
+          <Text style={styles.subTitle}>쏠쏠한 퀘스트</Text>
+          <Text style={styles.slogan}>
+            성장이 이자가 되고{'\n'}경쟁이 나눔이 되다
           </Text>
         </View>
 
-        {/* 메인 이미지 영역 */}
-        <View style={styles.imageSection}>
-          <View style={styles.imagePlaceholder}>
-            <Text style={styles.imageText}>🎯</Text>
-            <Text style={styles.imageSubtext}>퀘스트 이미지</Text>
+        {/* 캐릭터 이미지 영역 */}
+        <View style={styles.characterSection}>
+          <View style={styles.characterContainer}>
+            <Image
+              source={require('../../assets/SolCharacter.png')}
+              style={styles.characterImage}
+              resizeMode="contain"
+            />
           </View>
         </View>
 
         {/* 버튼 영역 */}
         <View style={styles.buttonSection}>
-          <PrimaryButton
-            title="로그인"
+          <TouchableOpacity
+            style={styles.loginButton}
             onPress={handleLoginPress}
-            variant="primary"
-            size="large"
-            style={styles.button}
-            accessibilityRole="button"
-            accessibilityLabel="로그인 버튼"
-          />
-          <PrimaryButton
-            title="회원가입"
+            activeOpacity={0.8}
+          >
+            <Text style={styles.loginButtonText}>로그인</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.signupButton}
             onPress={handleSignupPress}
-            variant="outline"
-            size="large"
-            style={styles.button}
-            accessibilityRole="button"
-            accessibilityLabel="회원가입 버튼"
-          />
-        </View>
-
-        {/* 하단 텍스트 */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            계속 진행하면 서비스 이용약관과 개인정보처리방침에 동의하는 것으로 간주됩니다.
-          </Text>
+            activeOpacity={0.8}
+          >
+            <Text style={styles.signupButtonText}>회원가입</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -100,75 +90,101 @@ export const LandingScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.white,
+    backgroundColor: '#E0F2F7', // 이미지의 하늘색 배경
   },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.lg,
     justifyContent: 'space-between',
+    paddingTop: SPACING.xxl,
+    paddingBottom: SPACING.xl,
   },
   logoSection: {
     alignItems: 'center',
-    marginTop: SPACING.xxl * 2,
+    marginTop: SPACING.xl,
   },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: SPACING.md,
-  },
-  logoText: {
-    fontSize: FONT_SIZES.xxxl,
+  mainTitle: {
+    fontSize: 36,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: '#1428A0', // 신한 블루
     marginBottom: SPACING.xs,
-  },
-  appName: {
-    fontSize: FONT_SIZES.lg,
-    color: COLORS.gray[600],
-    fontWeight: '500',
-  },
-  tagline: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.gray[500],
     textAlign: 'center',
-    lineHeight: 24,
   },
-  imageSection: {
+  subTitle: {
+    fontSize: FONT_SIZES.lg,
+    color: '#495057',
+    fontWeight: '500',
+    marginBottom: SPACING.lg,
+    textAlign: 'center',
+  },
+  slogan: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: 'bold',
+    color: '#343A40',
+    textAlign: 'center',
+    lineHeight: 32,
+    marginBottom: SPACING.xl,
+  },
+  characterSection: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    marginVertical: SPACING.xl,
   },
-  imagePlaceholder: {
+  characterContainer: {
     width: 200,
     height: 200,
-    backgroundColor: COLORS.gray[100],
-    borderRadius: BORDER_RADIUS.xl,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: COLORS.gray[200],
-    borderStyle: 'dashed',
   },
-  imageText: {
-    fontSize: 48,
-    marginBottom: SPACING.sm,
-  },
-  imageSubtext: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.gray[500],
+  characterImage: {
+    width: 300,
+    height: 400,
   },
   buttonSection: {
     marginBottom: SPACING.xl,
   },
-  button: {
+  loginButton: {
+    backgroundColor: '#1428A0', // 신한 블루
+    borderRadius: BORDER_RADIUS.lg,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
     marginBottom: SPACING.md,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  footer: {
-    marginBottom: SPACING.lg,
+  loginButtonText: {
+    color: '#FFFFFF',
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '600',
   },
-  footerText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.gray[500],
-    textAlign: 'center',
-    lineHeight: 16,
+  signupButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BORDER_RADIUS.lg,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    borderWidth: 2,
+    borderColor: '#1428A0', // 신한 블루
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  signupButtonText: {
+    color: '#1428A0', // 신한 블루
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '600',
   },
 });
