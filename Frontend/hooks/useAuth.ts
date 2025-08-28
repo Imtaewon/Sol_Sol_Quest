@@ -28,22 +28,28 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { authService, LoginRequest, FrontendSignupRequest } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../store/slices/authSlice';
 
 // 로그인 훅
 export const useLogin = () => {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authService.login(data),
     onSuccess: async (response: any) => {
-      if (response.success) {
+      if (response.data?.success) {
         // 토큰 저장 (access_token으로 변경)
-        await AsyncStorage.setItem('auth_token', response.data.access_token);
+        await AsyncStorage.setItem('auth_token', response.data.data.access_token);
         
         // 사용자 정보 캐시에 저장 (Backend 응답 형식에 맞춤)
-        queryClient.setQueryData(['user'], response.data.user);
-        queryClient.setQueryData(['token'], response.data.access_token);
-        queryClient.setQueryData(['savingStatus'], response.data.user.has_savings);
+        queryClient.setQueryData(['user'], response.data.data.user);
+        queryClient.setQueryData(['token'], response.data.data.access_token);
+        queryClient.setQueryData(['savingStatus'], response.data.data.user.has_savings);
+        
+        // Redux store 업데이트
+        dispatch(loginSuccess({ token: response.data.data.access_token }));
         
         Toast.show({
           type: 'success',
@@ -61,21 +67,75 @@ export const useLogin = () => {
 // 회원가입 훅
 export const useSignup = () => {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   return useMutation({
-    mutationFn: (data: FrontendSignupRequest) => authService.signup(data),
+    mutationFn: (data: FrontendSignupRequest) => {
+      console.log('🔄 useSignup mutationFn 호출됨');
+      console.log('전송할 데이터:', JSON.stringify(data, null, 2));
+      return authService.signup(data);
+    },
     onSuccess: async (response: any) => {
-      if (response.success) {
-        // 회원가입 성공 시 토큰이나 사용자 정보 저장하지 않음
+      console.log('🎉 useSignup onSuccess 호출됨');
+      console.log('응답 전체:', JSON.stringify(response, null, 2));
+      
+      if (response.data?.success) {
+        console.log('✅ 회원가입 성공 - 토큰 저장 및 상태 업데이트 시작');
+        
+        try {
+          // 회원가입 성공 시 토큰 저장 (자동 로그인)
+          console.log('1. AsyncStorage에 토큰 저장 중...');
+          await AsyncStorage.setItem('auth_token', response.data.data.access_token);
+          console.log('✅ 토큰 저장 완료:', response.data.data.access_token);
+          
+          // 사용자 정보 캐시에 저장
+          console.log('2. React Query 캐시 업데이트 중...');
+          queryClient.setQueryData(['user'], response.data.data.user);
+          queryClient.setQueryData(['token'], response.data.data.access_token);
+          queryClient.setQueryData(['savingStatus'], response.data.data.user.has_savings);
+          console.log('✅ React Query 캐시 업데이트 완료');
+          
+          // Redux store 업데이트
+          console.log('3. Redux store 업데이트 중...');
+          dispatch(loginSuccess({ token: response.data.data.access_token }));
+          console.log('✅ Redux store 업데이트 완료');
+          
+          console.log('🎯 모든 상태 업데이트 완료 - 메인 화면으로 자동 이동 예정');
+          
+          Toast.show({
+            type: 'success',
+            text1: '회원가입 성공',
+            text2: '자동으로 로그인되었습니다.',
+          });
+        } catch (error) {
+          console.error('❌ 상태 업데이트 중 오류:', error);
+        }
+      } else {
+        console.error('❌ 회원가입 실패 - API 응답에서 success가 false');
+        console.log('실패 응답:', JSON.stringify(response, null, 2));
+        
         Toast.show({
-          type: 'success',
-          text1: '회원가입 성공',
-          text2: '로그인해주세요.',
+          type: 'error',
+          text1: '회원가입 실패',
+          text2: response.data?.message || '알 수 없는 오류가 발생했습니다.',
         });
       }
     },
     onError: (error) => {
-      console.error('회원가입 실패:', error);
+      console.error('❌ useSignup onError 호출됨');
+      console.error('에러 타입:', typeof error);
+      console.error('에러 상세:', JSON.stringify(error, null, 2));
+      
+      if (error instanceof Error) {
+        console.error('에러 메시지:', error.message);
+        console.error('에러 스택:', error.stack);
+      }
+      
+      Toast.show({
+        type: 'error',
+        text1: '회원가입 실패',
+        text2: '다시 시도해주세요.',
+      });
     },
   });
 };

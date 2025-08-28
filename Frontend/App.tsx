@@ -23,7 +23,7 @@
  * - 에러 처리 및 재시도 로직
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { Provider } from 'react-redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -32,8 +32,10 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { store } from './store';
 import { AuthStack } from './navigation/AuthStack';
 import { MainTabs } from './navigation/MainTabs';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from './store';
+import { loginSuccess } from './store/slices/authSlice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
@@ -47,8 +49,44 @@ const queryClient = new QueryClient({
 
 // 인증 상태에 따른 네비게이션 컴포넌트
 const Navigation: React.FC = () => {
+  const dispatch = useDispatch();
   const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuthToken = async () => {
+      console.log('🔍 앱 시작 시 토큰 확인 중...');
+      try {
+        const token = await AsyncStorage.getItem('auth_token');
+        if (token) {
+          console.log('✅ 저장된 토큰 발견, 자동 로그인 처리');
+          // 토큰이 있으면 자동 로그인
+          dispatch(loginSuccess({ token }));
+        } else {
+          console.log('❌ 저장된 토큰 없음');
+        }
+      } catch (error) {
+        console.error('❌ 토큰 확인 중 오류:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuthToken();
+  }, [dispatch]);
+
+  useEffect(() => {
+    console.log('🔄 인증 상태 변경됨:', isAuthenticated);
+    console.log('현재 시간:', new Date().toISOString());
+  }, [isAuthenticated]);
+
+  if (isLoading) {
+    console.log('⏳ 로딩 중...');
+    // 로딩 중에는 빈 화면 표시 (또는 로딩 스피너)
+    return null;
+  }
   
+  console.log('🎯 네비게이션 렌더링:', isAuthenticated ? 'MainTabs' : 'AuthStack');
   return isAuthenticated ? <MainTabs /> : <AuthStack />;
 };
 

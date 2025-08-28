@@ -5,7 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  TouchableWithoutFeedback,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
@@ -34,10 +34,12 @@ export const ModalBase: React.FC<ModalBaseProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableWithoutFeedback onPress={closeOnBackdropPress ? onClose : undefined}>
-        <View style={styles.overlay}>
-          <TouchableWithoutFeedback onPress={() => {}}>
-            <View style={styles.modalContainer}>
+      <Pressable 
+        style={styles.overlay}
+        onPress={closeOnBackdropPress ? onClose : undefined}
+      >
+        <Pressable onPress={() => {}}>
+          <View style={styles.modalContainer}>
               {title && (
                 <View style={styles.header}>
                   <Text style={styles.title}>{title}</Text>
@@ -55,9 +57,8 @@ export const ModalBase: React.FC<ModalBaseProps> = ({
                 {children}
               </View>
             </View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
+          </Pressable>
+        </Pressable>
     </Modal>
   );
 };
