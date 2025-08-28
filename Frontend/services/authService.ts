@@ -37,16 +37,19 @@ export interface LoginRequest {
 
 // 로그인 응답 타입 (Backend 응답 형식에 맞춤)
 export interface LoginResponse {
-  access_token: string;       // token → access_token으로 변경
-  user: {
-    user_id: string;          // id → user_id로 변경 (ULID)
-    name: string;
-    login_id: string;         // username → login_id로 변경
-    email: string;
-    university_name?: string; // Backend 응답 형식에 맞춤
-    current_tier?: string;
-    total_exp?: number;
-    has_savings?: boolean;    // savingStatus → has_savings로 변경
+  success: boolean;
+  data: {
+    access_token: string;
+    user: {
+      user_id: string;
+      name: string;
+      login_id: string;
+      email: string;
+      university_name?: string;
+      current_tier?: string;
+      total_exp?: number;
+      has_savings?: boolean;
+    };
   };
 }
 

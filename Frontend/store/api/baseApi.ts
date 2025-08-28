@@ -69,8 +69,8 @@ interface PaymentHistory {
 }
 
 interface School {
-  id: string;
-  name: string;
+  university_code: string;
+  university_name: string;
 }
 
 export const baseApi = createApi({
@@ -123,15 +123,6 @@ export const baseApi = createApi({
       providesTags: ['User'],
     }),
     
-    // 학교 목록
-    getSchools: builder.query<School[], void>({
-      query: () => ({
-        url: '/schools',
-        method: 'GET',
-      }),
-      providesTags: ['Schools'],
-    }),
-    
     // 결제 관련
     getPaymentHistory: builder.query<PaymentHistory[], void>({
       query: () => '/payments/history',
@@ -154,6 +145,18 @@ export const baseApi = createApi({
       }),
       providesTags: ['Leaderboard'],
     }),
+
+    // 학교 목록
+    getSchools: builder.query<School[], void>({
+      query: () => ({
+        url: '/universities',
+        method: 'GET',
+      }),
+      transformResponse: (response: { success: boolean; data: School[] }) => {
+        return response.data || [];
+      },
+      providesTags: ['Schools'],
+    }),
   }),
 });
 
@@ -166,14 +169,14 @@ export const {
   // 사용자
   useGetUserInfoQuery,
   
-  // 학교
-  useGetSchoolsQuery,
-  
   // 결제
   useGetPaymentHistoryQuery,
   
   // 랭킹
   useGetMySchoolRankQuery,
   useGetTopSchoolsQuery,
+
+  // 학교
+  useGetSchoolsQuery,
 } = baseApi;
 

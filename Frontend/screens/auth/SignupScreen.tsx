@@ -728,10 +728,10 @@ export const SignupScreen: React.FC = () => {
           ) : schools && schools.length > 0 ? (
             schools.map((school) => (
               <PrimaryButton
-                key={school.id}
-                title={school.name}
+                key={school.university_code}
+                title={school.university_name}
                 onPress={() => {
-                  handleSchoolSelected(school.name);
+                  handleSchoolSelected(school.university_code);
                 }}
                 style={styles.modalButton}
               />
