@@ -122,19 +122,20 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(String(26), primary_key=True)                  # ULID
-    username = Column(String(64))                               # 금융 API username(@ 앞)
-    login_id = Column(String(50), unique=True, nullable=False)
+    username = Column(String(64), nullable=True)               # 금융 API username(@ 앞)
+    login_id = Column(String(50), unique=True, nullable=False)  # unique 제약 있음
     password = Column(String(255), nullable=False)              # hash only
-    email = Column(String(320), unique=True, nullable=False)
+    email = Column(String(320), unique=True, nullable=False)    # unique 제약 있음
     real_name = Column(String(50), nullable=False)
-    gender = Column(SQLEnum(UserGenderEnum))
-    birth_year = Column(SmallInteger)
-    school_id = Column(String(26), ForeignKey("schools.id"))
-    department = Column(String(100))
-    grade = Column(TINYINT(unsigned=True))                      # TINYINT UNSIGNED
+    gender = Column(SQLEnum(UserGenderEnum), nullable=True)     # NULL 허용
+    birth_year = Column(SmallInteger, nullable=True)            # NULL 허용
+    school_id = Column(String(26), ForeignKey("schools.id"), nullable=True)  # NULL 허용
+    department = Column(String(100), nullable=True)            # NULL 허용
+    grade = Column(TINYINT(unsigned=True), nullable=True)       # TINYINT UNSIGNED, NULL 허용
     role = Column(SQLEnum(UserRoleEnum), nullable=False, default=UserRoleEnum.MEMBER)
     created_at = Column(DateTime, nullable=False, default=func.current_timestamp())
     updated_at = Column(DateTime, nullable=False, default=func.current_timestamp(), onupdate=func.current_timestamp())
+    user_key = Column(String(60), nullable=False)               # DB에 있는 user_key 컬럼 추가
 
     school = relationship("School", back_populates="users")
     user_stats = relationship("UserStat", back_populates="user", uselist=False)
@@ -223,8 +224,7 @@ class Attendance(Base):
     user_id = Column(String(26), nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
     is_attend = Column(Boolean, nullable=False, default=True)
-    created_at = Column(DateTime, nullable=False, server_default=func.current_timestamp())
-
+    
     __table_args__ = (
         UniqueConstraint("user_id", "date", name="uq_attendance_user_date"),
     )
@@ -362,6 +362,18 @@ class SurveyQuestion(Base):
     question_type = Column(Integer, nullable=False)                # 카테고리 번호(1~6 등)
 
     answers = relationship("SurveyAnswer", back_populates="question")
+    options = relationship("SurveyQuestionOption", back_populates="question")
+
+
+class SurveyQuestionOption(Base):
+    __tablename__ = "survey_question_options"
+
+    id = Column(String(26), primary_key=True)
+    question_id = Column(String(26), ForeignKey("survey_questions.id"), nullable=False)
+    order_no = Column(Integer, nullable=False)
+    option_text = Column(String(1000), nullable=False)
+
+    question = relationship("SurveyQuestion", back_populates="options")
 
 
 class SurveyAnswer(Base):
