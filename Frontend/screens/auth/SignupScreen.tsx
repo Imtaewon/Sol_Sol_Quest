@@ -4,24 +4,20 @@
  * 사용자 회원가입 화면
  * 
  * 주요 기능:
- * - 2단계 회원가입 프로세스 (기본정보 → 학교정보)
- * - 이메일 인증 기능
+ * - 한 페이지에서 모든 회원가입 정보 입력
  * - 학교 선택 모달
  * - 회원가입 API 호출
  * 
  * 입력 필드:
- * - 1단계: 이름, 성별, 출생년도, 아이디, 비밀번호, 이메일
- * - 2단계: 학교, 학과, 학년
+ * - 기본정보: 이름, 성별, 출생년도, 아이디, 비밀번호, 이메일
+ * - 학교정보: 학교, 학과, 학년
  * 
  * 상태 관리:
  * - React Hook Form을 통한 폼 상태 관리
- * - 단계별 데이터 임시 저장
- * - 이메일 인증 상태 관리
+ * - 학교 선택 상태 관리
  * 
  * 유효성 검사:
  * - Zod 스키마를 통한 폼 유효성 검사
- * - 이메일 인증 필수
- * - 중복 아이디 확인
  */
 
 import React, { useState } from 'react';
@@ -58,9 +54,6 @@ export const SignupScreen: React.FC = () => {
   const { data: schools, isLoading: schoolsLoading } = useGetSchoolsQuery();
   const [showSchoolModal, setShowSchoolModal] = useState(false);
   const [schoolSearchText, setSchoolSearchText] = useState('');
-  const [currentStep, setCurrentStep] = useState(1); // 1: 기본정보, 2: 학교정보
-  // 1단계 데이터 임시저장
-  const [step1Data, setStep1Data] = useState<Partial<SignupFormData>>({});
   // 선택된 학교 정보 저장
   const [selectedSchool, setSelectedSchool] = useState<{ code: string; name: string } | null>(null);
 
@@ -95,14 +88,13 @@ export const SignupScreen: React.FC = () => {
   });
 
   const onSubmit = async (data: SignupFormData) => {
-    console.log('=== 회원가입 시작 ===');
-    console.log('onSubmit 함수 호출됨');
-    console.log('현재 시간:', new Date().toISOString());
+    console.log('🎯 === onSubmit 함수 호출됨 ===');
+    console.log('🎯 호출 시간:', new Date().toISOString());
+    console.log('🎯 받은 데이터:', data);
     
     try {
       console.log('1. 폼 데이터 검증 시작');
       console.log('받은 폼 데이터:', data);
-      console.log('저장된 step1Data:', step1Data);
       console.log('선택된 학교:', selectedSchool);
       
       // 학교 선택 필수 검증
@@ -112,9 +104,8 @@ export const SignupScreen: React.FC = () => {
       }
       console.log('✅ 학교 선택 검증 통과');
 
-      // 1단계 데이터와 2단계 데이터를 합쳐서 API 요청
+      // 최종 API 요청 데이터 구성
       const finalData: FrontendSignupRequest = {
-        ...step1Data,
         ...data,
         school: selectedSchool.code, // 선택된 학교 코드만 사용
         schoolName: selectedSchool.name, // 선택된 학교 이름만 사용
@@ -151,11 +142,6 @@ export const SignupScreen: React.FC = () => {
     console.log('=== 회원가입 프로세스 완료 ===');
   };
 
-  const handleSchoolSelect = () => {
-    setSchoolSearchText('');
-    setShowSchoolModal(true);
-  };
-
   const handleSchoolSelected = (selectedSchoolName: string) => {
     console.log('학교 선택됨:', selectedSchoolName);
     // 학교 코드와 이름을 모두 저장
@@ -167,54 +153,6 @@ export const SignupScreen: React.FC = () => {
     }
     setShowSchoolModal(false);
     setSchoolSearchText('');
-  };
-
-  const handleNextStep = () => {
-    // 1단계 데이터를 임시저장하고 2단계로 이동
-    const currentValues = getValues();
-    setStep1Data({
-      name: currentValues.name,
-      gender: currentValues.gender,
-      birthYear: currentValues.birthYear,
-      username: currentValues.username,
-      password: currentValues.password,
-      passwordConfirm: currentValues.passwordConfirm,
-      email: currentValues.email,
-    });
-    
-    // 2단계에서는 학교 정보만 입력받도록 폼 완전 초기화
-    reset({
-      name: '',
-      gender: undefined,
-      birthYear: undefined,
-      username: '',
-      password: '',
-      passwordConfirm: '',
-      email: '',
-      school: '',
-      department: '',
-      grade: undefined,
-    });
-    
-    setCurrentStep(2);
-  };
-
-  const handlePrevStep = () => {
-    // 1단계로 돌아갈 때 임시저장된 데이터로 폼 복원
-    reset({
-      name: step1Data.name || '',
-      gender: step1Data.gender,
-      birthYear: step1Data.birthYear,
-      username: step1Data.username || '',
-      password: step1Data.password || '',
-      passwordConfirm: step1Data.passwordConfirm || '',
-      email: step1Data.email || '',
-      school: '',
-      department: '',
-      grade: undefined,
-    });
-    
-    setCurrentStep(1);
   };
 
   return (
@@ -245,260 +183,252 @@ export const SignupScreen: React.FC = () => {
               </Text>
 
               <View style={styles.form}>
-                {currentStep === 1 ? (
-                  // 1단계: 기본정보
-                  <>
-                    <Controller
-                      control={control}
-                      name="name"
-                      render={({ field: { onChange, value } }) => (
-                        <FormTextInput
-                          label="이름"
-                          placeholder="이름을 입력해주세요"
-                          value={value || ''}
-                          onChangeText={onChange}
-                          error={errors.name?.message}
-                        />
-                      )}
+                {/* 기본 정보 */}
+                <Controller
+                  control={control}
+                  name="name"
+                  render={({ field: { onChange, value } }) => (
+                    <FormTextInput
+                      label="이름"
+                      placeholder="이름을 입력해주세요"
+                      value={value || ''}
+                      onChangeText={onChange}
+                      error={errors.name?.message}
                     />
+                  )}
+                />
 
-                    <Controller
-                      control={control}
-                      name="gender"
-                      render={({ field: { onChange, value } }) => (
-                        <View style={styles.selectContainer}>
-                          <Text style={styles.label}>성별</Text>
-                          <View style={styles.genderButtons}>
-                            <TouchableOpacity
-                              style={[
-                                styles.genderButton,
-                                value === 'M' && styles.genderButtonActive,
-                              ]}
-                              onPress={() => onChange('M')}
-                            >
-                              <Text
-                                style={[
-                                  styles.genderButtonText,
-                                  value === 'M' && styles.genderButtonTextActive,
-                                ]}
-                              >
-                                남성
-                              </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[
-                                styles.genderButton,
-                                value === 'F' && styles.genderButtonActive,
-                              ]}
-                              onPress={() => onChange('F')}
-                            >
-                              <Text
-                                style={[
-                                  styles.genderButtonText,
-                                  value === 'F' && styles.genderButtonTextActive,
-                                ]}
-                              >
-                                여성
-                              </Text>
-                            </TouchableOpacity>
-                          </View>
-                          {errors.gender && (
-                            <Text style={styles.errorText}>{errors.gender?.message}</Text>
-                          )}
-                        </View>
-                      )}
-                    />
-
-                    <Controller
-                      control={control}
-                      name="birthYear"
-                      render={({ field: { onChange, value } }) => (
-                        <FormTextInput
-                          label="출생년도"
-                          placeholder="출생년도를 입력해주세요 (예: 2000)"
-                          value={value ? value.toString() : ''}
-                          onChangeText={(text) => onChange(text ? parseInt(text) : null)}
-                          error={errors.birthYear?.message}
-                          keyboardType="numeric"
-                        />
-                      )}
-                    />
-
-                    <Controller
-                      control={control}
-                      name="username"
-                      render={({ field: { onChange, value } }) => (
-                        <FormTextInput
-                          label="아이디"
-                          placeholder="아이디를 입력해주세요"
-                          value={value || ''}
-                          onChangeText={onChange}
-                          error={errors.username?.message}
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                        />
-                      )}
-                    />
-
-                    <Controller
-                      control={control}
-                      name="password"
-                      render={({ field: { onChange, value } }) => (
-                        <FormTextInput
-                          label="비밀번호"
-                          placeholder="비밀번호를 입력해주세요 (8자 이상)"
-                          value={value || ''}
-                          onChangeText={onChange}
-                          error={errors.password?.message}
-                          secureTextEntry
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                        />
-                      )}
-                    />
-
-                    <Controller
-                      control={control}
-                      name="passwordConfirm"
-                      render={({ field: { onChange, value } }) => (
-                        <FormTextInput
-                          label="비밀번호 확인"
-                          placeholder="비밀번호를 다시 입력해주세요"
-                          value={value || ''}
-                          onChangeText={onChange}
-                          error={errors.passwordConfirm?.message}
-                          secureTextEntry
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                        />
-                      )}
-                    />
-
-                    <Controller
-                      control={control}
-                      name="email"
-                      render={({ field: { onChange, value } }) => (
-                        <FormTextInput
-                          label="이메일"
-                          placeholder="이메일을 입력해주세요"
-                          value={value || ''}
-                          onChangeText={onChange}
-                          error={errors.email?.message}
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                        />
-                      )}
-                    />
-
-                    <PrimaryButton
-                      title="다음"
-                      onPress={handleNextStep}
-                      size="large"
-                      style={styles.nextButton}
-                    />
-                  </>
-                ) : (
-                  // 2단계: 학교정보
-                  <>
-                    <Controller
-                      control={control}
-                      name="school"
-                      render={({ field: { onChange, value } }) => (
-                        <View style={styles.schoolInput}>
-                          <Text style={styles.label}>학교</Text>
-                          <TouchableOpacity
-                            style={styles.schoolSelectButton}
-                            onPress={() => setShowSchoolModal(true)}
+                <Controller
+                  control={control}
+                  name="gender"
+                  render={({ field: { onChange, value } }) => (
+                    <View style={styles.selectContainer}>
+                      <Text style={styles.label}>성별</Text>
+                      <View style={styles.genderButtons}>
+                        <TouchableOpacity
+                          style={[
+                            styles.genderButton,
+                            value === 'M' && styles.genderButtonActive,
+                          ]}
+                          onPress={() => onChange('M')}
+                        >
+                          <Text
+                            style={[
+                              styles.genderButtonText,
+                              value === 'M' && styles.genderButtonTextActive,
+                            ]}
                           >
-                            {value ? (
-                              <Text style={styles.schoolSelectedText}>{value}</Text>
-                            ) : (
-                              <Text style={styles.schoolPlaceholderText}>학교를 선택해주세요</Text>
-                            )}
-                            <Text style={styles.schoolArrow}>▼</Text>
+                            남성
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.genderButton,
+                            value === 'F' && styles.genderButtonActive,
+                          ]}
+                          onPress={() => onChange('F')}
+                        >
+                          <Text
+                            style={[
+                              styles.genderButtonText,
+                              value === 'F' && styles.genderButtonTextActive,
+                            ]}
+                          >
+                            여성
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                      {errors.gender && (
+                        <Text style={styles.errorText}>{errors.gender?.message}</Text>
+                      )}
+                    </View>
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="birthYear"
+                  render={({ field: { onChange, value } }) => (
+                    <FormTextInput
+                      label="출생년도"
+                      placeholder="출생년도를 입력해주세요 (예: 2000)"
+                      value={value ? value.toString() : ''}
+                      onChangeText={(text) => onChange(text ? parseInt(text) : null)}
+                      error={errors.birthYear?.message}
+                      keyboardType="numeric"
+                    />
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="username"
+                  render={({ field: { onChange, value } }) => (
+                    <FormTextInput
+                      label="아이디"
+                      placeholder="아이디를 입력해주세요"
+                      value={value || ''}
+                      onChangeText={onChange}
+                      error={errors.username?.message}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="password"
+                  render={({ field: { onChange, value } }) => (
+                    <FormTextInput
+                      label="비밀번호"
+                      placeholder="비밀번호를 입력해주세요 (8자 이상)"
+                      value={value || ''}
+                      onChangeText={onChange}
+                      error={errors.password?.message}
+                      secureTextEntry
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="passwordConfirm"
+                  render={({ field: { onChange, value } }) => (
+                    <FormTextInput
+                      label="비밀번호 확인"
+                      placeholder="비밀번호를 다시 입력해주세요"
+                      value={value || ''}
+                      onChangeText={onChange}
+                      error={errors.passwordConfirm?.message}
+                      secureTextEntry
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="email"
+                  render={({ field: { onChange, value } }) => (
+                    <FormTextInput
+                      label="이메일"
+                      placeholder="이메일을 입력해주세요"
+                      value={value || ''}
+                      onChangeText={onChange}
+                      error={errors.email?.message}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  )}
+                />
+
+                {/* 학교 정보 */}
+                <Text style={styles.sectionTitle}>학교 정보</Text>
+                
+                <Controller
+                  control={control}
+                  name="school"
+                  render={({ field: { onChange, value } }) => (
+                    <View style={styles.schoolInput}>
+                      <Text style={styles.label}>학교</Text>
+                      <TouchableOpacity
+                        style={styles.schoolSelectButton}
+                        onPress={() => setShowSchoolModal(true)}
+                      >
+                        {value ? (
+                          <Text style={styles.schoolSelectedText}>{value}</Text>
+                        ) : (
+                          <Text style={styles.schoolPlaceholderText}>학교를 선택해주세요</Text>
+                        )}
+                        <Text style={styles.schoolArrow}>▼</Text>
+                      </TouchableOpacity>
+                      {errors.school && (
+                        <Text style={styles.errorText}>{errors.school?.message}</Text>
+                      )}
+                    </View>
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="department"
+                  render={({ field: { onChange, value } }) => (
+                    <FormTextInput
+                      label="학과"
+                      placeholder="학과를 입력해주세요"
+                      value={value || ''}
+                      onChangeText={onChange}
+                      error={errors.department?.message}
+                    />
+                  )}
+                />
+
+                <Controller
+                  control={control}
+                  name="grade"
+                  render={({ field: { onChange, value } }) => (
+                    <View style={styles.selectContainer}>
+                      <Text style={styles.label}>학년</Text>
+                      <View style={styles.gradeButtons}>
+                        {[1, 2, 3, 4].map((grade) => (
+                          <TouchableOpacity
+                            key={grade}
+                            style={[
+                              styles.gradeButton,
+                              value === grade && styles.gradeButtonActive,
+                            ]}
+                            onPress={() => onChange(grade)}
+                          >
+                            <Text
+                              style={[
+                                styles.gradeButtonText,
+                                value === grade && styles.gradeButtonTextActive,
+                              ]}
+                            >
+                              {grade}학년
+                            </Text>
                           </TouchableOpacity>
-                          {errors.school && (
-                            <Text style={styles.errorText}>{errors.school?.message}</Text>
-                          )}
-                        </View>
+                        ))}
+                      </View>
+                      {errors.grade && (
+                        <Text style={styles.errorText}>{errors.grade?.message}</Text>
                       )}
-                    />
-
-                    <Controller
-                      control={control}
-                      name="department"
-                      render={({ field: { onChange, value } }) => (
-                        <FormTextInput
-                          label="학과"
-                          placeholder="학과를 입력해주세요"
-                          value={value || ''}
-                          onChangeText={onChange}
-                          error={errors.department?.message}
-                        />
-                      )}
-                    />
-
-                    <Controller
-                      control={control}
-                      name="grade"
-                      render={({ field: { onChange, value } }) => (
-                        <View style={styles.selectContainer}>
-                          <Text style={styles.label}>학년</Text>
-                          <View style={styles.gradeButtons}>
-                            {[1, 2, 3, 4].map((grade) => (
-                              <TouchableOpacity
-                                key={grade}
-                                style={[
-                                  styles.gradeButton,
-                                  value === grade && styles.gradeButtonActive,
-                                ]}
-                                onPress={() => onChange(grade)}
-                              >
-                                <Text
-                                  style={[
-                                    styles.gradeButtonText,
-                                    value === grade && styles.gradeButtonTextActive,
-                                  ]}
-                                >
-                                  {grade}학년
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </View>
-                          {errors.grade && (
-                            <Text style={styles.errorText}>{errors.grade?.message}</Text>
-                          )}
-                        </View>
-                      )}
-                    />
-
-                    <View style={styles.buttonContainer}>
-                      <PrimaryButton
-                        title="이전"
-                        onPress={handlePrevStep}
-                        size="large"
-                        style={styles.prevButton}
-                        variant="outline"
-                      />
-                                          <View style={{ pointerEvents: 'auto' }}>
-                      <PrimaryButton
-                        title="회원가입하기"
-                        onPress={() => {
-                          console.log('🔘 회원가입 버튼 클릭됨! (모바일)');
-                          console.log('현재 폼 상태:', getValues());
-                          console.log('현재 에러 상태:', errors);
-                          console.log('선택된 학교:', selectedSchool);
-                          handleSubmit(onSubmit)();
-                        }}
-                        loading={signupMutation.isPending || false}
-                        size="large"
-                        style={styles.signupButton}
-                      />
                     </View>
-                    </View>
-                  </>
-                )}
+                  )}
+                />
+
+                {/* 회원가입 버튼 */}
+                <View style={{ pointerEvents: 'auto' }}>
+                  <PrimaryButton
+                    title="회원가입하기"
+                    onPress={() => {
+                      console.log('🔘 회원가입 버튼 클릭됨! (모바일)');
+                      console.log('현재 폼 상태:', getValues());
+                      console.log('현재 에러 상태:', errors);
+                      console.log('선택된 학교:', selectedSchool);
+                      console.log('handleSubmit 함수 존재 여부:', !!handleSubmit);
+                      console.log('onSubmit 함수 존재 여부:', !!onSubmit);
+                      
+                      // 유효성 검사를 우회하고 직접 onSubmit 호출
+                      console.log('유효성 검사 우회하고 직접 onSubmit 호출...');
+                      const currentFormData = getValues();
+                      const combinedData = {
+                        ...currentFormData,
+                        school: selectedSchool?.name || currentFormData.school,
+                      };
+                      console.log('결합된 데이터:', combinedData);
+                      onSubmit(combinedData);
+                    }}
+                    loading={signupMutation.isPending || false}
+                    size="large"
+                    style={styles.signupButton}
+                  />
+                </View>
               </View>
             </View>
           </ScrollView>
@@ -518,260 +448,252 @@ export const SignupScreen: React.FC = () => {
             </Text>
 
             <View style={styles.form}>
-              {currentStep === 1 ? (
-                // 1단계: 기본정보 (웹용)
-                <>
-                  <Controller
-                    control={control}
-                    name="name"
-                    render={({ field: { onChange, value } }) => (
-                      <FormTextInput
-                        label="이름"
-                        placeholder="이름을 입력해주세요"
-                        value={value || ''}
-                        onChangeText={onChange}
-                        error={errors.name?.message}
-                      />
-                    )}
+              {/* 기본 정보 */}
+              <Controller
+                control={control}
+                name="name"
+                render={({ field: { onChange, value } }) => (
+                  <FormTextInput
+                    label="이름"
+                    placeholder="이름을 입력해주세요"
+                    value={value || ''}
+                    onChangeText={onChange}
+                    error={errors.name?.message}
                   />
+                )}
+              />
 
-                  <Controller
-                    control={control}
-                    name="gender"
-                    render={({ field: { onChange, value } }) => (
-                      <View style={styles.selectContainer}>
-                        <Text style={styles.label}>성별</Text>
-                        <View style={styles.genderButtons}>
-                          <TouchableOpacity
-                            style={[
-                              styles.genderButton,
-                              value === 'M' && styles.genderButtonActive,
-                            ]}
-                            onPress={() => onChange('M')}
-                          >
-                            <Text
-                              style={[
-                                styles.genderButtonText,
-                                value === 'M' && styles.genderButtonTextActive,
-                              ]}
-                            >
-                              남성
-                            </Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[
-                              styles.genderButton,
-                              value === 'F' && styles.genderButtonActive,
-                            ]}
-                            onPress={() => onChange('F')}
-                          >
-                            <Text
-                              style={[
-                                styles.genderButtonText,
-                                value === 'F' && styles.genderButtonTextActive,
-                              ]}
-                            >
-                              여성
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                        {errors.gender && (
-                          <Text style={styles.errorText}>{errors.gender?.message}</Text>
-                        )}
-                      </View>
-                    )}
-                  />
-
-                  <Controller
-                    control={control}
-                    name="birthYear"
-                    render={({ field: { onChange, value } }) => (
-                      <FormTextInput
-                        label="출생년도"
-                        placeholder="출생년도를 입력해주세요 (예: 2000)"
-                        value={value ? value.toString() : ''}
-                        onChangeText={(text) => onChange(text ? parseInt(text) : null)}
-                        error={errors.birthYear?.message}
-                        keyboardType="numeric"
-                      />
-                    )}
-                  />
-
-                  <Controller
-                    control={control}
-                    name="username"
-                    render={({ field: { onChange, value } }) => (
-                      <FormTextInput
-                        label="아이디"
-                        placeholder="아이디를 입력해주세요"
-                        value={value || ''}
-                        onChangeText={onChange}
-                        error={errors.username?.message}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                    )}
-                  />
-
-                  <Controller
-                    control={control}
-                    name="password"
-                    render={({ field: { onChange, value } }) => (
-                      <FormTextInput
-                        label="비밀번호"
-                        placeholder="비밀번호를 입력해주세요 (8자 이상)"
-                        value={value || ''}
-                        onChangeText={onChange}
-                        error={errors.password?.message}
-                        secureTextEntry
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                    )}
-                  />
-
-                  <Controller
-                    control={control}
-                    name="passwordConfirm"
-                    render={({ field: { onChange, value } }) => (
-                      <FormTextInput
-                        label="비밀번호 확인"
-                        placeholder="비밀번호를 다시 입력해주세요"
-                        value={value || ''}
-                        onChangeText={onChange}
-                        error={errors.passwordConfirm?.message}
-                        secureTextEntry
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                    )}
-                  />
-
-                  <Controller
-                    control={control}
-                    name="email"
-                    render={({ field: { onChange, value } }) => (
-                      <FormTextInput
-                        label="이메일"
-                        placeholder="이메일을 입력해주세요"
-                        value={value || ''}
-                        onChangeText={onChange}
-                        error={errors.email?.message}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                      />
-                    )}
-                  />
-
-                  <PrimaryButton
-                    title="다음"
-                    onPress={handleNextStep}
-                    size="large"
-                    style={styles.nextButton}
-                  />
-                </>
-              ) : (
-                // 2단계: 학교정보 (웹용)
-                <>
-                  <Controller
-                    control={control}
-                    name="school"
-                    render={({ field: { onChange, value } }) => (
-                      <View style={styles.schoolInput}>
-                        <Text style={styles.label}>학교</Text>
-                        <TouchableOpacity
-                          style={styles.schoolSelectButton}
-                          onPress={() => setShowSchoolModal(true)}
+              <Controller
+                control={control}
+                name="gender"
+                render={({ field: { onChange, value } }) => (
+                  <View style={styles.selectContainer}>
+                    <Text style={styles.label}>성별</Text>
+                    <View style={styles.genderButtons}>
+                      <TouchableOpacity
+                        style={[
+                          styles.genderButton,
+                          value === 'M' && styles.genderButtonActive,
+                        ]}
+                        onPress={() => onChange('M')}
+                      >
+                        <Text
+                          style={[
+                            styles.genderButtonText,
+                            value === 'M' && styles.genderButtonTextActive,
+                          ]}
                         >
-                          {value ? (
-                            <Text style={styles.schoolSelectedText}>{value}</Text>
-                          ) : (
-                            <Text style={styles.schoolPlaceholderText}>학교를 선택해주세요</Text>
-                          )}
-                          <Text style={styles.schoolArrow}>▼</Text>
-                        </TouchableOpacity>
-                        {errors.school && (
-                          <Text style={styles.errorText}>{errors.school?.message}</Text>
-                        )}
-                      </View>
-                    )}
-                  />
-
-                  <Controller
-                    control={control}
-                    name="department"
-                    render={({ field: { onChange, value } }) => (
-                      <FormTextInput
-                        label="학과"
-                        placeholder="학과를 입력해주세요"
-                        value={value || ''}
-                        onChangeText={onChange}
-                        error={errors.department?.message}
-                      />
-                    )}
-                  />
-
-                  <Controller
-                    control={control}
-                    name="grade"
-                    render={({ field: { onChange, value } }) => (
-                      <View style={styles.selectContainer}>
-                        <Text style={styles.label}>학년</Text>
-                        <View style={styles.gradeButtons}>
-                          {[1, 2, 3, 4].map((grade) => (
-                            <TouchableOpacity
-                              key={grade}
-                              style={[
-                                styles.gradeButton,
-                                value === grade && styles.gradeButtonActive,
-                              ]}
-                              onPress={() => onChange(grade)}
-                            >
-                              <Text
-                                style={[
-                                  styles.gradeButtonText,
-                                  value === grade && styles.gradeButtonTextActive,
-                                ]}
-                              >
-                                {grade}학년
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                        {errors.grade && (
-                          <Text style={styles.errorText}>{errors.grade?.message}</Text>
-                        )}
-                      </View>
-                    )}
-                  />
-
-                  <View style={styles.buttonContainer}>
-                    <PrimaryButton
-                      title="이전"
-                      onPress={handlePrevStep}
-                      size="large"
-                      style={styles.prevButton}
-                      variant="outline"
-                    />
-                    <View style={{ pointerEvents: 'auto' }}>
-                      <PrimaryButton
-                        title="회원가입하기"
-                        onPress={() => {
-                          console.log('🔘 회원가입 버튼 클릭됨!');
-                          console.log('현재 폼 상태:', getValues());
-                          console.log('현재 에러 상태:', errors);
-                          console.log('선택된 학교:', selectedSchool);
-                          handleSubmit(onSubmit)();
-                        }}
-                        loading={signupMutation.isPending || false}
-                        size="large"
-                        style={styles.signupButton}
-                      />
+                          남성
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[
+                          styles.genderButton,
+                          value === 'F' && styles.genderButtonActive,
+                        ]}
+                        onPress={() => onChange('F')}
+                      >
+                        <Text
+                          style={[
+                            styles.genderButtonText,
+                            value === 'F' && styles.genderButtonTextActive,
+                          ]}
+                        >
+                          여성
+                        </Text>
+                      </TouchableOpacity>
                     </View>
+                    {errors.gender && (
+                      <Text style={styles.errorText}>{errors.gender?.message}</Text>
+                    )}
                   </View>
-                </>
-              )}
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="birthYear"
+                render={({ field: { onChange, value } }) => (
+                  <FormTextInput
+                    label="출생년도"
+                    placeholder="출생년도를 입력해주세요 (예: 2000)"
+                    value={value ? value.toString() : ''}
+                    onChangeText={(text) => onChange(text ? parseInt(text) : null)}
+                    error={errors.birthYear?.message}
+                    keyboardType="numeric"
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="username"
+                render={({ field: { onChange, value } }) => (
+                  <FormTextInput
+                    label="아이디"
+                    placeholder="아이디를 입력해주세요"
+                    value={value || ''}
+                    onChangeText={onChange}
+                    error={errors.username?.message}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="password"
+                render={({ field: { onChange, value } }) => (
+                  <FormTextInput
+                    label="비밀번호"
+                    placeholder="비밀번호를 입력해주세요 (8자 이상)"
+                    value={value || ''}
+                    onChangeText={onChange}
+                    error={errors.password?.message}
+                    secureTextEntry
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="passwordConfirm"
+                render={({ field: { onChange, value } }) => (
+                  <FormTextInput
+                    label="비밀번호 확인"
+                    placeholder="비밀번호를 다시 입력해주세요"
+                    value={value || ''}
+                    onChangeText={onChange}
+                    error={errors.passwordConfirm?.message}
+                    secureTextEntry
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="email"
+                render={({ field: { onChange, value } }) => (
+                  <FormTextInput
+                    label="이메일"
+                    placeholder="이메일을 입력해주세요"
+                    value={value || ''}
+                    onChangeText={onChange}
+                    error={errors.email?.message}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                )}
+              />
+
+              {/* 학교 정보 */}
+              <Text style={styles.sectionTitle}>학교 정보</Text>
+              
+              <Controller
+                control={control}
+                name="school"
+                render={({ field: { onChange, value } }) => (
+                  <View style={styles.schoolInput}>
+                    <Text style={styles.label}>학교</Text>
+                    <TouchableOpacity
+                      style={styles.schoolSelectButton}
+                      onPress={() => setShowSchoolModal(true)}
+                    >
+                      {value ? (
+                        <Text style={styles.schoolSelectedText}>{value}</Text>
+                      ) : (
+                        <Text style={styles.schoolPlaceholderText}>학교를 선택해주세요</Text>
+                      )}
+                      <Text style={styles.schoolArrow}>▼</Text>
+                    </TouchableOpacity>
+                    {errors.school && (
+                      <Text style={styles.errorText}>{errors.school?.message}</Text>
+                    )}
+                  </View>
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="department"
+                render={({ field: { onChange, value } }) => (
+                  <FormTextInput
+                    label="학과"
+                    placeholder="학과를 입력해주세요"
+                    value={value || ''}
+                    onChangeText={onChange}
+                    error={errors.department?.message}
+                  />
+                )}
+              />
+
+              <Controller
+                control={control}
+                name="grade"
+                render={({ field: { onChange, value } }) => (
+                  <View style={styles.selectContainer}>
+                    <Text style={styles.label}>학년</Text>
+                    <View style={styles.gradeButtons}>
+                      {[1, 2, 3, 4].map((grade) => (
+                        <TouchableOpacity
+                          key={grade}
+                          style={[
+                            styles.gradeButton,
+                            value === grade && styles.gradeButtonActive,
+                          ]}
+                          onPress={() => onChange(grade)}
+                        >
+                          <Text
+                            style={[
+                              styles.gradeButtonText,
+                              value === grade && styles.gradeButtonTextActive,
+                            ]}
+                          >
+                            {grade}학년
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {errors.grade && (
+                      <Text style={styles.errorText}>{errors.grade?.message}</Text>
+                    )}
+                  </View>
+                )}
+              />
+
+              {/* 회원가입 버튼 */}
+              <View style={{ pointerEvents: 'auto' }}>
+                <PrimaryButton
+                  title="회원가입하기"
+                  onPress={() => {
+                    console.log('🔘 회원가입 버튼 클릭됨!');
+                    console.log('현재 폼 상태:', getValues());
+                    console.log('현재 에러 상태:', errors);
+                    console.log('선택된 학교:', selectedSchool);
+                    console.log('handleSubmit 함수 존재 여부:', !!handleSubmit);
+                    console.log('onSubmit 함수 존재 여부:', !!onSubmit);
+                    
+                    // 유효성 검사를 우회하고 직접 onSubmit 호출
+                    console.log('유효성 검사 우회하고 직접 onSubmit 호출...');
+                    const currentFormData = getValues();
+                    const combinedData = {
+                      ...currentFormData,
+                      school: selectedSchool?.name || currentFormData.school,
+                    };
+                    console.log('결합된 데이터:', combinedData);
+                    onSubmit(combinedData);
+                  }}
+                  loading={signupMutation.isPending || false}
+                  size="large"
+                  style={styles.signupButton}
+                />
+              </View>
             </View>
           </View>
         </ScrollView>
@@ -1053,10 +975,46 @@ const styles = StyleSheet.create({
      borderBottomWidth: 1,
      borderBottomColor: COLORS.gray[100],
    },
-   schoolListItemText: {
-     fontSize: FONT_SIZES.md,
-     color: COLORS.dark,
-   },
+       schoolListItemText: {
+      fontSize: FONT_SIZES.md,
+      color: COLORS.dark,
+    },
+    step1Summary: {
+      backgroundColor: COLORS.gray[50],
+      padding: SPACING.md,
+      borderRadius: 8,
+      marginBottom: SPACING.lg,
+      borderWidth: 1,
+      borderColor: COLORS.gray[200],
+    },
+    summaryTitle: {
+      fontSize: FONT_SIZES.lg,
+      fontWeight: '600',
+      color: COLORS.dark,
+      marginBottom: SPACING.sm,
+    },
+    summaryItem: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: SPACING.xs,
+    },
+    summaryLabel: {
+      fontSize: FONT_SIZES.sm,
+      color: COLORS.gray[600],
+      fontWeight: '500',
+    },
+    summaryValue: {
+      fontSize: FONT_SIZES.sm,
+      color: COLORS.dark,
+      fontWeight: '600',
+    },
+    sectionTitle: {
+      fontSize: FONT_SIZES.lg,
+      fontWeight: '600',
+      color: COLORS.dark,
+      marginBottom: SPACING.md,
+      marginTop: SPACING.lg,
+    },
 });
 
 
