@@ -35,7 +35,7 @@ def create_ssafy_member(user_email: str) -> str:
     }
     # 권장 타임아웃: 연결 3s / 전체 7s
     try:
-        with httpx.Client(timeout=httpx.Timeout(connect=3.0, read=7.0, write=5.0)) as client:
+        with httpx.Client(timeout=10.0) as client:
             resp = client.post(url, json=payload)
     except httpx.RequestError as e:
         # 네트워크/타임아웃 등
