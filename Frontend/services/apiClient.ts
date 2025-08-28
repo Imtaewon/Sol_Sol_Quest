@@ -138,7 +138,11 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && originalRequest) {
       try {
         // 토큰 제거
-        await AsyncStorage.removeItem('auth_token');
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          localStorage.removeItem('access_token');
+        } else {
+          await AsyncStorage.removeItem('access_token');
+        }
         
         // 로그인 화면으로 리다이렉트 (네비게이션 처리 필요)
         console.log('토큰이 만료되어 로그인 화면으로 이동합니다.');

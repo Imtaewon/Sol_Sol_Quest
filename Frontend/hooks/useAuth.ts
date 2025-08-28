@@ -29,7 +29,7 @@ import { authService, LoginRequest, FrontendSignupRequest } from '../services/au
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useDispatch } from 'react-redux';
-import { loginSuccess } from '../store/slices/authSlice';
+import { loginSuccess, logout } from '../store/slices/authSlice';
 import { Platform } from 'react-native';
 
 // AsyncStorage fallback 함수들
@@ -152,10 +152,10 @@ export const useLogin = () => {
           queryClient.setQueryData(['token'], response.data.data.access_token);
           queryClient.setQueryData(['savingStatus'], response.data.data.user.has_savings);
           
-          // Redux store 업데이트
-          dispatch(loginSuccess({ token: response.data.data.access_token }));
+          // Redux store 업데이트 (AsyncStorage와 동기화)
+          dispatch(loginSuccess({ token }));
           console.log('🔐 Redux loginSuccess 액션 호출됨');
-          console.log('토큰:', response.data.data.access_token);
+          console.log('토큰:', token);
           
           Toast.show({
             type: 'success',
@@ -209,12 +209,16 @@ export const useSignup = () => {
 // 로그아웃 훅
 export const useLogout = () => {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   return useMutation({
     mutationFn: () => authService.logout(),
     onSuccess: async () => {
-      // 토큰 삭제
+      // 토큰 삭제 (AsyncStorage와 Redux 모두)
       await clearStorage();
+      
+      // Redux state도 클리어
+      dispatch(logout());
       
       // 모든 쿼리 캐시 초기화
       queryClient.clear();

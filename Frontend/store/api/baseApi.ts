@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { Config } from '../../config/env';
+import { Platform } from 'react-native';
 
 // 타입 정의
 export interface LoginRequest {
@@ -109,11 +110,24 @@ export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
     baseUrl: Config.API_BASE_URL,
-    prepareHeaders: (headers, { getState }) => {
-      // 토큰이 있으면 헤더에 추가
-      const token = (getState() as any).auth?.token;
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
+    prepareHeaders: async (headers) => {
+      // AsyncStorage에서 토큰 가져오기
+      try {
+        let token = null;
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          // 웹 환경
+          token = localStorage.getItem('access_token');
+        } else {
+          // 네이티브 환경
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          token = await AsyncStorage.getItem('access_token');
+        }
+        
+        if (token) {
+          headers.set('authorization', `Bearer ${token}`);
+        }
+      } catch (error) {
+        console.error('토큰 가져오기 실패:', error);
       }
       return headers;
     },
