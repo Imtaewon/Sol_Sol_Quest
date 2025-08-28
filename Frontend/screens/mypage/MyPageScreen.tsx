@@ -45,6 +45,8 @@ import { clearUser } from '../../store/slices/userSlice';
 import { RootState } from '../../store';
 import { MyPageStackParamList } from '../../navigation/MyPageStack';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useLogoutMutation } from '../../store/api/baseApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // 카드 너비를 고정값으로 설정 (Dimensions 제거)
 const CARD_WIDTH = 300;
@@ -74,6 +76,7 @@ export const MyPageScreen: React.FC = () => {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.user.user);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoutMutation] = useLogoutMutation();
 
   // 더미 데이터 (실제로는 API에서 가져올 데이터)
   const userStats = {
@@ -100,7 +103,7 @@ export const MyPageScreen: React.FC = () => {
     ],
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       '로그아웃',
       '정말 로그아웃하시겠습니까?',
@@ -109,15 +112,34 @@ export const MyPageScreen: React.FC = () => {
         {
           text: '로그아웃',
           style: 'destructive',
-          onPress: () => {
-            dispatch(logout());
-            dispatch(clearUser());
-            // 로그인 화면으로 이동 (AuthStack의 Landing으로 이동)
-            // TODO: 실제 구현에서는 AuthStack으로 네비게이션해야 함
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Landing' }],
-            });
+          onPress: async () => {
+            try {
+              // 백엔드 API 호출
+              await logoutMutation().unwrap();
+              
+              // 로컬 토큰 삭제
+              await AsyncStorage.removeItem('auth_token');
+              
+              // Redux 상태 초기화
+              dispatch(logout());
+              dispatch(clearUser());
+              
+              // 로그인 화면으로 이동
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Landing' }],
+              });
+            } catch (error) {
+              console.error('로그아웃 실패:', error);
+              // API 실패해도 로컬 로그아웃은 진행
+              await AsyncStorage.removeItem('auth_token');
+              dispatch(logout());
+              dispatch(clearUser());
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Landing' }],
+              });
+            }
           },
         },
       ]

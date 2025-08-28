@@ -34,12 +34,8 @@ import { AppHeader } from '../../components/common/AppHeader';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
 import { QuestWithAttempt, QuestAttempt } from '../../types/database';
-import { 
-  useStartQuestMutation,
-  useSubmitQuestMutation,
-  useVerifyQuestMutation,
-  useLogQuestInteractionMutation
-} from '../../store/api/questApi';
+
+import { useCompleteQuestMutation } from '../../store/api/baseApi';
 import { HomeStackParamList } from '../../navigation/HomeStack';
 
 type QuestDetailRouteProp = RouteProp<HomeStackParamList, 'QuestDetail'>;
@@ -102,10 +98,7 @@ export const QuestDetailScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 퀘스트 관련 API 뮤테이션 훅들
-  const [startQuest] = useStartQuestMutation();        // 퀘스트 시작
-  const [submitQuest] = useSubmitQuestMutation();      // 퀘스트 제출
-  const [verifyQuest] = useVerifyQuestMutation();      // 퀘스트 인증
-  const [logQuestInteraction] = useLogQuestInteractionMutation(); // 상호작용 로그
+  const [completeQuest] = useCompleteQuestMutation(); // 퀘스트 즉시 완료 (시연용)
 
   /**
    * 퀘스트 진행률 계산 함수
@@ -148,40 +141,18 @@ export const QuestDetailScreen: React.FC = () => {
     }
   };
 
-  const handleStartQuest = async () => {
-    try {
-      await startQuest({ quest_id: quest.id });
-      
-      await logQuestInteraction({
-        quest_id: quest.id,
-        event: 'start',
-        context: 'quest_detail'
-      });
 
-      Alert.alert('퀘스트 시작', `${quest.title} 퀘스트를 시작했습니다!`);
-      // 상세 화면에서 데이터 갱신이 필요하면 목록 화면으로 돌아가서 새로고침하도록 안내
-      navigation.goBack();
-    } catch (error) {
-      Alert.alert('오류', '퀘스트 시작에 실패했습니다.');
-    }
-  };
 
-  const handleSubmitQuest = async () => {
+  const handleCompleteQuest = async () => {
     try {
       setIsSubmitting(true);
-      await submitQuest({ quest_id: quest.id });
-      
-      await logQuestInteraction({
-        quest_id: quest.id,
-        event: 'complete',
-        context: 'quest_detail'
-      });
+      await completeQuest({ quest_id: quest.id });
 
-      Alert.alert('퀘스트 제출', '퀘스트가 성공적으로 제출되었습니다!');
+      Alert.alert('퀘스트 즉시 완료', `${quest.reward_exp} EXP를 획득했습니다!`);
       // 상세 화면에서 데이터 갱신이 필요하면 목록 화면으로 돌아가서 새로고침하도록 안내
       navigation.goBack();
     } catch (error) {
-      Alert.alert('오류', '퀘스트 제출에 실패했습니다.');
+      Alert.alert('오류', '퀘스트 즉시 완료에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -189,46 +160,43 @@ export const QuestDetailScreen: React.FC = () => {
 
   const handleVerifyQuest = async () => {
     try {
-      // 인증 방식에 따른 처리
-      let verifyData = {};
-      
-      switch (quest.verify_method) {
-        case 'GPS':
-          // GPS 인증 로직
-          verifyData = { lat: quest.lat, lng: quest.lng };
-          break;
-        case 'STEPS':
-          // 걸음 수 인증 로직
-          verifyData = { steps: quest.attempt?.progress_count || 0 };
-          break;
-        case 'PAYMENT':
-          // 결제 인증 로직
-          verifyData = { payment_id: 'sample_payment_id' };
-          break;
-        case 'ATTENDANCE':
-          // 출석 인증 로직
-          verifyData = { attendance_date: new Date().toISOString() };
-          break;
-        default:
-          verifyData = {};
-      }
-
-      await verifyQuest({ 
-        quest_id: quest.id, 
-        verify_data: verifyData 
-      });
-
-      Alert.alert('인증 완료', '퀘스트 인증이 완료되었습니다!');
-      // 상세 화면에서 데이터 갱신이 필요하면 목록 화면으로 돌아가서 새로고침하도록 안내
-      navigation.goBack();
+      // 파일 업로드 시뮬레이션 (UI만)
+      Alert.alert(
+        '파일 업로드',
+        '증빙 파일을 선택해주세요',
+        [
+          {
+            text: '취소',
+            style: 'cancel',
+          },
+          {
+            text: '파일 선택',
+            onPress: () => {
+              // 파일 선택 시뮬레이션
+              setTimeout(() => {
+                Alert.alert(
+                  '제출 완료',
+                  '증빙 파일이 성공적으로 업로드되었습니다!\n퀘스트가 완료되었습니다!',
+                  [
+                    {
+                      text: '확인',
+                      onPress: () => navigation.goBack(),
+                    },
+                  ]
+                );
+              }, 1000);
+            },
+          },
+        ]
+      );
     } catch (error) {
       Alert.alert('오류', '퀘스트 인증에 실패했습니다.');
     }
   };
 
-  const canStart = !quest.attempt || quest.attempt.status === 'deactive';
+  const canStart = false; // 시작 버튼 제거 (적금 가입 시 자동 시작)
   const canSubmit = quest.attempt?.status === 'clear';
-  const canVerify = quest.attempt?.status === 'in_progress';
+  const canVerify = quest.attempt?.status === 'in_progress' || !quest.attempt; // 미시작도 인증 가능으로 표시
   const isCompleted = quest.attempt?.status === 'approved';
 
   return (
@@ -347,29 +315,26 @@ export const QuestDetailScreen: React.FC = () => {
 
         {/* 액션 버튼 */}
         <View style={styles.actionContainer}>
-          {canStart && (
-            <PrimaryButton
-              title="퀘스트 시작하기"
-              onPress={handleStartQuest}
-              size="large"
-            />
-          )}
+
 
           {canVerify && (
             <PrimaryButton
-              title="인증하기"
+              title="퀘스트 완료"
               onPress={handleVerifyQuest}
               size="large"
               variant="secondary"
             />
           )}
 
-          {canSubmit && (
+
+
+          {/* 시연용 퀘스트 즉시 완료 버튼 */}
+          {!isCompleted && (
             <PrimaryButton
-              title="퀘스트 제출하기"
-              onPress={handleSubmitQuest}
+              title="퀘스트 즉시 완료 (시연용)"
+              onPress={handleCompleteQuest}
               size="large"
-              variant="success"
+              variant="warning"
               loading={isSubmitting}
             />
           )}

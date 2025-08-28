@@ -61,7 +61,9 @@ export const AttendanceScreen: React.FC = () => {
   const { data: attendanceData, isLoading, error, refetch } = useAttendanceData(year, month);
   const checkAttendanceMutation = useCheckAttendance();
 
-  const isAttendedToday = attendanceData?.data?.days?.[day] || false;
+  // 백엔드 API 응답 구조에 맞춰 수정
+  const attendanceDays = attendanceData?.data?.attendance_dates || [];
+  const isAttendedToday = attendanceDays.includes(new Date().toISOString().split('T')[0]);
 
   const handleAttendanceCheck = async () => {
     if (isAttendedToday) {
@@ -133,7 +135,7 @@ export const AttendanceScreen: React.FC = () => {
       
       calendarData.push({
         date: dateString,
-        isAttended: attendanceData?.data?.days?.[day] || false,
+        isAttended: attendanceDays.includes(dateString),
         isToday,
         isPast: date <= today,
         isCurrentMonth: true,
@@ -176,7 +178,7 @@ export const AttendanceScreen: React.FC = () => {
       <View style={styles.attendanceContent}>
         <View style={styles.streakInfo}>
           <Text style={styles.streakNumber}>
-            {Object.values(attendanceData?.data?.days || {}).filter(Boolean).length}
+            {attendanceDays.length}
           </Text>
           <Text style={styles.streakLabel}>이번 달 출석</Text>
         </View>

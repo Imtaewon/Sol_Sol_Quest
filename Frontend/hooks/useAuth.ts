@@ -35,7 +35,7 @@ export const useLogin = () => {
 
   return useMutation({
     mutationFn: (data: LoginRequest) => authService.login(data),
-    onSuccess: async (response) => {
+    onSuccess: async (response: any) => {
       if (response.success) {
         // 토큰 저장 (access_token으로 변경)
         await AsyncStorage.setItem('auth_token', response.data.access_token);
@@ -64,20 +64,13 @@ export const useSignup = () => {
 
   return useMutation({
     mutationFn: (data: FrontendSignupRequest) => authService.signup(data),
-    onSuccess: async (response) => {
+    onSuccess: async (response: any) => {
       if (response.success) {
-        // 회원가입 성공 시 자동 로그인 처리
-        await AsyncStorage.setItem('auth_token', response.data.access_token);
-        
-        // 사용자 정보 캐시에 저장
-        queryClient.setQueryData(['user'], response.data.user);
-        queryClient.setQueryData(['token'], response.data.access_token);
-        queryClient.setQueryData(['savingStatus'], response.data.user.has_savings);
-        
+        // 회원가입 성공 시 토큰이나 사용자 정보 저장하지 않음
         Toast.show({
           type: 'success',
           text1: '회원가입 성공',
-          text2: '자동으로 로그인되었습니다.',
+          text2: '로그인해주세요.',
         });
       }
     },

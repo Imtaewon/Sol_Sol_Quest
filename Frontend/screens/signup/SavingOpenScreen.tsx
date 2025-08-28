@@ -4,9 +4,9 @@
  * 적금 가입 화면 컴포넌트
  * 
  * 주요 기능:
- * - 1단계: 개인정보 조회 + 적금 정보 입력
+ * - 1단계: 적금 정보 입력 + 상시입출금 계좌 생성
  * - 2단계: 설문 조사 (12문제)
- * - 최종 제출: 모든 데이터를 백엔드로 전송
+ * - 최종 제출: 설문 응답 제출
  */
 
 import React, { useState, useEffect } from 'react';
@@ -27,14 +27,13 @@ import { AppHeader } from '../../components/common/AppHeader';
 import { FormTextInput } from '../../components/common/FormTextInput';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
+import { useGetUserInfoQuery, useCreateDemandAccountMutation, useCreateSavingsAccountMutation } from '../../store/api/baseApi';
 import { 
-  useGetPersonalInfoQuery,
   useGetSurveyQuestionQuery,
-  useSubmitSavingSignupMutation,
   useSubmitSurveyResponsesMutation 
 } from '../../store/api/savingApi';
+
 import { 
-  PersonalInfo, 
   SurveyQuestion, 
   SurveyResponse, 
   QUESTION_TYPE_MAPPING 
@@ -67,20 +66,23 @@ export const SavingOpenScreen: React.FC = () => {
     currentQuestion: 1,
   });
 
+  // 상시입출금 계좌번호 저장
+  const [demandAccountNumber, setDemandAccountNumber] = useState<string>('');
+
   // 폼 컨트롤
-  const { control, handleSubmit, formState: { errors }, watch } = useForm<SavingFormData>({
+  const { control, handleSubmit, formState: { errors }, watch, setValue } = useForm<SavingFormData>({
     defaultValues: {
       monthlyAmount: 0,
       accountNumber: '',
     },
   });
 
-  // API 호출
+  // API 호출 - 로그인한 사용자 정보 조회
   const { 
-    data: personalInfo, 
-    isLoading: isPersonalInfoLoading, 
-    error: personalInfoError 
-  } = useGetPersonalInfoQuery();
+    data: userInfo, 
+    isLoading: isUserInfoLoading, 
+    error: userInfoError 
+  } = useGetUserInfoQuery();
 
   const { 
     data: surveyQuestion, 
@@ -89,7 +91,8 @@ export const SavingOpenScreen: React.FC = () => {
     skip: currentStep !== 2,
   });
 
-  const [submitSavingSignup, { isLoading: isSubmittingSaving }] = useSubmitSavingSignupMutation();
+  const [createDemandAccount, { isLoading: isCreatingDemand }] = useCreateDemandAccountMutation();
+  const [createSavingsAccount, { isLoading: isCreatingSavings }] = useCreateSavingsAccountMutation();
   const [submitSurveyResponses, { isLoading: isSubmittingSurvey }] = useSubmitSurveyResponsesMutation();
 
   // 입력된 값들 감시
@@ -97,21 +100,61 @@ export const SavingOpenScreen: React.FC = () => {
   const accountNumber = watch('accountNumber');
 
   /**
-   * 1단계 제출 처리 (적금 정보 입력)
+   * 상시입출금 계좌 생성
    */
-  const handleStep1Submit = (data: SavingFormData) => {
-    if (!data.monthlyAmount || data.monthlyAmount <= 0) {
-      Alert.alert('오류', '월 납입 금액을 입력해주세요.');
-      return;
-    }
+  const handleCreateDemandAccount = async () => {
+    try {
+      if (!userInfo?.user_id) {
+        Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
+        return;
+      }
 
-    if (!data.accountNumber || data.accountNumber.trim() === '') {
-      Alert.alert('오류', '자동이체 계좌번호를 입력해주세요.');
-      return;
+      const result = await createDemandAccount({ user_id: userInfo.user_id }).unwrap();
+      
+      if (result.success && result.data?.account_no) {
+        setDemandAccountNumber(result.data.account_no);
+        setValue('accountNumber', result.data.account_no);
+        Alert.alert('계좌 생성 완료', '상시입출금 계좌가 생성되었습니다.');
+      }
+    } catch (error) {
+      Alert.alert('오류', '상시입출금 계좌 생성에 실패했습니다.');
     }
+  };
 
-    // 2단계로 이동
-    setCurrentStep(2);
+  /**
+   * 설문 버튼 클릭 처리 (적금 가입 + 설문 시작)
+   */
+  const handleStartSurvey = async (data: SavingFormData) => {
+    try {
+      if (!userInfo?.user_id) {
+        Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
+        return;
+      }
+
+      if (!data.monthlyAmount || data.monthlyAmount <= 0) {
+        Alert.alert('오류', '월 납입 금액을 입력해주세요.');
+        return;
+      }
+
+      if (!data.accountNumber || data.accountNumber.trim() === '') {
+        Alert.alert('오류', '자동이체 계좌번호를 입력해주세요.');
+        return;
+      }
+
+      // 적금 가입 API 호출
+      const savingsResult = await createSavingsAccount({
+        user_id: userInfo.user_id,
+        deposit_balance: data.monthlyAmount,
+        account_no: data.accountNumber,
+      }).unwrap();
+
+      if (savingsResult.success) {
+        // 설문 단계로 이동
+        setCurrentStep(2);
+      }
+    } catch (error) {
+      Alert.alert('오류', '적금 가입에 실패했습니다.');
+    }
   };
 
   /**
@@ -166,19 +209,9 @@ export const SavingOpenScreen: React.FC = () => {
       // 설문 응답 제출
       await submitSurveyResponses(surveyResponses).unwrap();
 
-      // 적금 가입 데이터 준비
-      const savingData = {
-        monthlyAmount,
-        accountNumber,
-        surveyResponses,
-      };
-
-      // 적금 가입 제출
-      await submitSavingSignup(savingData).unwrap();
-
       Alert.alert(
         '적금 가입 완료',
-        '축하합니다! 적금 가입이 완료되었습니다.',
+        '축하합니다! 적금 가입이 완료되었습니다.\n모든 퀘스트가 자동으로 시작되었습니다!',
         [
           {
             text: '확인',
@@ -187,7 +220,7 @@ export const SavingOpenScreen: React.FC = () => {
         ]
       );
     } catch (error) {
-      Alert.alert('오류', '적금 가입에 실패했습니다. 다시 시도해주세요.');
+      Alert.alert('오류', '설문 제출에 실패했습니다.');
     }
   };
 
@@ -199,25 +232,25 @@ export const SavingOpenScreen: React.FC = () => {
   };
 
   // 로딩 상태 처리
-  if (isPersonalInfoLoading) {
+  if (isUserInfoLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <AppHeader title="적금 가입" showBack />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>개인정보를 불러오는 중...</Text>
+          <Text style={styles.loadingText}>사용자 정보를 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   // 에러 상태 처리
-  if (personalInfoError) {
+  if (userInfoError) {
     return (
       <SafeAreaView style={styles.container}>
         <AppHeader title="적금 가입" showBack />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={48} color={COLORS.error} />
-          <Text style={styles.errorText}>개인정보를 불러오는데 실패했습니다.</Text>
+          <Text style={styles.errorText}>사용자 정보를 불러오는데 실패했습니다.</Text>
           <TouchableOpacity style={styles.retryButton}>
             <Text style={styles.retryButtonText}>다시 시도</Text>
           </TouchableOpacity>
@@ -270,23 +303,23 @@ export const SavingOpenScreen: React.FC = () => {
               <View style={styles.personalInfoCard}>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>이름</Text>
-                  <Text style={styles.infoValue}>{personalInfo?.data?.name}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.name}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>출생연도</Text>
-                  <Text style={styles.infoValue}>{personalInfo?.data?.birthYear}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.birthYear}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학교</Text>
-                  <Text style={styles.infoValue}>{personalInfo?.data?.school}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.school}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학과</Text>
-                  <Text style={styles.infoValue}>{personalInfo?.data?.department}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.department}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학년</Text>
-                  <Text style={styles.infoValue}>{personalInfo?.data?.grade}학년</Text>
+                  <Text style={styles.infoValue}>{userInfo?.grade}학년</Text>
                 </View>
               </View>
             </View>
@@ -328,11 +361,19 @@ export const SavingOpenScreen: React.FC = () => {
                     />
                     <TouchableOpacity 
                       style={styles.openAccountButton}
-                      onPress={handleOpenDemandAccount}
+                      onPress={handleCreateDemandAccount}
+                      disabled={isCreatingDemand}
                     >
-                      <Text style={styles.openAccountButtonText}>가입하기</Text>
+                      <Text style={styles.openAccountButtonText}>
+                        {isCreatingDemand ? '생성 중...' : '상시입출금 계좌 만들기'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
+                  {demandAccountNumber && (
+                    <Text style={styles.accountCreatedText}>
+                      ✓ 상시입출금 계좌가 생성되었습니다: {demandAccountNumber}
+                    </Text>
+                  )}
                 </View>
               </View>
             </View>
@@ -340,8 +381,8 @@ export const SavingOpenScreen: React.FC = () => {
             {/* 다음 버튼 */}
             <PrimaryButton
               title="다음"
-              onPress={handleSubmit(handleStep1Submit)}
-              loading={isSubmittingSaving}
+              onPress={handleSubmit(handleStartSurvey)}
+              loading={isCreatingDemand || isCreatingSavings}
               style={styles.nextButton}
             />
           </View>
@@ -695,5 +736,11 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
+  },
+  accountCreatedText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.success,
+    marginTop: SPACING.sm,
+    textAlign: 'center',
   },
 });

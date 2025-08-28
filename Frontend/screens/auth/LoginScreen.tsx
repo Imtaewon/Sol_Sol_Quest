@@ -63,7 +63,7 @@ export const LoginScreen: React.FC = () => {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      const result = await loginMutation.mutateAsync(data);
+      const result: any = await loginMutation.mutateAsync(data);
       if (result.success) {
         // Redux 상태 업데이트 (Backend 응답 형식에 맞춤)
         dispatch(loginSuccess({ token: result.data.access_token }));

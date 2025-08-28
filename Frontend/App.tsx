@@ -89,21 +89,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
-    minHeight: '100vh',
+    ...(Platform.OS === 'web' && {
+      minHeight: '100vh' as any,
+    }),
   },
   mobileFrame: {
-    width: 375, // iPhone 12/13/14 width
-    height: 812, // iPhone 12/13/14 height
+    width: 375,
+    height: 812,
     backgroundColor: '#ffffff',
     borderRadius: 20,
     overflow: 'hidden',
     boxShadow: '0 0 20px rgba(0, 0, 0, 0.3)',
     // 웹에서만 적용되는 스타일
     ...(Platform.OS === 'web' && {
-      maxWidth: '100vw',
-      maxHeight: '100vh',
-      width: 'min(375px, 100vw)',
-      height: 'min(812px, 100vh)',
+      maxWidth: '100vw' as any,
+      maxHeight: '100vh' as any,
+      width: 'min(375px, 100vw)' as any,
+      height: 'min(812px, 100vh)' as any,
     }),
   },
 });

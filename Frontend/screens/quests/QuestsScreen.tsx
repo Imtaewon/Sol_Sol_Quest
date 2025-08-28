@@ -38,12 +38,9 @@ import { Skeleton } from '../../components/common/Skeleton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
 import { QuestWithAttempt, QuestAttempt } from '../../types/database';
 import { 
-  useGetQuestsQuery, 
-  useStartQuestMutation,
-  useSubmitQuestMutation,
-  useLogQuestClickMutation,
-  useLogQuestInteractionMutation 
+  useGetQuestsQuery
 } from '../../store/api/questApi';
+import { useCompleteQuestMutation } from '../../store/api/baseApi';
 import { RootState } from '../../store';
 import { HomeStackParamList } from '../../navigation/HomeStack';
 
@@ -117,10 +114,7 @@ export const QuestsScreen: React.FC = () => {
   });
 
   // 퀘스트 관련 API 뮤테이션 훅들
-  const [startQuest] = useStartQuestMutation();        // 퀘스트 시작
-  const [submitQuest] = useSubmitQuestMutation();      // 퀘스트 완료
-  const [logQuestClick] = useLogQuestClickMutation();  // 퀘스트 클릭 로그
-  const [logQuestInteraction] = useLogQuestInteractionMutation(); // 퀘스트 상호작용 로그
+  const [completeQuest] = useCompleteQuestMutation(); // 퀘스트 즉시 완료 (시연용)
 
   // API에서 받아온 퀘스트 데이터
   const quests = questsData?.data || [];
@@ -166,71 +160,27 @@ export const QuestsScreen: React.FC = () => {
 
   /**
    * 퀘스트 카드 클릭 처리 함수
-   * 퀘스트 상세 화면으로 이동하며 로그 기록
+   * 퀘스트 상세 화면으로 이동
    */
   const handleQuestPress = async (quest: QuestWithAttempt) => {
-    try {
-      // 퀘스트 클릭 로그 기록
-      await logQuestClick({ 
-        quest_id: quest.id,
-        context: `quests_screen_${selectedType}`
-      });
-
-      // 퀘스트 상세 클릭 상호작용 로그 기록
-      await logQuestInteraction({
-        quest_id: quest.id,
-        event: 'detail_click',
-        context: `quests_screen_${selectedType}`
-      });
-
-      // 퀘스트 상세 화면으로 이동 (quest 객체 전체 전달)
-      navigation.navigate('QuestDetail', { quest: quest });
-    } catch (error) {
-      console.error('퀘스트 클릭 로그 실패:', error);
-    }
+    // 퀘스트 상세 화면으로 이동 (quest 객체 전체 전달)
+    navigation.navigate('QuestDetail', { quest: quest });
   };
 
-  /**
-   * 퀘스트 시작 처리 함수
-   * 퀘스트를 시작하고 상호작용 로그 기록
-   */
-  const handleStartQuest = async (quest: QuestWithAttempt) => {
-    try {
-      // 퀘스트 시작 API 호출
-      await startQuest({ quest_id: quest.id });
-      
-      // 퀘스트 시작 상호작용 로그 기록
-      await logQuestInteraction({
-        quest_id: quest.id,
-        event: 'start',
-        context: `quests_screen_${selectedType}`
-      });
 
-      Alert.alert('퀘스트 시작', `${quest.title} 퀘스트를 시작했습니다!`);
-    } catch (error) {
-      Alert.alert('오류', '퀘스트 시작에 실패했습니다.');
-    }
-  };
 
   /**
-   * 퀘스트 완료 처리 함수
-   * 퀘스트를 완료하고 경험치를 획득하며 로그 기록
+   * 퀘스트 즉시 완료 처리 함수 (시연용)
+   * 퀘스트를 즉시 완료하고 경험치를 획득
    */
-  const handleCompleteQuest = async (quest: QuestWithAttempt) => {
+  const handleInstantCompleteQuest = async (quest: QuestWithAttempt) => {
     try {
-      // 퀘스트 완료 API 호출 (백엔드에서 검증 후 완료 처리)
-      await submitQuest({ quest_id: quest.id });
-      
-      // 퀘스트 완료 상호작용 로그 기록
-      await logQuestInteraction({
-        quest_id: quest.id,
-        event: 'complete',
-        context: `quests_screen_${selectedType}`
-      });
+      // 퀘스트 즉시 완료 API 호출
+      await completeQuest({ quest_id: quest.id });
 
-      Alert.alert('퀘스트 완료', `${quest.title} 퀘스트가 완료되었습니다! ${quest.reward_exp} EXP를 획득했습니다!`);
+      Alert.alert('퀘스트 즉시 완료', `${quest.title} 퀘스트가 즉시 완료되었습니다! ${quest.reward_exp} EXP를 획득했습니다!`);
     } catch (error) {
-      Alert.alert('오류', '퀘스트 완료에 실패했습니다.');
+      Alert.alert('오류', '퀘스트 즉시 완료에 실패했습니다.');
     }
   };
 
@@ -270,11 +220,11 @@ export const QuestsScreen: React.FC = () => {
     const progress = getQuestProgress(quest);
     const statusText = getQuestStatusText(quest);
     
-    // 퀘스트 상태별 버튼 표시 조건
-    const isInProgress = quest.attempt?.status === 'in_progress';  // 진행중
-    const canStart = !quest.attempt || quest.attempt.status === 'deactive';  // 시작 가능
-    const canComplete = quest.attempt?.status === 'clear';  // 완료 가능
-    const isApproved = quest.attempt?.status === 'approved';  // 완료됨
+         // 퀘스트 상태별 버튼 표시 조건 (적금 가입 시 모든 퀘스트가 자동 시작)
+     const isInProgress = quest.attempt?.status === 'in_progress' || !quest.attempt;  // 진행중 (미시작도 진행중으로 표시)
+     const canStart = false;  // 시작 버튼 제거 (적금 가입 시 자동 시작)
+     const canComplete = quest.attempt?.status === 'clear';  // 완료 가능
+     const isApproved = quest.attempt?.status === 'approved';  // 완료됨
 
     return (
       <TouchableOpacity 
@@ -338,30 +288,26 @@ export const QuestsScreen: React.FC = () => {
               <Text style={styles.statusText}>{statusText}</Text>
             </View>
 
-            {canStart && (
-              <TouchableOpacity
-                style={styles.startButton}
-                onPress={() => handleStartQuest(quest)}
-              >
-                <Text style={styles.startButtonText}>시작하기</Text>
-              </TouchableOpacity>
-            )}
 
-            {isInProgress && (
-              <TouchableOpacity
-                style={[styles.startButton, styles.continueButton]}
-                onPress={() => handleQuestPress(quest)}
-              >
-                <Text style={styles.startButtonText}>계속하기</Text>
-              </TouchableOpacity>
-            )}
 
-            {canComplete && (
+                         {isInProgress && (
+               <TouchableOpacity
+                 style={[styles.startButton, styles.continueButton]}
+                 onPress={() => handleQuestPress(quest)}
+               >
+                 <Text style={styles.startButtonText}>진행하기</Text>
+               </TouchableOpacity>
+             )}
+
+
+
+            {/* 시연용 퀘스트 즉시 완료 버튼 */}
+            {!isApproved && (
               <TouchableOpacity
-                style={[styles.startButton, styles.completeButton]}
-                onPress={() => handleCompleteQuest(quest)}
+                style={[styles.startButton, styles.instantCompleteButton]}
+                onPress={() => handleInstantCompleteQuest(quest)}
               >
-                <Text style={styles.startButtonText}>완료하기</Text>
+                <Text style={styles.startButtonText}>즉시 완료</Text>
               </TouchableOpacity>
             )}
 
@@ -599,6 +545,9 @@ const styles = StyleSheet.create({
   },
   completeButton: {
     backgroundColor: COLORS.success,
+  },
+  instantCompleteButton: {
+    backgroundColor: COLORS.warning,
   },
   startButtonText: {
     color: COLORS.white,

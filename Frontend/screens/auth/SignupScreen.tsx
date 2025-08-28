@@ -101,8 +101,11 @@ export const SignupScreen: React.FC = () => {
       
       const result = await signupMutation.mutateAsync(finalData);
       if (result.success) {
-        // 회원가입 성공 후 로그인 화면으로 이동
-        navigation.navigate('SignIn');
+        // 회원가입 성공 후 랜딩페이지로 이동
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Landing' as any }],
+        });
       }
     } catch (error) {
       console.error('회원가입 실패:', error);

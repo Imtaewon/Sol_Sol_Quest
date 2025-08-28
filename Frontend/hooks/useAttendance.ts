@@ -1,30 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { attendanceService, AttendanceCheckRequest } from '../services/attendanceService';
+import { useGetAttendanceDataQuery, useCheckAttendanceMutation } from '../store/api/baseApi';
 import Toast from 'react-native-toast-message';
 
 // 출석 데이터 조회 훅
 export const useAttendanceData = (year: number, month: number) => {
-  return useQuery({
-    queryKey: ['attendance', year, month],
-    queryFn: () => attendanceService.getAttendanceData(year, month),
-    staleTime: 1 * 60 * 1000, // 1분
-    gcTime: 3 * 60 * 1000, // 3분
-  });
+  return useGetAttendanceDataQuery({ year, month });
 };
-
 
 // 출석 체크 훅
 export const useCheckAttendance = () => {
   const queryClient = useQueryClient();
+  const [checkAttendance] = useCheckAttendanceMutation();
 
-  return useMutation({
-    mutationFn: (data: AttendanceCheckRequest) => attendanceService.checkAttendance(data),
-    onSuccess: (response) => {
-      if (response.success) {
+  const checkAttendanceWithToast = async (data: { year: number; month: number; day: number }) => {
+    try {
+      const result = await checkAttendance(data).unwrap();
+      if (result.success) {
         // 출석 데이터 무효화하여 리페치
-        const today = new Date();
         queryClient.invalidateQueries({ 
-          queryKey: ['attendance', today.getFullYear(), today.getMonth() + 1] 
+          queryKey: ['attendance', data.year, data.month] 
         });
         
         Toast.show({
@@ -33,14 +27,20 @@ export const useCheckAttendance = () => {
           text2: '오늘도 화이팅!',
         });
       }
-    },
-    onError: (error) => {
+      return result;
+    } catch (error) {
       console.error('출석 체크 실패:', error);
       Toast.show({
         type: 'error',
         text1: '출석 체크 실패',
         text2: '다시 시도해주세요.',
       });
-    },
-  });
+      throw error;
+    }
+  };
+
+  return {
+    mutateAsync: checkAttendanceWithToast,
+    isPending: false, // RTK Query에서는 isLoading 사용
+  };
 };

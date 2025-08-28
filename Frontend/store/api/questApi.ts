@@ -93,94 +93,13 @@ export const questApi = baseApi.injectEndpoints({
       }),
     }),
 
-    /**
-     * 퀘스트 시작
-     * POST /quests/start
-     * 퀘스트를 시작하고 진행 상황을 초기화
-     */
-    startQuest: builder.mutation<ApiResponse<QuestAttempt>, QuestStartRequest>({
-      query: (data) => ({
-        url: '/quests/start',
-        method: 'POST',
-        data,
-      }),
-    }),
 
-    /**
-     * 퀘스트 제출
-     * POST /quests/submit
-     * 목표를 달성한 퀘스트를 제출하여 완료 처리
-     */
-    submitQuest: builder.mutation<ApiResponse<QuestAttempt>, QuestSubmitRequest>({
-      query: (data) => ({
-        url: '/quests/submit',
-        method: 'POST',
-        data,
-      }),
-    }),
 
-    /**
-     * 퀘스트 인증
-     * POST /quests/verify
-     * GPS, STEPS, PAYMENT 등 다양한 인증 방식으로 퀘스트 진행
-     */
-    verifyQuest: builder.mutation<ApiResponse<QuestAttempt>, QuestVerifyRequest>({
-      query: (data) => ({
-        url: '/quests/verify',
-        method: 'POST',
-        data,
-      }),
-    }),
 
-    // 내 퀘스트 진행 상황
-    getMyQuestProgress: builder.query<QuestProgress[], void>({
-      query: () => ({
-        url: '/quests/my-progress',
-        method: 'GET',
-      }),
-    }),
-
-    // 추천 퀘스트 조회
-    getRecommendedQuests: builder.query<QuestWithAttempt[], void>({
-      query: () => ({
-        url: '/quests/recommended',
-        method: 'GET',
-      }),
-    }),
-
-    // 퀘스트 추천 클릭 로그
-    logQuestClick: builder.mutation<void, { quest_id: string; context?: string }>({
-      query: (data) => ({
-        url: '/quests/log-click',
-        method: 'POST',
-        data,
-      }),
-    }),
-
-    // 퀘스트 상호작용 로그
-    logQuestInteraction: builder.mutation<void, {
-      quest_id: string;
-      event: 'impression' | 'detail_click' | 'start' | 'complete';
-      context?: string;
-    }>({
-      query: (data) => ({
-        url: '/quests/log-interaction',
-        method: 'POST',
-        data,
-      }),
-    }),
   }),
 });
 
 export const {
   useGetQuestsQuery,
-  useGetQuestDetailQuery,
-  useStartQuestMutation,
-  useSubmitQuestMutation,
-  useVerifyQuestMutation,
-  useGetMyQuestProgressQuery,
-  useGetRecommendedQuestsQuery,
-  useLogQuestClickMutation,
-  useLogQuestInteractionMutation,
 } = questApi;
 

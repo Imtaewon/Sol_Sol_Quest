@@ -21,13 +21,13 @@ export interface AttendanceCheckRequest {
 export const attendanceService = {
   // 해당 달 출석 데이터 조회
   getAttendanceData: async (year: number, month: number): Promise<ApiResponse<AttendanceData>> => {
-    const response = await apiClient.get<ApiResponse<AttendanceData>>(`/attendance/${year}/${month}`);
+    const response = await apiClient.get<ApiResponse<AttendanceData>>(`/api/attendance/${year}/${month}`);
     return response.data;
   },
 
   // 출석 체크
   checkAttendance: async (data: AttendanceCheckRequest): Promise<ApiResponse> => {
-    const response = await apiClient.post<ApiResponse>('/attendance/check', data);
+    const response = await apiClient.post<ApiResponse>('/api/attendance/check-in', data);
     return response.data;
   },
 };
