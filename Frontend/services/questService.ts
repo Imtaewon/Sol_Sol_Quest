@@ -49,7 +49,7 @@ export const questService = {
   getRecommendedQuests: async (): Promise<ApiResponse<RecommendedQuest[]>> => {
     console.log('🌐 questService.getRecommendedQuests HTTP 요청 시작');
     try {
-      const response = await apiClient.get<ApiResponse<RecommendedQuest[]>>('/api/v1/quests?type=recommended');
+      const response = await apiClient.get<ApiResponse<RecommendedQuest[]>>('/api/recommendations/quests');
       console.log('🌐 questService.getRecommendedQuests HTTP 요청 완료:', response.status);
       console.log('🌐 questService.getRecommendedQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
       return response.data;

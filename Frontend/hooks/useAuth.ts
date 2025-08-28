@@ -37,14 +37,21 @@ export const useLogin = () => {
   const dispatch = useDispatch();
 
   return useMutation({
-    mutationFn: (data: LoginRequest) => {
+    mutationFn: async (data: LoginRequest) => {
       console.log('🔄 useLogin mutationFn 호출됨');
       console.log('전송할 데이터:', data);
       
       // AsyncStorage 클리어
-      AsyncStorage.clear().then(() => {
+      try {
+        await AsyncStorage.clear();
         console.log('🧹 AsyncStorage 클리어 완료');
-      });
+        
+        // 클리어 후 확인
+        const allKeys = await AsyncStorage.getAllKeys();
+        console.log('🧹 클리어 후 AsyncStorage 키들:', allKeys);
+      } catch (error) {
+        console.error('❌ AsyncStorage 클리어 실패:', error);
+      }
       
       return authService.login(data);
     },
@@ -52,27 +59,44 @@ export const useLogin = () => {
       console.log('로그인 응답:', response);
       
       if (response.data?.success) {
-        // 토큰 저장 (access_token으로 변경)
-        await AsyncStorage.setItem('auth_token', response.data.data.access_token);
-        console.log('🔐 토큰 AsyncStorage 저장 완료');
-        
-        // 즉시 토큰 검증
-        const storedToken = await AsyncStorage.getItem('auth_token');
-        console.log('DEBUG: 로그인 후 AsyncStorage 토큰 검증:', storedToken ? '토큰 존재' : '토큰 없음', '길이:', storedToken?.length || 0);
-        
-        // 사용자 정보 캐시에 저장 (Backend 응답 형식에 맞춤)
-        queryClient.setQueryData(['user'], response.data.data.user);
-        queryClient.setQueryData(['token'], response.data.data.access_token);
-        queryClient.setQueryData(['savingStatus'], response.data.data.user.has_savings);
-        
-        // Redux store 업데이트
-        dispatch(loginSuccess({ token: response.data.data.access_token }));
-        
-        Toast.show({
-          type: 'success',
-          text1: '로그인 성공',
-          text2: '환영합니다!',
-        });
+        try {
+          // 토큰 저장 (access_token으로 변경)
+          const token = response.data.data.access_token;
+          console.log('🔐 저장할 토큰:', token ? `${token.substring(0, 20)}...` : 'null');
+          
+          await AsyncStorage.setItem('auth_token', token);
+          console.log('🔐 토큰 AsyncStorage 저장 완료');
+          
+          // 즉시 토큰 검증
+          const storedToken = await AsyncStorage.getItem('auth_token');
+          console.log('DEBUG: 로그인 후 AsyncStorage 토큰 검증:', {
+            hasToken: !!storedToken,
+            tokenLength: storedToken?.length || 0,
+            tokenPreview: storedToken ? `${storedToken.substring(0, 20)}...` : 'null'
+          });
+          
+          // 더미 키도 확인
+          const dummyValue = await AsyncStorage.getItem('dummy_key');
+          console.log('DEBUG: 로그인 후 dummy_key 확인:', dummyValue);
+          
+          // 사용자 정보 캐시에 저장 (Backend 응답 형식에 맞춤)
+          queryClient.setQueryData(['user'], response.data.data.user);
+          queryClient.setQueryData(['token'], response.data.data.access_token);
+          queryClient.setQueryData(['savingStatus'], response.data.data.user.has_savings);
+          
+          // Redux store 업데이트
+          dispatch(loginSuccess({ token: response.data.data.access_token }));
+          console.log('🔐 Redux loginSuccess 액션 호출됨');
+          console.log('토큰:', response.data.data.access_token);
+          
+          Toast.show({
+            type: 'success',
+            text1: '로그인 성공',
+            text2: '환영합니다!',
+          });
+        } catch (error) {
+          console.error('❌ 토큰 저장 중 에러:', error);
+        }
       }
     },
     onError: (error) => {
