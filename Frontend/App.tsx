@@ -37,6 +37,58 @@ import { RootState } from './store';
 import { loginSuccess } from './store/slices/authSlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// AsyncStorage fallback 함수들
+const getStorageItem = async (key: string): Promise<string | null> => {
+  try {
+    // 먼저 AsyncStorage 시도
+    const value = await AsyncStorage.getItem(key);
+    if (value !== null) {
+      return value;
+    }
+    
+    // AsyncStorage가 실패하면 localStorage 시도 (웹 환경)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      return localStorage.getItem(key);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('❌ getStorageItem 에러:', error);
+    
+    // 에러 발생 시 localStorage 시도 (웹 환경)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem(key);
+      } catch (localError) {
+        console.error('❌ localStorage도 실패:', localError);
+        return null;
+      }
+    }
+    
+    return null;
+  }
+};
+
+const setStorageItem = async (key: string, value: string): Promise<void> => {
+  try {
+    // 먼저 AsyncStorage 시도
+    await AsyncStorage.setItem(key, value);
+    console.log(`✅ AsyncStorage에 ${key} 저장 성공`);
+  } catch (error) {
+    console.error('❌ AsyncStorage 저장 실패:', error);
+    
+    // AsyncStorage가 실패하면 localStorage 시도 (웹 환경)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(key, value);
+        console.log(`✅ localStorage에 ${key} 저장 성공`);
+      } catch (localError) {
+        console.error('❌ localStorage 저장도 실패:', localError);
+      }
+    }
+  }
+};
+
 // React Query 클라이언트 생성
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,7 +109,7 @@ const Navigation: React.FC = () => {
     const checkAuthToken = async () => {
       console.log('🔍 앱 시작 시 토큰 확인 중...');
       try {
-        const token = await AsyncStorage.getItem('auth_token');
+        const token = await getStorageItem('auth_token');
         if (token) {
           console.log('✅ 저장된 토큰 발견, 자동 로그인 처리');
           // 토큰이 있으면 자동 로그인
@@ -78,7 +130,7 @@ const Navigation: React.FC = () => {
   // 앱 초기화 시 더미 키 설정
   useEffect(() => {
     const setDummyKey = async () => {
-      await AsyncStorage.setItem('dummy_key', 'dummy_value');
+      await setStorageItem('dummy_key', 'dummy_value');
       console.log('DEBUG: AsyncStorage dummy_key 설정 완료');
     };
     setDummyKey();
@@ -88,10 +140,10 @@ const Navigation: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated) {
       const checkToken = async () => {
-        const token = await AsyncStorage.getItem('auth_token');
+        const token = await getStorageItem('auth_token');
         console.log('✅ App.tsx - 로그인 후 AsyncStorage 토큰 재확인:', token ? '토큰 존재' : '토큰 없음', '길이:', token?.length || 0);
         
-        const dummyValue = await AsyncStorage.getItem('dummy_key');
+        const dummyValue = await getStorageItem('dummy_key');
         console.log('✅ App.tsx - AsyncStorage dummy_key 확인:', dummyValue);
       };
       checkToken();

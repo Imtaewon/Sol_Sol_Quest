@@ -30,6 +30,79 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../store/slices/authSlice';
+import { Platform } from 'react-native';
+
+// AsyncStorage fallback 함수들
+const getStorageItem = async (key: string): Promise<string | null> => {
+  try {
+    // 먼저 AsyncStorage 시도
+    const value = await AsyncStorage.getItem(key);
+    if (value !== null) {
+      return value;
+    }
+    
+    // AsyncStorage가 실패하면 localStorage 시도 (웹 환경)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      return localStorage.getItem(key);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('❌ getStorageItem 에러:', error);
+    
+    // 에러 발생 시 localStorage 시도 (웹 환경)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem(key);
+      } catch (localError) {
+        console.error('❌ localStorage도 실패:', localError);
+        return null;
+      }
+    }
+    
+    return null;
+  }
+};
+
+const setStorageItem = async (key: string, value: string): Promise<void> => {
+  try {
+    // 먼저 AsyncStorage 시도
+    await AsyncStorage.setItem(key, value);
+    console.log(`✅ AsyncStorage에 ${key} 저장 성공`);
+  } catch (error) {
+    console.error('❌ AsyncStorage 저장 실패:', error);
+    
+    // AsyncStorage가 실패하면 localStorage 시도 (웹 환경)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(key, value);
+        console.log(`✅ localStorage에 ${key} 저장 성공`);
+      } catch (localError) {
+        console.error('❌ localStorage 저장도 실패:', localError);
+      }
+    }
+  }
+};
+
+const clearStorage = async (): Promise<void> => {
+  try {
+    // 먼저 AsyncStorage 시도
+    await AsyncStorage.clear();
+    console.log('✅ AsyncStorage 클리어 성공');
+  } catch (error) {
+    console.error('❌ AsyncStorage 클리어 실패:', error);
+    
+    // AsyncStorage가 실패하면 localStorage 시도 (웹 환경)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        localStorage.clear();
+        console.log('✅ localStorage 클리어 성공');
+      } catch (localError) {
+        console.error('❌ localStorage 클리어도 실패:', localError);
+      }
+    }
+  }
+};
 
 // 로그인 훅
 export const useLogin = () => {
@@ -43,7 +116,7 @@ export const useLogin = () => {
       
       // AsyncStorage 클리어
       try {
-        await AsyncStorage.clear();
+        await clearStorage();
         console.log('🧹 AsyncStorage 클리어 완료');
         
         // 클리어 후 확인
@@ -64,19 +137,19 @@ export const useLogin = () => {
           const token = response.data.data.access_token;
           console.log('🔐 저장할 토큰:', token ? `${token.substring(0, 20)}...` : 'null');
           
-          await AsyncStorage.setItem('auth_token', token);
-          console.log('🔐 토큰 AsyncStorage 저장 완료');
+          await setStorageItem('auth_token', token);
+          console.log('🔐 토큰 저장 완료');
           
           // 즉시 토큰 검증
-          const storedToken = await AsyncStorage.getItem('auth_token');
-          console.log('DEBUG: 로그인 후 AsyncStorage 토큰 검증:', {
+          const storedToken = await getStorageItem('auth_token');
+          console.log('DEBUG: 로그인 후 토큰 검증:', {
             hasToken: !!storedToken,
             tokenLength: storedToken?.length || 0,
             tokenPreview: storedToken ? `${storedToken.substring(0, 20)}...` : 'null'
           });
           
           // 더미 키도 확인
-          const dummyValue = await AsyncStorage.getItem('dummy_key');
+          const dummyValue = await getStorageItem('dummy_key');
           console.log('DEBUG: 로그인 후 dummy_key 확인:', dummyValue);
           
           // 사용자 정보 캐시에 저장 (Backend 응답 형식에 맞춤)
@@ -146,7 +219,7 @@ export const useLogout = () => {
     mutationFn: () => authService.logout(),
     onSuccess: async () => {
       // 토큰 삭제
-      await AsyncStorage.removeItem('auth_token');
+      await clearStorage();
       
       // 모든 쿼리 캐시 초기화
       queryClient.clear();
@@ -160,7 +233,7 @@ export const useLogout = () => {
     onError: async (error) => {
       console.error('로그아웃 실패:', error);
       // 에러가 발생해도 로컬 토큰은 삭제
-      await AsyncStorage.removeItem('auth_token');
+      await clearStorage();
       queryClient.clear();
     },
   });

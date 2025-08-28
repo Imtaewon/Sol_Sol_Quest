@@ -27,6 +27,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Config } from '../config/env';
+import { Platform } from 'react-native';
 
 // API 응답 타입
 export interface ApiResponse<T = any> {
@@ -35,6 +36,58 @@ export interface ApiResponse<T = any> {
   message?: string;
   error?: string;
 }
+
+// AsyncStorage fallback 함수들
+const getStorageItem = async (key: string): Promise<string | null> => {
+  try {
+    // 먼저 AsyncStorage 시도
+    const value = await AsyncStorage.getItem(key);
+    if (value !== null) {
+      return value;
+    }
+    
+    // AsyncStorage가 실패하면 localStorage 시도 (웹 환경)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      return localStorage.getItem(key);
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('❌ getStorageItem 에러:', error);
+    
+    // 에러 발생 시 localStorage 시도 (웹 환경)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem(key);
+      } catch (localError) {
+        console.error('❌ localStorage도 실패:', localError);
+        return null;
+      }
+    }
+    
+    return null;
+  }
+};
+
+const setStorageItem = async (key: string, value: string): Promise<void> => {
+  try {
+    // 먼저 AsyncStorage 시도
+    await AsyncStorage.setItem(key, value);
+    console.log(`✅ AsyncStorage에 ${key} 저장 성공`);
+  } catch (error) {
+    console.error('❌ AsyncStorage 저장 실패:', error);
+    
+    // AsyncStorage가 실패하면 localStorage 시도 (웹 환경)
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(key, value);
+        console.log(`✅ localStorage에 ${key} 저장 성공`);
+      } catch (localError) {
+        console.error('❌ localStorage 저장도 실패:', localError);
+      }
+    }
+  }
+};
 
 // Axios 인스턴스 생성
 const apiClient: AxiosInstance = axios.create({
@@ -50,10 +103,10 @@ apiClient.interceptors.request.use(
   async (config) => {
     try {
       // 더미 키 확인으로 AsyncStorage 기능 테스트
-      const dummyValue = await AsyncStorage.getItem('dummy_key');
+      const dummyValue = await getStorageItem('dummy_key');
       console.log('DEBUG: Interceptor - AsyncStorage dummy_key:', dummyValue);
       
-      const token = await AsyncStorage.getItem('auth_token');
+      const token = await getStorageItem('auth_token');
       const hasToken = !!token;
       const tokenLength = token?.length || 0;
       
