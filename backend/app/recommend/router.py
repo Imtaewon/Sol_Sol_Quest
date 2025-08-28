@@ -66,6 +66,7 @@ async def get_recommended_quests_with_details(
     현재 사용자를 위한 상세 정보가 포함된 퀘스트 추천
     
     - 추천된 퀘스트의 상세 정보와 추천 점수를 함께 반환합니다.
+    - quest_recommendations 테이블에 추천 기록을 저장합니다.
     """
     try:
         # current_user 객체에서 user_id 추출
@@ -87,6 +88,10 @@ async def get_recommended_quests_with_details(
             # 기본 추천
             default_ids = recommendation_system._get_default_recommendations(db)
             recommended_quests = [q for q in available_quests if q["id"] in default_ids][:3]
+        
+        # DB에 추천 기록 저장
+        quest_ids = [quest["id"] for quest in recommended_quests]
+        recommendation_system._save_recommendations_to_db(db, user_id, quest_ids)
         
         return [
             QuestDetailResponse(
