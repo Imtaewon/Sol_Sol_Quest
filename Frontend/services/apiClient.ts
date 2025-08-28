@@ -39,52 +39,41 @@ export interface ApiResponse<T = any> {
 
 // AsyncStorage fallback 함수들
 const getStorageItem = async (key: string): Promise<string | null> => {
-  try {
-    // 먼저 AsyncStorage 시도
-    const value = await AsyncStorage.getItem(key);
-    if (value !== null) {
-      return value;
-    }
-    
-    // AsyncStorage가 실패하면 localStorage 시도 (웹 환경)
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // 웹 환경에서는 직접 localStorage 사용
+    try {
       return localStorage.getItem(key);
+    } catch (error) {
+      console.error('❌ localStorage 읽기 실패:', error);
+      return null;
     }
-    
-    return null;
-  } catch (error) {
-    console.error('❌ getStorageItem 에러:', error);
-    
-    // 에러 발생 시 localStorage 시도 (웹 환경)
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        return localStorage.getItem(key);
-      } catch (localError) {
-        console.error('❌ localStorage도 실패:', localError);
-        return null;
-      }
+  } else {
+    // 네이티브 환경에서는 AsyncStorage 사용
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch (error) {
+      console.error('❌ AsyncStorage 읽기 실패:', error);
+      return null;
     }
-    
-    return null;
   }
 };
 
 const setStorageItem = async (key: string, value: string): Promise<void> => {
-  try {
-    // 먼저 AsyncStorage 시도
-    await AsyncStorage.setItem(key, value);
-    console.log(`✅ AsyncStorage에 ${key} 저장 성공`);
-  } catch (error) {
-    console.error('❌ AsyncStorage 저장 실패:', error);
-    
-    // AsyncStorage가 실패하면 localStorage 시도 (웹 환경)
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(key, value);
-        console.log(`✅ localStorage에 ${key} 저장 성공`);
-      } catch (localError) {
-        console.error('❌ localStorage 저장도 실패:', localError);
-      }
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // 웹 환경에서는 직접 localStorage 사용
+    try {
+      localStorage.setItem(key, value);
+      console.log(`✅ localStorage에 ${key} 저장 성공`);
+    } catch (error) {
+      console.error('❌ localStorage 저장 실패:', error);
+    }
+  } else {
+    // 네이티브 환경에서는 AsyncStorage 사용
+    try {
+      await AsyncStorage.setItem(key, value);
+      console.log(`✅ AsyncStorage에 ${key} 저장 성공`);
+    } catch (error) {
+      console.error('❌ AsyncStorage 저장 실패:', error);
     }
   }
 };
