@@ -68,7 +68,6 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const user = useSelector((state: RootState) => state.user.user);
-  const hasSavings = userInfo?.data?.has_savings ?? false;
 
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -77,12 +76,13 @@ export const HomeScreen: React.FC = () => {
   // API 훅들
   const { data: userInfo, isLoading: userLoading, error: userError, refetch: refetchUser } = useUserInfo();
   
-  // has_savings가 true일 때만 계좌 정보 조회
-  const savingsQuery = hasSavings ? useSavingsAccount() : { data: undefined, isLoading: false, error: undefined, refetch: () => Promise.resolve() };
-  const depositQuery = hasSavings ? useDepositAccount() : { data: undefined, isLoading: false, error: undefined, refetch: () => Promise.resolve() };
+  // 계좌 정보 조회 (항상 호출하되, 데이터 존재 여부로 판단)
+  const { data: savingsAccount, isLoading: savingsLoading, error: savingsError, refetch: refetchSavings } = useSavingsAccount();
+  const { data: depositAccount, isLoading: depositLoading, error: depositError, refetch: refetchDeposit } = useDepositAccount();
   
-  const { data: savingsAccount, isLoading: savingsLoading, error: savingsError, refetch: refetchSavings } = savingsQuery;
-  const { data: depositAccount, isLoading: depositLoading, error: depositError, refetch: refetchDeposit } = depositQuery;
+  // 계좌 존재 여부로 hasSavings 판단
+  const hasSavings = (savingsAccount?.data?.data && savingsAccount.data.data.length > 0) || 
+                     (depositAccount?.data?.data && depositAccount.data.data.length > 0);
   
   // 학교 랭킹 API 호출 (적금 가입 여부와 관계없이 동일한 API 사용)
   const { 
@@ -201,45 +201,45 @@ export const HomeScreen: React.FC = () => {
         {hasSavings ? (
           // 가입자: 실제 계좌 정보 표시
           <>
-            {savingsAccount?.data && (
-              <TouchableOpacity 
-                style={styles.accountCard}
-                accessibilityRole="button"
-                accessibilityLabel="적금 계좌 카드"
-              >
-                <View style={styles.accountHeader}>
-                  <Text style={styles.accountType}>적금</Text>
-                  <Ionicons name="trending-up" size={20} color={COLORS.secondary} />
-                </View>
-                <Text style={styles.accountBalance}>
-                  {formatCurrency(savingsAccount.data.currentBalance)}
-                </Text>
-                <Text style={styles.accountNumber}>
-                  {savingsAccount.data.accountNumber}
-                </Text>
-                <Text style={styles.monthlyAmount}>
-                  월 {formatCurrency(savingsAccount.data.monthlyAmount)} 납입
-                </Text>
-              </TouchableOpacity>
-            )}
-            {depositAccount?.data && (
-              <TouchableOpacity 
-                style={styles.accountCard}
-                accessibilityRole="button"
-                accessibilityLabel="예금 계좌 카드"
-              >
-                <View style={styles.accountHeader}>
-                  <Text style={styles.accountType}>예금</Text>
-                  <Ionicons name="wallet" size={20} color={COLORS.primary} />
-                </View>
-                <Text style={styles.accountBalance}>
-                  {formatCurrency(depositAccount.data.currentBalance)}
-                </Text>
-                <Text style={styles.accountNumber}>
-                  {depositAccount.data.accountNumber}
-                </Text>
-              </TouchableOpacity>
-            )}
+                         {savingsAccount?.data?.data && savingsAccount.data.data.length > 0 && (
+               <TouchableOpacity 
+                 style={styles.accountCard}
+                 accessibilityRole="button"
+                 accessibilityLabel="적금 계좌 카드"
+               >
+                 <View style={styles.accountHeader}>
+                   <Text style={styles.accountType}>적금</Text>
+                   <Ionicons name="trending-up" size={20} color={COLORS.secondary} />
+                 </View>
+                 <Text style={styles.accountBalance}>
+                   월 {formatCurrency(savingsAccount.data.data[0].monthly_amount)} 납입
+                 </Text>
+                 <Text style={styles.accountNumber}>
+                   계좌번호: {savingsAccount.data.data[0].id}
+                 </Text>
+                 <Text style={styles.monthlyAmount}>
+                   이율: {savingsAccount.data.data[0].interest_rate}%
+                 </Text>
+               </TouchableOpacity>
+             )}
+                         {depositAccount?.data?.data && depositAccount.data.data.length > 0 && (
+               <TouchableOpacity 
+                 style={styles.accountCard}
+                 accessibilityRole="button"
+                 accessibilityLabel="예금 계좌 카드"
+               >
+                 <View style={styles.accountHeader}>
+                   <Text style={styles.accountType}>예금</Text>
+                   <Ionicons name="wallet" size={20} color={COLORS.primary} />
+                 </View>
+                 <Text style={styles.accountBalance}>
+                   입출금 계좌
+                 </Text>
+                 <Text style={styles.accountNumber}>
+                   계좌번호: {depositAccount.data.data[0].account_no}
+                 </Text>
+               </TouchableOpacity>
+             )}
           </>
         ) : (
           // 비가입자: CTA 카드
@@ -272,35 +272,38 @@ export const HomeScreen: React.FC = () => {
         )}
       </ScrollView>
       
-      {/* 페이지 인디케이터 */}
-      <View style={styles.pageIndicator}>
-        {hasSavings ? 
-          [savingsAccount?.data, depositAccount?.data].filter(Boolean).map((_, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.indicatorDot,
-                index === currentCarouselIndex && styles.indicatorDotActive
-              ]}
-              onPress={() => scrollToIndex(index)}
-              accessibilityRole="button"
-              accessibilityLabel={`${index + 1}번째 계좌`}
-            />
-          )) :
-          [1, 2].map((_, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.indicatorDot,
-                index === currentCarouselIndex && styles.indicatorDotActive
-              ]}
-              onPress={() => scrollToIndex(index)}
-              accessibilityRole="button"
-              accessibilityLabel={`${index + 1}번째 카드`}
-            />
-          ))
-        }
-      </View>
+             {/* 페이지 인디케이터 */}
+       <View style={styles.pageIndicator}>
+         {hasSavings ? 
+           [
+             savingsAccount?.data?.data && savingsAccount.data.data.length > 0,
+             depositAccount?.data?.data && depositAccount.data.data.length > 0
+           ].filter(Boolean).map((_, index) => (
+             <TouchableOpacity
+               key={index}
+               style={[
+                 styles.indicatorDot,
+                 index === currentCarouselIndex && styles.indicatorDotActive
+               ]}
+               onPress={() => scrollToIndex(index)}
+               accessibilityRole="button"
+               accessibilityLabel={`${index + 1}번째 계좌`}
+             />
+           )) :
+           [1, 2].map((_, index) => (
+             <TouchableOpacity
+               key={index}
+               style={[
+                 styles.indicatorDot,
+                 index === currentCarouselIndex && styles.indicatorDotActive
+               ]}
+               onPress={() => scrollToIndex(index)}
+               accessibilityRole="button"
+               accessibilityLabel={`${index + 1}번째 카드`}
+             />
+           ))
+         }
+       </View>
     </View>
   );
 

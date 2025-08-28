@@ -49,7 +49,7 @@ import { MyPageStackParamList } from '../../navigation/MyPageStack';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useLogout } from '../../hooks/useAuth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useUserInfo, useAccountInfo } from '../../hooks/useUser';
+import { useUserInfo, useSavingsAccount, useDepositAccount } from '../../hooks/useUser';
 
 // 카드 너비를 고정값으로 설정 (Dimensions 제거)
 const CARD_WIDTH = 300;
@@ -84,32 +84,31 @@ export const MyPageScreen: React.FC = () => {
   // API 훅들
   const { data: userInfo, isLoading: userInfoLoading, error: userInfoError } = useUserInfo();
   
-  // has_savings가 true일 때만 계좌 정보 API 호출
-  const hasSavings = userInfo?.data?.has_savings;
-  const { data: accountInfo, isLoading: accountInfoLoading, error: accountInfoError } = useAccountInfo({
-    enabled: !!hasSavings // has_savings가 true일 때만 API 호출
-  });
+  // 계좌 정보 API 호출 (항상 호출하되, 데이터 존재 여부로 판단)
+  const { data: savingsAccount, isLoading: savingsLoading, error: savingsError } = useSavingsAccount();
+  const { data: depositAccount, isLoading: depositLoading, error: depositError } = useDepositAccount();
+  
+  // 계좌 존재 여부로 hasSavings 판단
+  const hasSavings = (savingsAccount?.data?.data && savingsAccount.data.data.length > 0) || 
+                     (depositAccount?.data?.data && depositAccount.data.data.length > 0);
 
   // API 요청 로그
   console.log('👤 MyPageScreen API 상태:', {
     userInfo: { loading: userInfoLoading, error: userInfoError, data: userInfo?.data ? '있음' : '없음' },
     hasSavings,
-    accountInfo: { 
-      loading: accountInfoLoading, 
-      error: accountInfoError, 
-      data: accountInfo?.data ? '있음' : '없음',
-      enabled: !!hasSavings
-    }
+    savingsAccount: { loading: savingsLoading, error: savingsError, data: savingsAccount?.data ? '있음' : '없음' },
+    depositAccount: { loading: depositLoading, error: depositError, data: depositAccount?.data ? '있음' : '없음' }
   });
 
   // 로딩 상태 처리
   console.log('👤 MyPageScreen 로딩 상태:', {
     userInfoLoading,
-    accountInfoLoading,
-    isLoading: userInfoLoading || accountInfoLoading
+    savingsLoading,
+    depositLoading,
+    isLoading: userInfoLoading || savingsLoading || depositLoading
   });
   
-  if (userInfoLoading || accountInfoLoading) {
+  if (userInfoLoading || savingsLoading || depositLoading) {
     console.log('👤 MyPageScreen 로딩 화면 표시');
     return (
       <SafeAreaView style={styles.container}>
@@ -283,7 +282,7 @@ export const MyPageScreen: React.FC = () => {
           contentContainerStyle={styles.accountCarousel}
         >
           {/* 적금 카드 */}
-          {accountInfo?.data?.saving ? (
+          {savingsAccount?.data?.data && savingsAccount.data.data.length > 0 && (
             <View style={styles.accountCard}>
               <View style={styles.accountHeader}>
                 <View style={styles.accountTypeContainer}>
@@ -296,29 +295,29 @@ export const MyPageScreen: React.FC = () => {
               </View>
               
               <View style={styles.accountBalance}>
-                <Text style={styles.balanceLabel}>현재 잔액</Text>
+                <Text style={styles.balanceLabel}>월 납입금</Text>
                 <Text style={styles.balanceAmount}>
-                  {accountInfo.data.saving.currentBalance.toLocaleString()}원
+                  {savingsAccount.data.data[0].monthly_amount.toLocaleString()}원
                 </Text>
               </View>
               
               <View style={styles.accountDetails}>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>월 납입금</Text>
+                  <Text style={styles.detailLabel}>이율</Text>
                   <Text style={styles.detailValue}>
-                    {accountInfo.data.saving.monthlyAmount.toLocaleString()}원
+                    {savingsAccount.data.data[0].interest_rate}%
                   </Text>
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>계좌번호</Text>
-                  <Text style={styles.detailValue}>{accountInfo.data.saving.accountNumber}</Text>
+                  <Text style={styles.detailValue}>{savingsAccount.data.data[0].id}</Text>
                 </View>
               </View>
             </View>
-          ) : null}
+          )}
 
           {/* 예금 카드 */}
-          {accountInfo?.data?.deposit ? (
+          {depositAccount?.data?.data && depositAccount.data.data.length > 0 && (
             <View style={styles.accountCard}>
               <View style={styles.accountHeader}>
                 <View style={styles.accountTypeContainer}>
@@ -331,20 +330,20 @@ export const MyPageScreen: React.FC = () => {
               </View>
               
               <View style={styles.accountBalance}>
-                <Text style={styles.balanceLabel}>현재 잔액</Text>
+                <Text style={styles.balanceLabel}>입출금 계좌</Text>
                 <Text style={styles.balanceAmount}>
-                  {accountInfo.data.deposit.currentBalance.toLocaleString()}원
+                  활성 상태
                 </Text>
               </View>
               
               <View style={styles.accountDetails}>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>계좌번호</Text>
-                  <Text style={styles.detailValue}>{accountInfo.data.deposit.accountNumber}</Text>
+                  <Text style={styles.detailValue}>{depositAccount.data.data[0].account_no}</Text>
                 </View>
               </View>
             </View>
-          ) : null}
+          )}
         </ScrollView>
       ) : (
         /* has_savings가 false일 때 가입하기 캐러셀 표시 */
