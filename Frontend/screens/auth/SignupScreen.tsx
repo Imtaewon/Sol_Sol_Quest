@@ -91,6 +91,7 @@ export const SignupScreen: React.FC = () => {
       department: '',
       grade: undefined,
     },
+    mode: 'onChange',
   });
 
   const onSubmit = async (data: SignupFormData) => {
@@ -229,7 +230,7 @@ export const SignupScreen: React.FC = () => {
                         <FormTextInput
                           label="이름"
                           placeholder="이름을 입력해주세요"
-                          value={value}
+                          value={value || ''}
                           onChangeText={onChange}
                           error={errors.name?.message}
                         />
@@ -290,8 +291,8 @@ export const SignupScreen: React.FC = () => {
                         <FormTextInput
                           label="출생년도"
                           placeholder="출생년도를 입력해주세요 (예: 2000)"
-                          value={value?.toString() || ''}
-                          onChangeText={(text) => onChange(parseInt(text) || undefined)}
+                          value={value ? value.toString() : ''}
+                          onChangeText={(text) => onChange(text ? parseInt(text) : undefined)}
                           error={errors.birthYear?.message}
                           keyboardType="numeric"
                         />
@@ -305,7 +306,7 @@ export const SignupScreen: React.FC = () => {
                         <FormTextInput
                           label="아이디"
                           placeholder="아이디를 입력해주세요"
-                          value={value}
+                          value={value || ''}
                           onChangeText={onChange}
                           error={errors.username?.message}
                           autoCapitalize="none"
@@ -321,7 +322,7 @@ export const SignupScreen: React.FC = () => {
                         <FormTextInput
                           label="비밀번호"
                           placeholder="비밀번호를 입력해주세요 (8자 이상)"
-                          value={value}
+                          value={value || ''}
                           onChangeText={onChange}
                           error={errors.password?.message}
                           secureTextEntry
@@ -338,7 +339,7 @@ export const SignupScreen: React.FC = () => {
                         <FormTextInput
                           label="비밀번호 확인"
                           placeholder="비밀번호를 다시 입력해주세요"
-                          value={value}
+                          value={value || ''}
                           onChangeText={onChange}
                           error={errors.passwordConfirm?.message}
                           secureTextEntry
@@ -355,7 +356,7 @@ export const SignupScreen: React.FC = () => {
                         <FormTextInput
                           label="이메일"
                           placeholder="이메일을 입력해주세요"
-                          value={value}
+                          value={value || ''}
                           onChangeText={onChange}
                           error={errors.email?.message}
                           keyboardType="email-address"
@@ -433,7 +434,7 @@ export const SignupScreen: React.FC = () => {
                         <FormTextInput
                           label="학과"
                           placeholder="학과를 입력해주세요"
-                          value={value}
+                          value={value || ''}
                           onChangeText={onChange}
                           error={errors.department?.message}
                         />
@@ -521,7 +522,7 @@ export const SignupScreen: React.FC = () => {
                       <FormTextInput
                         label="이름"
                         placeholder="이름을 입력해주세요"
-                        value={value}
+                        value={value || ''}
                         onChangeText={onChange}
                         error={errors.name?.message}
                       />
@@ -582,8 +583,8 @@ export const SignupScreen: React.FC = () => {
                       <FormTextInput
                         label="출생년도"
                         placeholder="출생년도를 입력해주세요 (예: 2000)"
-                        value={value?.toString() || ''}
-                        onChangeText={(text) => onChange(parseInt(text) || undefined)}
+                        value={value ? value.toString() : ''}
+                        onChangeText={(text) => onChange(text ? parseInt(text) : undefined)}
                         error={errors.birthYear?.message}
                         keyboardType="numeric"
                       />
@@ -597,7 +598,7 @@ export const SignupScreen: React.FC = () => {
                       <FormTextInput
                         label="아이디"
                         placeholder="아이디를 입력해주세요"
-                        value={value}
+                        value={value || ''}
                         onChangeText={onChange}
                         error={errors.username?.message}
                         autoCapitalize="none"
@@ -613,7 +614,7 @@ export const SignupScreen: React.FC = () => {
                       <FormTextInput
                         label="비밀번호"
                         placeholder="비밀번호를 입력해주세요 (8자 이상)"
-                        value={value}
+                        value={value || ''}
                         onChangeText={onChange}
                         error={errors.password?.message}
                         secureTextEntry
@@ -630,7 +631,7 @@ export const SignupScreen: React.FC = () => {
                       <FormTextInput
                         label="비밀번호 확인"
                         placeholder="비밀번호를 다시 입력해주세요"
-                        value={value}
+                        value={value || ''}
                         onChangeText={onChange}
                         error={errors.passwordConfirm?.message}
                         secureTextEntry
@@ -647,7 +648,7 @@ export const SignupScreen: React.FC = () => {
                       <FormTextInput
                         label="이메일"
                         placeholder="이메일을 입력해주세요"
-                        value={value}
+                        value={value || ''}
                         onChangeText={onChange}
                         error={errors.email?.message}
                         keyboardType="email-address"
@@ -725,7 +726,7 @@ export const SignupScreen: React.FC = () => {
                       <FormTextInput
                         label="학과"
                         placeholder="학과를 입력해주세요"
-                        value={value}
+                        value={value || ''}
                         onChangeText={onChange}
                         error={errors.department?.message}
                       />
