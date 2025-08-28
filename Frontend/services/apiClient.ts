@@ -50,8 +50,18 @@ apiClient.interceptors.request.use(
   async (config) => {
     try {
       const token = await AsyncStorage.getItem('auth_token');
+      console.log('🔑 API 요청 토큰 확인:', {
+        url: config.url,
+        method: config.method,
+        hasToken: !!token,
+        tokenLength: token?.length || 0
+      });
+      
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('✅ 토큰이 헤더에 추가됨');
+      } else {
+        console.log('⚠️ 토큰이 없음');
       }
     } catch (error) {
       console.error('토큰 가져오기 실패:', error);

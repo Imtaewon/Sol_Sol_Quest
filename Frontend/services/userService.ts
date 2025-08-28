@@ -60,9 +60,15 @@ export const userService = {
   // 사용자 정보 조회
   getUserInfo: async (): Promise<ApiResponse<UserInfo>> => {
     console.log('🌐 userService.getUserInfo HTTP 요청 시작');
-    const response = await apiClient.get<ApiResponse<UserInfo>>('/user/info');
-    console.log('🌐 userService.getUserInfo HTTP 요청 완료:', response.status);
-    return response.data;
+    try {
+      const response = await apiClient.get<ApiResponse<UserInfo>>('/api/v1/users/me');
+      console.log('🌐 userService.getUserInfo HTTP 요청 완료:', response.status);
+      console.log('🌐 userService.getUserInfo 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('🌐 userService.getUserInfo 에러:', error);
+      throw error;
+    }
   },
 
   // 적금 가입용 개인정보 조회
@@ -80,8 +86,14 @@ export const userService = {
   // 계좌 정보 조회
   getAccountInfo: async (): Promise<ApiResponse<AccountInfo>> => {
     console.log('🌐 userService.getAccountInfo HTTP 요청 시작');
-    const response = await apiClient.get<ApiResponse<AccountInfo>>('/user/account');
-    console.log('🌐 userService.getAccountInfo HTTP 요청 완료:', response.status);
-    return response.data;
+    try {
+      const response = await apiClient.get<ApiResponse<AccountInfo>>('/api/v1/accounts');
+      console.log('🌐 userService.getAccountInfo HTTP 요청 완료:', response.status);
+      console.log('🌐 userService.getAccountInfo 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('🌐 userService.getAccountInfo 에러:', error);
+      throw error;
+    }
   },
 };

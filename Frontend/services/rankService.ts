@@ -30,9 +30,15 @@ export const rankService = {
   // 내 학교 랭킹 조회 (비가입자)
   getMySchoolRank: async (): Promise<ApiResponse<MySchoolRank>> => {
     console.log('🌐 rankService.getMySchoolRank HTTP 요청 시작');
-    const response = await apiClient.get<ApiResponse<MySchoolRank>>('/ranks/my-school');
-    console.log('🌐 rankService.getMySchoolRank HTTP 요청 완료:', response.status);
-    return response.data;
+    try {
+      const response = await apiClient.get<ApiResponse<MySchoolRank>>('/api/v1/universities/leaderboard');
+      console.log('🌐 rankService.getMySchoolRank HTTP 요청 완료:', response.status);
+      console.log('🌐 rankService.getMySchoolRank 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('🌐 rankService.getMySchoolRank 에러:', error);
+      throw error;
+    }
   },
 
   // 내 학교 랭킹 조회 (가입자)
@@ -44,9 +50,15 @@ export const rankService = {
   // 상위 10개 학교 조회 (총점 기준)
   getTopSchoolsByTotal: async (): Promise<ApiResponse<SchoolRank[]>> => {
     console.log('🌐 rankService.getTopSchoolsByTotal HTTP 요청 시작');
-    const response = await apiClient.get<ApiResponse<SchoolRank[]>>('/ranks/top-schools/total');
-    console.log('🌐 rankService.getTopSchoolsByTotal HTTP 요청 완료:', response.status);
-    return response.data;
+    try {
+      const response = await apiClient.get<ApiResponse<SchoolRank[]>>('/api/v1/universities/leaderboard?limit=10');
+      console.log('🌐 rankService.getTopSchoolsByTotal HTTP 요청 완료:', response.status);
+      console.log('🌐 rankService.getTopSchoolsByTotal 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('🌐 rankService.getTopSchoolsByTotal 에러:', error);
+      throw error;
+    }
   },
 
   // 상위 10개 학교 조회 (평균 기준)

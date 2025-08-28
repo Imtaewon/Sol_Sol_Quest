@@ -48,46 +48,70 @@ export const questService = {
   // 추천 퀘스트 조회
   getRecommendedQuests: async (): Promise<ApiResponse<RecommendedQuest[]>> => {
     console.log('🌐 questService.getRecommendedQuests HTTP 요청 시작');
-    const response = await apiClient.get<ApiResponse<RecommendedQuest[]>>('/quests/recommended');
-    console.log('🌐 questService.getRecommendedQuests HTTP 요청 완료:', response.status);
-    return response.data;
+    try {
+      const response = await apiClient.get<ApiResponse<RecommendedQuest[]>>('/api/v1/quests?type=recommended');
+      console.log('🌐 questService.getRecommendedQuests HTTP 요청 완료:', response.status);
+      console.log('🌐 questService.getRecommendedQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('🌐 questService.getRecommendedQuests 에러:', error);
+      throw error;
+    }
   },
 
   // 성장 퀘스트 조회 (진행중 최대 5개)
   getGrowthQuestsInProgress: async (): Promise<ApiResponse<Quest[]>> => {
-    const response = await apiClient.get<ApiResponse<Quest[]>>('/quests/growth/in-progress');
-    return response.data;
+    try {
+      const response = await apiClient.get<ApiResponse<Quest[]>>('/api/v1/quests?category=growth&status=in-progress');
+      console.log('🌐 questService.getGrowthQuestsInProgress 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('🌐 questService.getGrowthQuestsInProgress 에러:', error);
+      throw error;
+    }
   },
 
   // 성장 퀘스트 전체 조회
   getAllGrowthQuests: async (): Promise<ApiResponse<Quest[]>> => {
-    const response = await apiClient.get<ApiResponse<Quest[]>>('/quests/growth/all');
+    const response = await apiClient.get<ApiResponse<Quest[]>>('/api/v1/quests?category=growth');
     return response.data;
   },
 
   // 일상 퀘스트 조회
   getDailyQuests: async (): Promise<ApiResponse<Quest[]>> => {
     console.log('🌐 questService.getDailyQuests HTTP 요청 시작');
-    const response = await apiClient.get<ApiResponse<Quest[]>>('/quests/daily');
-    console.log('🌐 questService.getDailyQuests HTTP 요청 완료:', response.status);
-    return response.data;
+    try {
+      const response = await apiClient.get<ApiResponse<Quest[]>>('/api/v1/quests?category=daily');
+      console.log('🌐 questService.getDailyQuests HTTP 요청 완료:', response.status);
+      console.log('🌐 questService.getDailyQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('🌐 questService.getDailyQuests 에러:', error);
+      throw error;
+    }
   },
 
   // 돌발 퀘스트 조회
   getSurpriseQuests: async (): Promise<ApiResponse<Quest[]>> => {
-    const response = await apiClient.get<ApiResponse<Quest[]>>('/quests/surprise');
-    return response.data;
+    try {
+      const response = await apiClient.get<ApiResponse<Quest[]>>('/api/v1/quests?category=surprise');
+      console.log('🌐 questService.getSurpriseQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error) {
+      console.error('🌐 questService.getSurpriseQuests 에러:', error);
+      throw error;
+    }
   },
 
   // 퀘스트 진행 내역 조회
   getQuestHistory: async (category: string): Promise<ApiResponse<QuestHistory[]>> => {
-    const response = await apiClient.get<ApiResponse<QuestHistory[]>>(`/quests/history/${category}`);
+    const response = await apiClient.get<ApiResponse<QuestHistory[]>>(`/api/v1/quests?category=${category}&status=completed`);
     return response.data;
   },
 
   // 퀘스트 수령
   claimQuest: async (data: ClaimQuestRequest): Promise<ApiResponse> => {
-    const response = await apiClient.post<ApiResponse>('/quests/claim', data);
+    const response = await apiClient.post<ApiResponse>('/api/v1/quests/claim', data);
     return response.data;
   },
 };
