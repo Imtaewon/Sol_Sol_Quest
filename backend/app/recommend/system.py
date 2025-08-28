@@ -3,7 +3,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Dict, Optional
 import random
-from datetime import datetime
+from datetime import datetime, date
+import secrets
+import string
 
 # 추천 시스템 클래스
 class QuestRecommendationSystem:
@@ -312,8 +314,63 @@ class QuestRecommendationSystem:
         
         return sorted(scored_quests, key=lambda x: x["recommendation_score"], reverse=True)
 
+    def _generate_ulid_like_id(self) -> str:
+        """ULID 형식의 ID 생성 (26자리)"""
+        # 실제 ULID는 시간 기반이지만, 여기서는 랜덤 문자열로 생성
+        # 형식: 01HJQXXX... (26자리)
+        prefix = "01HJQ"  # 고정 prefix
+        remaining_length = 26 - len(prefix)
+        random_part = ''.join(secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) 
+                            for _ in range(remaining_length))
+        return prefix + random_part
+
+    def _save_recommendations_to_db(self, db: Session, user_id: str, quest_ids: List[str]) -> None:
+        """추천된 퀘스트를 quest_recommendations 테이블에 저장"""
+        try:
+            today = date.today()
+            
+            for quest_id in quest_ids:
+                # 이미 같은 날짜에 같은 퀘스트가 추천되었는지 확인
+                check_query = text("""
+                    SELECT id FROM quest_recommendations 
+                    WHERE user_id = :user_id 
+                    AND quest_id = :quest_id 
+                    AND recommendation_date = :recommendation_date
+                """)
+                
+                existing = db.execute(check_query, {
+                    "user_id": user_id,
+                    "quest_id": quest_id,
+                    "recommendation_date": today
+                }).fetchone()
+                
+                # 이미 존재하지 않는 경우에만 삽입
+                if not existing:
+                    insert_query = text("""
+                        INSERT INTO quest_recommendations 
+                        (id, user_id, quest_id, recommendation_date, is_click, is_cleared)
+                        VALUES (:id, :user_id, :quest_id, :recommendation_date, :is_click, :is_cleared)
+                    """)
+                    
+                    db.execute(insert_query, {
+                        "id": self._generate_ulid_like_id(),
+                        "user_id": user_id,
+                        "quest_id": quest_id,
+                        "recommendation_date": today,
+                        "is_click": 0,  # 초기값: False
+                        "is_cleared": 0  # 초기값: False
+                    })
+            
+            db.commit()
+            print(f"사용자 {user_id}에 대해 {len(quest_ids)}개의 퀘스트 추천을 DB에 저장했습니다.")
+            
+        except Exception as e:
+            db.rollback()
+            print(f"추천 저장 중 오류 발생: {e}")
+            raise
+
     def recommend_quests(self, db: Session, user_id: str) -> List[str]:
-        """메인 추천 함수 - 3개의 퀘스트 ID 반환"""
+        """메인 추천 함수 - 3개의 퀘스트 ID 반환 및 DB 저장"""
         try:
             # 1. 사용자 정보 조회
             user_info = self.get_user_info(db, user_id)
@@ -323,26 +380,37 @@ class QuestRecommendationSystem:
             
             if not survey_answers:
                 # 설문조사 답변이 없는 경우 기본 추천
-                return self._get_default_recommendations(db)
+                quest_ids = self._get_default_recommendations(db)
+            else:
+                # 3. 사용 가능한 퀘스트 조회
+                available_quests = self.get_available_quests(db)
+                
+                # 4. 사용자 선호도 분석
+                category_scores = self.analyze_user_preferences(user_info, survey_answers)
+                
+                # 5. 퀘스트 점수 계산 및 정렬
+                scored_quests = self.score_quests(available_quests, category_scores)
+                
+                # 6. 다양성을 위한 최종 선택 (카테고리별로 분산)
+                recommended_quests = self._select_diverse_quests(scored_quests, 3)
+                
+                quest_ids = [quest["id"] for quest in recommended_quests]
             
-            # 3. 사용 가능한 퀘스트 조회
-            available_quests = self.get_available_quests(db)
+            # 7. DB에 추천 기록 저장
+            self._save_recommendations_to_db(db, user_id, quest_ids)
             
-            # 4. 사용자 선호도 분석
-            category_scores = self.analyze_user_preferences(user_info, survey_answers)
-            
-            # 5. 퀘스트 점수 계산 및 정렬
-            scored_quests = self.score_quests(available_quests, category_scores)
-            
-            # 6. 다양성을 위한 최종 선택 (카테고리별로 분산)
-            recommended_quests = self._select_diverse_quests(scored_quests, 3)
-            
-            return [quest["id"] for quest in recommended_quests]
+            return quest_ids
             
         except Exception as e:
             print(f"추천 시스템 오류: {e}")
             # 오류 발생 시 기본 추천
-            return self._get_default_recommendations(db)
+            default_ids = self._get_default_recommendations(db)
+            # 오류가 발생해도 기본 추천은 DB에 저장 시도
+            try:
+                self._save_recommendations_to_db(db, user_id, default_ids)
+            except:
+                pass  # 저장 실패해도 추천은 반환
+            return default_ids
 
     def _select_diverse_quests(self, scored_quests: List[Dict], count: int) -> List[Dict]:
         """다양한 카테고리에서 퀘스트 선택"""
