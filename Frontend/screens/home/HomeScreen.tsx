@@ -84,13 +84,13 @@ export const HomeScreen: React.FC = () => {
   const { data: savingsAccount, isLoading: savingsLoading, error: savingsError, refetch: refetchSavings } = savingsQuery;
   const { data: depositAccount, isLoading: depositLoading, error: depositError, refetch: refetchDeposit } = depositQuery;
   
-  // 적금 가입 여부에 따라 다른 랭킹 API 호출
+  // 학교 랭킹 API 호출 (적금 가입 여부와 관계없이 동일한 API 사용)
   const { 
     data: schoolRank, 
     isLoading: rankLoading, 
     error: rankError, 
     refetch: refetchRank 
-  } = hasSavings ? useMySchoolRankWithUser() : useMySchoolRank();
+  } = useMySchoolRank();
   
   // has_savings가 true일 때만 추천 퀘스트 조회
   const questsQuery = hasSavings ? useRecommendedQuests(hasSavings) : { data: undefined, isLoading: false, error: undefined, refetch: () => Promise.resolve() };
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   carouselContainer: {
     paddingHorizontal: SPACING.lg,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   accountCard: {
     backgroundColor: COLORS.white,
@@ -487,6 +487,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     width: width - SPACING.lg * 2,
+    height: 200, // 고정 높이 설정
     flexShrink: 0,
   },
   accountHeader: {
@@ -704,6 +705,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.gray[200],
     borderStyle: 'dashed',
+    height: 200, // 고정 높이 설정
   },
   savingsCTAContent: {
     alignItems: 'center',
@@ -729,6 +731,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.gray[200],
     borderStyle: 'dashed',
+    height: 200, // 고정 높이 설정
   },
   depositCTAContent: {
     alignItems: 'center',

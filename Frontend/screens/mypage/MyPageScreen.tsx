@@ -35,6 +35,7 @@ import {
   TouchableOpacity,
   Alert,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
@@ -194,12 +195,16 @@ export const MyPageScreen: React.FC = () => {
       <View style={styles.personalInfoCard}>
         <View style={styles.profileRow}>
           <View style={styles.profileImage}>
-            <Ionicons name="person" size={24} color={COLORS.white} />
+            <Image 
+              source={require('../../assets/MySolCharacter.png')} 
+              style={styles.profileImageStyle}
+              resizeMode="cover"
+            />
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{user?.real_name || '사용자'}</Text>
+            <Text style={styles.userName}>{userInfo?.data?.name || '사용자'}</Text>
             <Text style={styles.userDetails}>
-              {user?.school_id ? '대학생' : '게스트'} • {user?.department || '학과 미설정'}
+              {userInfo?.data?.university_name || '학교 미설정'} • {userInfo?.data?.major || '학과 미설정'} • {userInfo?.data?.grade || '학년 미설정'}학년
             </Text>
           </View>
           <TouchableOpacity style={styles.editButton}>
@@ -432,6 +437,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
+    overflow: 'hidden',
+  },
+  profileImageStyle: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
   },
   profileInfo: {
     flex: 1,

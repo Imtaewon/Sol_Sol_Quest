@@ -29,7 +29,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { questService, ClaimQuestRequest } from '../services/questService';
+import { questService, ClaimQuestRequest, categorizeQuests, convertQuestListItemToQuest } from '../services/questService';
 import Toast from 'react-native-toast-message';
 
 // 추천 퀘스트 조회 훅
@@ -48,72 +48,124 @@ export const useRecommendedQuests = (hasSavings: boolean = false) => {
   });
 };
 
-// 성장 퀘스트 조회 훅 (진행중 최대 5개)
+// 전체 퀘스트 조회 훅 (하나의 API로 모든 퀘스트 가져오기)
+export const useAllQuests = () => {
+  console.log('🔍 useAllQuests 훅 호출됨');
+  return useQuery({
+    queryKey: ['quests', 'all'],
+    queryFn: async () => {
+      console.log('📡 useAllQuests API 호출 시작');
+      const result = await questService.getAllQuests();
+      console.log('📡 useAllQuests API 호출 완료:', result.success ? '성공' : '실패');
+      return result;
+    },
+    staleTime: 2 * 60 * 1000, // 2분
+    gcTime: 5 * 60 * 1000, // 5분
+  });
+};
+
+// 카테고리별 퀘스트 조회 훅들 (기존 호환성을 위해 유지)
 export const useGrowthQuestsInProgress = () => {
-  console.log('🔍 useGrowthQuestsInProgress 훅 호출됨');
-  return useQuery({
-    queryKey: ['quests', 'growth', 'inProgress'],
-    queryFn: async () => {
-      console.log('📡 useGrowthQuestsInProgress API 호출 시작');
-      const result = await questService.getGrowthQuestsInProgress();
-      console.log('📡 useGrowthQuestsInProgress API 호출 완료:', result.success ? '성공' : '실패');
-      return result;
-    },
-    staleTime: 1 * 60 * 1000, // 1분
-    gcTime: 3 * 60 * 1000, // 3분
-  });
+  const allQuestsQuery = useAllQuests();
+  
+  if (!allQuestsQuery.data?.data?.quests) {
+    return {
+      ...allQuestsQuery,
+      data: { success: true, data: [] }
+    };
+  }
+
+  const categorized = categorizeQuests(allQuestsQuery.data.data.quests);
+  const growthQuests = categorized.growth
+    .filter(quest => quest.user_status === 'IN_PROGRESS')
+    .slice(0, 5)
+    .map(convertQuestListItemToQuest);
+
+  return {
+    ...allQuestsQuery,
+    data: { success: true, data: growthQuests }
+  };
 };
 
-// 성장 퀘스트 전체 조회 훅
 export const useAllGrowthQuests = () => {
-  return useQuery({
-    queryKey: ['quests', 'growth', 'all'],
-    queryFn: () => questService.getAllGrowthQuests(),
-    staleTime: 2 * 60 * 1000, // 2분
-    gcTime: 5 * 60 * 1000, // 5분
-  });
+  const allQuestsQuery = useAllQuests();
+  
+  if (!allQuestsQuery.data?.data?.quests) {
+    return {
+      ...allQuestsQuery,
+      data: { success: true, data: [] }
+    };
+  }
+
+  const categorized = categorizeQuests(allQuestsQuery.data.data.quests);
+  const growthQuests = categorized.growth.map(convertQuestListItemToQuest);
+
+  return {
+    ...allQuestsQuery,
+    data: { success: true, data: growthQuests }
+  };
 };
 
-// 일상 퀘스트 조회 훅
 export const useDailyQuests = () => {
-  console.log('🔍 useDailyQuests 훅 호출됨');
-  return useQuery({
-    queryKey: ['quests', 'daily'],
-    queryFn: async () => {
-      console.log('📡 useDailyQuests API 호출 시작');
-      const result = await questService.getDailyQuests();
-      console.log('📡 useDailyQuests API 호출 완료:', result.success ? '성공' : '실패');
-      return result;
-    },
-    staleTime: 2 * 60 * 1000, // 2분
-    gcTime: 5 * 60 * 1000, // 5분
-  });
+  const allQuestsQuery = useAllQuests();
+  
+  if (!allQuestsQuery.data?.data?.quests) {
+    return {
+      ...allQuestsQuery,
+      data: { success: true, data: [] }
+    };
+  }
+
+  const categorized = categorizeQuests(allQuestsQuery.data.data.quests);
+  const dailyQuests = categorized.daily.map(convertQuestListItemToQuest);
+
+  return {
+    ...allQuestsQuery,
+    data: { success: true, data: dailyQuests }
+  };
 };
 
-// 돌발 퀘스트 조회 훅
 export const useSurpriseQuests = () => {
-  console.log('🔍 useSurpriseQuests 훅 호출됨');
-  return useQuery({
-    queryKey: ['quests', 'surprise'],
-    queryFn: async () => {
-      console.log('📡 useSurpriseQuests API 호출 시작');
-      const result = await questService.getSurpriseQuests();
-      console.log('📡 useSurpriseQuests API 호출 완료:', result.success ? '성공' : '실패');
-      return result;
-    },
-    staleTime: 2 * 60 * 1000, // 2분
-    gcTime: 5 * 60 * 1000, // 5분
-  });
+  const allQuestsQuery = useAllQuests();
+  
+  if (!allQuestsQuery.data?.data?.quests) {
+    return {
+      ...allQuestsQuery,
+      data: { success: true, data: [] }
+    };
+  }
+
+  const categorized = categorizeQuests(allQuestsQuery.data.data.quests);
+  const surpriseQuests = categorized.surprise.map(convertQuestListItemToQuest);
+
+  return {
+    ...allQuestsQuery,
+    data: { success: true, data: surpriseQuests }
+  };
 };
 
-// 퀘스트 진행 내역 조회 훅
+// 퀘스트 진행 내역 조회 훅 (완료된 퀘스트만 필터링)
 export const useQuestHistory = (category: string) => {
-  return useQuery({
-    queryKey: ['quests', 'history', category],
-    queryFn: () => questService.getQuestHistory(category),
-    staleTime: 2 * 60 * 1000, // 2분
-    gcTime: 5 * 60 * 1000, // 5분
-  });
+  const allQuestsQuery = useAllQuests();
+  
+  if (!allQuestsQuery.data?.data?.quests) {
+    return {
+      ...allQuestsQuery,
+      data: { success: true, data: [] }
+    };
+  }
+
+  const categorized = categorizeQuests(allQuestsQuery.data.data.quests);
+  const categoryKey = category === 'daily' ? 'daily' : category;
+  const categoryQuests = categorized[categoryKey as keyof typeof categorized] || [];
+  const completedQuests = categoryQuests
+    .filter(quest => quest.user_status === 'APPROVED')
+    .map(convertQuestListItemToQuest);
+
+  return {
+    ...allQuestsQuery,
+    data: { success: true, data: completedQuests }
+  };
 };
 
 // 퀘스트 수령 훅
@@ -125,9 +177,7 @@ export const useClaimQuest = () => {
     onSuccess: (response) => {
       if (response.success) {
         // 관련 쿼리 무효화하여 리페치
-        queryClient.invalidateQueries({ queryKey: ['quests', 'recommended'] });
-        queryClient.invalidateQueries({ queryKey: ['quests', 'growth'] });
-        queryClient.invalidateQueries({ queryKey: ['quests', 'history'] });
+        queryClient.invalidateQueries({ queryKey: ['quests'] });
         queryClient.invalidateQueries({ queryKey: ['user'] });
         
         Toast.show({
