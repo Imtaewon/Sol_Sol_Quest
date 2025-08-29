@@ -135,7 +135,6 @@ class QuestRecommendationSystem:
             SELECT question_id, question_type, option_order_no
             FROM survey_answers 
             WHERE user_id = :user_id
-            ORDER BY question_type
         """)
         results = db.execute(query, {"user_id": user_id}).fetchall()
         
