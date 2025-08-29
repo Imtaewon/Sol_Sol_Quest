@@ -75,6 +75,7 @@ export interface Quest {
   isCompleted?: boolean;
   isClaimed?: boolean;
   link_url?: string; // 백엔드와 일치하도록 추가
+  user_status?: string; // 원본 상태 정보
 }
 
 // 퀘스트 목록 응답 타입
@@ -233,6 +234,26 @@ export const categorizeQuests = (quests: QuestListItem[]) => {
 
 // 백엔드 QuestListItem을 프론트엔드 Quest로 변환하는 함수
 export const convertQuestListItemToQuest = (questItem: QuestListItem): Quest => {
+  // 진행률 계산
+  const progress = questItem.progress_count || 0;
+  const maxProgress = questItem.user_target_count || 1;
+  const progressPercent = maxProgress > 0 ? Math.min((progress / maxProgress) * 100, 100) : 0;
+  
+  // 완료 상태 판단 (CLEAR 또는 APPROVED 상태면 완료)
+  const isCompleted = questItem.user_status === 'APPROVED' || questItem.user_status === 'CLEAR';
+  const isClaimed = questItem.user_status === 'APPROVED';
+  
+  console.log('🔄 convertQuestListItemToQuest 변환 결과:', {
+    id: questItem.id,
+    title: questItem.title,
+    progress,
+    maxProgress,
+    progressPercent,
+    user_status: questItem.user_status,
+    isCompleted,
+    isClaimed
+  });
+  
   return {
     id: questItem.id,
     title: questItem.title,
@@ -240,10 +261,11 @@ export const convertQuestListItemToQuest = (questItem: QuestListItem): Quest => 
     category: questItem.type === 'LIFE' ? 'daily' : 
               questItem.type === 'GROWTH' ? 'growth' : 'surprise', // 백엔드 enum을 프론트엔드 카테고리로 매핑
     expReward: questItem.reward_exp,
-    progress: questItem.progress_count,
-    maxProgress: questItem.user_target_count,
-    isCompleted: questItem.user_status === 'APPROVED',
-    isClaimed: questItem.user_status === 'APPROVED',
-    link_url: questItem.link_url // 백엔드 link_url 필드 매핑
+    progress,
+    maxProgress,
+    isCompleted,
+    isClaimed,
+    link_url: questItem.link_url, // 백엔드 link_url 필드 매핑
+    user_status: questItem.user_status // 원본 상태 정보도 포함
   };
 };

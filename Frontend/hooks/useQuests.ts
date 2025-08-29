@@ -40,14 +40,14 @@ export const useRecommendedQuests = (hasSavings: boolean = false) => {
     queryFn: async () => {
       console.log('📡 useRecommendedQuests API 호출 시작');
       const result = await questService.getRecommendedQuests();
-      console.log('📡 useRecommendedQuests API 호출 완료:', result.success ? '성공' : '실패');
+      console.log('📡 useRecommendedQuests API 호출 완료: 성공');
       console.log('📡 useRecommendedQuests 결과 데이터 구조:', {
-        hasData: !!result.data,
-        hasQuestIds: !!result.data?.quest_ids,
-        isQuestIdsArray: Array.isArray(result.data?.quest_ids),
-        questIdsLength: result.data?.quest_ids?.length || 0,
+        hasData: !!result,
+        hasQuestIds: !!result?.quest_ids,
+        isQuestIdsArray: Array.isArray(result?.quest_ids),
+        questIdsLength: result?.quest_ids?.length || 0,
         resultKeys: Object.keys(result),
-        dataKeys: result.data ? Object.keys(result.data) : []
+        dataKeys: result ? Object.keys(result) : []
       });
       console.log('📡 useRecommendedQuests 결과 데이터:', JSON.stringify(result, null, 2));
       return result;

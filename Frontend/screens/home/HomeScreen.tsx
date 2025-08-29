@@ -130,7 +130,7 @@ export const HomeScreen: React.FC = () => {
     savingsAccount: { loading: savingsLoading, error: savingsError, data: savingsAccount?.data ? '있음' : '없음' },
     depositAccount: { loading: depositLoading, error: depositError, data: depositAccount?.data ? '있음' : '없음' },
     schoolRank: { loading: rankLoading, error: rankError, data: schoolRank?.data ? '있음' : '없음' },
-    recommendedQuests: { loading: questsLoading, error: questsError, data: recommendedQuests?.data ? '있음' : '없음' }
+    recommendedQuests: { loading: questsLoading, error: questsError, data: recommendedQuests ? '있음' : '없음' }
   });
 
   const claimQuestMutation = useClaimQuest();

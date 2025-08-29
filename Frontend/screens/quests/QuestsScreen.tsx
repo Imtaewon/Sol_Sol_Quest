@@ -234,9 +234,9 @@ export const QuestsScreen: React.FC = () => {
    * @returns 진행률 퍼센트 (0-100)
    */
   const getQuestProgress = (quest: any) => {
-    // 백엔드 데이터 구조에 맞게 수정
-    if (!quest.progress_count || !quest.user_target_count) return 0;
-    return Math.min((quest.progress_count / quest.user_target_count) * 100, 100);
+    // 변환된 데이터 구조 사용 (progress, maxProgress)
+    if (!quest.progress || !quest.maxProgress) return 0;
+    return Math.min((quest.progress / quest.maxProgress) * 100, 100);
   };
 
   /**
@@ -245,9 +245,9 @@ export const QuestsScreen: React.FC = () => {
    * @returns 상태에 따른 한글 텍스트
    */
   const getQuestStatusText = (quest: any) => {
-    if (quest.user_status === 'APPROVED') return '완료';
+    if (quest.isCompleted) return '완료';
     if (quest.user_status === 'CLEAR') return '수령 가능';
-    if (quest.progress_count && quest.progress_count > 0) return '진행중';
+    if (quest.progress && quest.progress > 0) return '진행중';
     return '미시작';
   };
 
@@ -263,7 +263,9 @@ export const QuestsScreen: React.FC = () => {
       progress: quest.progress,
       maxProgress: quest.maxProgress,
       isCompleted: quest.isCompleted,
-      isClaimed: quest.isClaimed
+      isClaimed: quest.isClaimed,
+      user_status: quest.user_status, // 원본 백엔드 데이터
+      rawQuestData: quest // 전체 원본 데이터 확인
     });
 
     // 적금 미가입자인 경우 간단한 카드 표시
@@ -296,10 +298,10 @@ export const QuestsScreen: React.FC = () => {
     const progress = getQuestProgress(quest);
     const statusText = getQuestStatusText(quest);
     
-    // 퀘스트 상태별 버튼 표시 조건 (백엔드 데이터 구조에 맞게 수정)
-    const isInProgress = quest.progress_count && quest.progress_count > 0 && quest.user_status !== 'APPROVED';
+    // 퀘스트 상태별 버튼 표시 조건 (변환된 데이터 구조 사용)
+    const isInProgress = quest.progress && quest.progress > 0 && !quest.isCompleted;
     const canClaim = quest.user_status === 'CLEAR';
-    const isCompleted = quest.isClaimed;
+    const isCompleted = quest.isCompleted;
 
     console.log('🎯 퀘스트 상태 계산:', {
       progress,
@@ -322,9 +324,6 @@ export const QuestsScreen: React.FC = () => {
                 { backgroundColor: QUEST_TYPE_COLORS[quest.type] }
               ]} 
             />
-            <Text style={styles.questTypeText}>
-              {quest.type === 'daily' ? '일상' : quest.type === 'growth' ? '성장' : '돌발'}
-            </Text>
           </View>
           
           <View style={styles.questReward}>
@@ -356,7 +355,7 @@ export const QuestsScreen: React.FC = () => {
               />
             </View>
             <Text style={styles.progressText}>
-              {quest.progress_count || 0} / {quest.user_target_count || 1}
+              {quest.progress || 0} / {quest.maxProgress || 1}
             </Text>
           </View>
 
