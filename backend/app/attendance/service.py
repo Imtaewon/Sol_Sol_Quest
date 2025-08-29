@@ -66,6 +66,9 @@ def check_in_and_clear_daily_quest(db: Session, user_id: str) -> int:
             user_id=user_id,
             quest_id=QUEST_ID_DAILY,
             status="CLEAR",
+            progress_count=1,
+            target_count=1,
+            period_scope="DAILY",
         )
         db.add(qa)
 
