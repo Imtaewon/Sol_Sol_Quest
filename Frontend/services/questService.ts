@@ -88,7 +88,24 @@ export interface QuestListResponse {
   };
 }
 
-// 새로운 추천 퀘스트 응답 타입
+// 새로운 추천 퀘스트 응답 타입 (전체 퀘스트 정보)
+export interface RecommendedQuestDetail {
+  id: string;
+  type: string;
+  title: string;
+  category: string;
+  verify_method: string;
+  verify_params?: string;
+  reward_exp: number;
+  target_count: number;
+  period_scope: string;
+  active: boolean;
+  lat?: number;
+  lng?: number;
+  quest_link_url?: string;
+  created_at?: string;
+}
+
 export interface RecommendedQuestsResponse {
   quest_ids: string[];
   message: string;
@@ -124,11 +141,11 @@ export interface ClaimQuestRequest {
 
 // 퀘스트 서비스
 export const questService = {
-  // 추천 퀘스트 조회 (새로운 응답 형식)
-  getRecommendedQuests: async (): Promise<RecommendedQuestsResponse> => {
+  // 추천 퀘스트 조회 (전체 퀘스트 정보)
+  getRecommendedQuests: async (): Promise<RecommendedQuestDetail[]> => {
     console.log('🌐 questService.getRecommendedQuests HTTP 요청 시작');
     try {
-      const response = await apiClient.get<RecommendedQuestsResponse>('/api/v1/recommendations/quests/ids-only');
+      const response = await apiClient.get<RecommendedQuestDetail[]>('/api/v1/recommendations/quests');
       console.log('🌐 questService.getRecommendedQuests HTTP 요청 완료:', response.status);
       console.log('🌐 questService.getRecommendedQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
       return response.data;

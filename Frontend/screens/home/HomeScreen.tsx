@@ -371,21 +371,23 @@ export const HomeScreen: React.FC = () => {
       </View>
       
       {hasSavings ? (
-        recommendedQuests?.quest_ids && Array.isArray(recommendedQuests.quest_ids) && recommendedQuests.quest_ids.length > 0 ? (
+        recommendedQuests && Array.isArray(recommendedQuests) && recommendedQuests.length > 0 ? (
           <View style={styles.questsList}>
-            {recommendedQuests.quest_ids.slice(0, 3).map((questId: string, index: number) => (
-              <View key={questId} style={styles.questItem}>
+            {recommendedQuests.slice(0, 3).map((quest, index: number) => (
+              <View key={quest.id} style={styles.questItem}>
                 <View style={styles.questInfo}>
-                  <Text style={styles.questTitle}>추천 퀘스트 {index + 1}</Text>
-                  <Text style={styles.questDescription}>퀘스트 ID: {questId}</Text>
+                  <Text style={styles.questTitle}>{quest.title}</Text>
+                  <Text style={styles.questDescription}>
+                    {quest.category} • {quest.verify_method}
+                  </Text>
                 </View>
                 <View style={styles.questReward}>
-                  <Text style={styles.questRewardText}>EXP 보상</Text>
+                  <Text style={styles.questRewardText}>{quest.reward_exp} EXP</Text>
                   <PrimaryButton
                     title="시작하기"
                     onPress={() => {
                       // 퀘스트 상세 페이지로 이동하거나 퀘스트 시작 로직
-                      console.log('퀘스트 시작:', questId);
+                      console.log('퀘스트 시작:', quest.id);
                     }}
                     size="small"
                     style={styles.claimButton}
@@ -395,11 +397,9 @@ export const HomeScreen: React.FC = () => {
                 </View>
               </View>
             ))}
-            {recommendedQuests.message && (
-              <Text style={styles.recommendationMessage}>
-                {recommendedQuests.message}
-              </Text>
-            )}
+            <Text style={styles.recommendationMessage}>
+              맞춤형 퀘스트를 추천해드립니다
+            </Text>
           </View>
         ) : (
           <EmptyView message="추천 퀘스트가 없습니다." icon="🎯" />

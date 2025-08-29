@@ -29,7 +29,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { questService, ClaimQuestRequest, categorizeQuests, convertQuestListItemToQuest } from '../services/questService';
+import { questService, ClaimQuestRequest, categorizeQuests, convertQuestListItemToQuest, RecommendedQuestDetail } from '../services/questService';
 import Toast from 'react-native-toast-message';
 
 // 추천 퀘스트 조회 훅
@@ -43,11 +43,9 @@ export const useRecommendedQuests = (hasSavings: boolean = false) => {
       console.log('📡 useRecommendedQuests API 호출 완료: 성공');
       console.log('📡 useRecommendedQuests 결과 데이터 구조:', {
         hasData: !!result,
-        hasQuestIds: !!result?.quest_ids,
-        isQuestIdsArray: Array.isArray(result?.quest_ids),
-        questIdsLength: result?.quest_ids?.length || 0,
-        resultKeys: Object.keys(result),
-        dataKeys: result ? Object.keys(result) : []
+        isArray: Array.isArray(result),
+        length: result?.length || 0,
+        resultKeys: result && !Array.isArray(result) ? Object.keys(result) : []
       });
       console.log('📡 useRecommendedQuests 결과 데이터:', JSON.stringify(result, null, 2));
       return result;

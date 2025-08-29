@@ -333,7 +333,7 @@ export const MyPageScreen: React.FC = () => {
              <View style={styles.accountHeader}>
                <View style={styles.accountTypeContainer}>
                  <Text style={styles.accountTypeLabel}>적금</Text>
-                 <Text style={styles.accountName}>솔 적금</Text>
+                 <Text style={styles.accountName}>쏠쏠한 퀘스트 적금</Text>
                </View>
              </View>
              
@@ -372,7 +372,7 @@ export const MyPageScreen: React.FC = () => {
              <View style={styles.accountHeader}>
                                 <View style={styles.accountTypeContainer}>
                    <Text style={styles.accountTypeLabel}>상시입출금</Text>
-                   <Text style={styles.accountName}>솔 입출금</Text>
+                   <Text style={styles.accountName}>쏠 입출금</Text>
                  </View>
              </View>
              
