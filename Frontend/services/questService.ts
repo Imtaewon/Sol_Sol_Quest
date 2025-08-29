@@ -78,7 +78,7 @@ export interface Quest {
 // 퀘스트 목록 응답 타입
 export interface QuestListResponse {
   quests: QuestListItem[];
-  pagination: {
+  pagination?: {
     current_page: number;
     total_pages: number;
     total_count: number;
@@ -140,19 +140,19 @@ export const questService = {
   },
 
   // 전체 퀘스트 목록 조회 (하나의 API로 모든 퀘스트 가져오기)
-  getAllQuests: async (): Promise<ApiResponse<QuestListResponse>> => {
+  getAllQuests: async (): Promise<QuestListResponse> => {
     console.log('🌐 questService.getAllQuests HTTP 요청 시작');
     console.log('🌐 questService.getAllQuests 요청 URL:', '/api/v1/quests');
     try {
-      const response = await apiClient.get<ApiResponse<QuestListResponse>>('/api/v1/quests');
+      const response = await apiClient.get<QuestListResponse>('/api/v1/quests');
       console.log('🌐 questService.getAllQuests HTTP 요청 완료:', response.status);
       console.log('🌐 questService.getAllQuests 응답 헤더:', response.headers);
       console.log('🌐 questService.getAllQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
       
       // API 응답 구조에 맞게 수정
-      if (response.data?.data?.quests) {
-        console.log('🌐 questService.getAllQuests 퀘스트 개수:', response.data.data.quests.length);
-        console.log('🌐 questService.getAllQuests 첫 번째 퀘스트:', response.data.data.quests[0]);
+      if (response.data?.quests) {
+        console.log('🌐 questService.getAllQuests 퀘스트 개수:', response.data.quests.length);
+        console.log('🌐 questService.getAllQuests 첫 번째 퀘스트:', response.data.quests[0]);
       } else {
         console.log('🌐 questService.getAllQuests 퀘스트 데이터 없음');
       }
@@ -193,13 +193,18 @@ export const categorizeQuests = (quests: QuestListItem[]) => {
       id: quest.id,
       title: quest.title,
       type: quest.type,
-      category: quest.category
+      category: quest.category,
+      typeCheck: {
+        isGROWTH: quest.type === 'GROWTH',
+        isLIFE: quest.type === 'LIFE',
+        isSURPRISE: quest.type === 'SURPRISE'
+      }
     });
   });
   
   const categorized = {
     growth: quests.filter(quest => quest.type === 'GROWTH'),
-    daily: quests.filter(quest => quest.type === 'LIFE'), // 백엔드의 'life'를 프론트의 'daily'로 매핑
+    daily: quests.filter(quest => quest.type === 'LIFE'), // 백엔드의 'LIFE'를 프론트의 'daily'로 매핑
     surprise: quests.filter(quest => quest.type === 'SURPRISE')
   };
   
@@ -209,6 +214,17 @@ export const categorizeQuests = (quests: QuestListItem[]) => {
     surprise: categorized.surprise.length,
     total: quests.length
   });
+  
+  // 각 카테고리의 첫 번째 퀘스트 확인
+  if (categorized.growth.length > 0) {
+    console.log('📊 GROWTH 퀘스트 예시:', categorized.growth[0]);
+  }
+  if (categorized.daily.length > 0) {
+    console.log('📊 LIFE 퀘스트 예시:', categorized.daily[0]);
+  }
+  if (categorized.surprise.length > 0) {
+    console.log('📊 SURPRISE 퀘스트 예시:', categorized.surprise[0]);
+  }
   
   return categorized;
 };

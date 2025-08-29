@@ -42,11 +42,11 @@ const CustomTabIcon = ({ route, focused, color, size }: CustomTabIconProps) => {
   if (route.name === 'Home') {
     iconName = focused ? 'home' : 'home-outline';
   } else if (route.name === 'Quests') {
-    iconName = focused ? 'trophy' : 'trophy-outline';
+    iconName = focused ? 'list' : 'list-outline';
   } else if (route.name === 'Payment') {
     iconName = focused ? 'card' : 'card-outline';
   } else if (route.name === 'Leaderboard') {
-    iconName = focused ? 'list' : 'list-outline';
+    iconName = focused ? 'trophy' : 'trophy-outline';
   } else if (route.name === 'MyPage') {
     iconName = focused ? 'person' : 'person-outline';
   } else {

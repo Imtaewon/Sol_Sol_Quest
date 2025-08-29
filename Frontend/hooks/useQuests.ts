@@ -56,7 +56,12 @@ export const useAllQuests = () => {
     queryFn: async () => {
       console.log('📡 useAllQuests API 호출 시작');
       const result = await questService.getAllQuests();
-      console.log('📡 useAllQuests API 호출 완료:', result.success ? '성공' : '실패');
+      console.log('📡 useAllQuests API 호출 완료: 성공');
+      console.log('📡 useAllQuests 결과 데이터 구조:', {
+        hasQuests: !!result.quests,
+        questsLength: result.quests?.length || 0,
+        resultKeys: Object.keys(result)
+      });
       return result;
     },
     staleTime: 2 * 60 * 1000, // 2분
@@ -68,19 +73,24 @@ export const useAllQuests = () => {
 export const useGrowthQuestsInProgress = () => {
   const allQuestsQuery = useAllQuests();
   
-  if (!allQuestsQuery.data?.data?.quests) {
+  console.log('🔍 useGrowthQuestsInProgress - allQuestsQuery.data:', allQuestsQuery.data);
+  
+  if (!allQuestsQuery.data?.quests) {
+    console.log('🔍 useGrowthQuestsInProgress - 퀘스트 데이터 없음');
     return {
       ...allQuestsQuery,
       data: { success: true, data: [] }
     };
   }
 
-  const categorized = categorizeQuests(allQuestsQuery.data.data.quests);
+  console.log('🔍 useGrowthQuestsInProgress - 퀘스트 데이터 있음, 개수:', allQuestsQuery.data.quests.length);
+  const categorized = categorizeQuests(allQuestsQuery.data.quests);
   const growthQuests = categorized.growth
     .filter(quest => quest.user_status === 'IN_PROGRESS')
     .slice(0, 5)
     .map(convertQuestListItemToQuest);
 
+  console.log('🔍 useGrowthQuestsInProgress - 분류된 growth 퀘스트:', growthQuests.length);
   return {
     ...allQuestsQuery,
     data: { success: true, data: growthQuests }
@@ -90,14 +100,14 @@ export const useGrowthQuestsInProgress = () => {
 export const useAllGrowthQuests = () => {
   const allQuestsQuery = useAllQuests();
   
-  if (!allQuestsQuery.data?.data?.quests) {
+  if (!allQuestsQuery.data?.quests) {
     return {
       ...allQuestsQuery,
       data: { success: true, data: [] }
     };
   }
 
-  const categorized = categorizeQuests(allQuestsQuery.data.data.quests);
+  const categorized = categorizeQuests(allQuestsQuery.data.quests);
   const growthQuests = categorized.growth.map(convertQuestListItemToQuest);
 
   return {
@@ -109,16 +119,21 @@ export const useAllGrowthQuests = () => {
 export const useDailyQuests = () => {
   const allQuestsQuery = useAllQuests();
   
-  if (!allQuestsQuery.data?.data?.quests) {
+  console.log('🔍 useDailyQuests - allQuestsQuery.data:', allQuestsQuery.data);
+  
+  if (!allQuestsQuery.data?.quests) {
+    console.log('🔍 useDailyQuests - 퀘스트 데이터 없음');
     return {
       ...allQuestsQuery,
       data: { success: true, data: [] }
     };
   }
 
-  const categorized = categorizeQuests(allQuestsQuery.data.data.quests);
+  console.log('🔍 useDailyQuests - 퀘스트 데이터 있음, 개수:', allQuestsQuery.data.quests.length);
+  const categorized = categorizeQuests(allQuestsQuery.data.quests);
   const dailyQuests = categorized.daily.map(convertQuestListItemToQuest);
 
+  console.log('🔍 useDailyQuests - 분류된 daily 퀘스트:', dailyQuests.length);
   return {
     ...allQuestsQuery,
     data: { success: true, data: dailyQuests }
@@ -128,16 +143,21 @@ export const useDailyQuests = () => {
 export const useSurpriseQuests = () => {
   const allQuestsQuery = useAllQuests();
   
-  if (!allQuestsQuery.data?.data?.quests) {
+  console.log('🔍 useSurpriseQuests - allQuestsQuery.data:', allQuestsQuery.data);
+  
+  if (!allQuestsQuery.data?.quests) {
+    console.log('🔍 useSurpriseQuests - 퀘스트 데이터 없음');
     return {
       ...allQuestsQuery,
       data: { success: true, data: [] }
     };
   }
 
-  const categorized = categorizeQuests(allQuestsQuery.data.data.quests);
+  console.log('🔍 useSurpriseQuests - 퀘스트 데이터 있음, 개수:', allQuestsQuery.data.quests.length);
+  const categorized = categorizeQuests(allQuestsQuery.data.quests);
   const surpriseQuests = categorized.surprise.map(convertQuestListItemToQuest);
 
+  console.log('🔍 useSurpriseQuests - 분류된 surprise 퀘스트:', surpriseQuests.length);
   return {
     ...allQuestsQuery,
     data: { success: true, data: surpriseQuests }
@@ -148,14 +168,14 @@ export const useSurpriseQuests = () => {
 export const useQuestHistory = (category: string) => {
   const allQuestsQuery = useAllQuests();
   
-  if (!allQuestsQuery.data?.data?.quests) {
+  if (!allQuestsQuery.data?.quests) {
     return {
       ...allQuestsQuery,
       data: { success: true, data: [] }
     };
   }
 
-  const categorized = categorizeQuests(allQuestsQuery.data.data.quests);
+  const categorized = categorizeQuests(allQuestsQuery.data.quests);
   const categoryKey = category === 'daily' ? 'daily' : category;
   const categoryQuests = categorized[categoryKey as keyof typeof categorized] || [];
   const completedQuests = categoryQuests

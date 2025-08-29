@@ -180,51 +180,40 @@ export const MyPageScreen: React.FC = () => {
 
   const handleLogout = async () => {
     console.log('🔍 handleLogout 함수 호출됨');
-    Alert.alert(
-      '로그아웃',
-      '정말 로그아웃하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '로그아웃',
-          style: 'destructive',
-          onPress: async () => {
-            console.log('🔍 로그아웃 확인 버튼 클릭됨');
-            try {
-              console.log('🔍 직접 authService.logout() 호출 시작');
-              // 직접 authService.logout() 호출로 테스트
-              const result = await authService.logout();
-              console.log('🔍 authService.logout() 결과:', result);
-              
-              // 성공 시 로컬 정리
-              if (result.success) {
-                console.log('🔍 로그아웃 성공 - 로컬 정리 시작');
-                // 토큰 삭제
-                if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                  localStorage.removeItem('access_token');
-                } else {
-                  await AsyncStorage.removeItem('access_token');
-                }
-                
-                // Redux 상태 초기화
-                dispatch(logout());
-                
-                console.log('🔍 로그아웃 완료 - 랜딩페이지로 이동');
-              }
-            } catch (error) {
-              console.error('❌ 로그아웃 실패:', error);
-              // 에러가 발생해도 로컬 토큰은 삭제
-              if (Platform.OS === 'web' && typeof window !== 'undefined') {
-                localStorage.removeItem('access_token');
-              } else {
-                await AsyncStorage.removeItem('access_token');
-              }
-              dispatch(logout());
-            }
-          },
-        },
-      ]
-    );
+    
+    // Alert 없이 바로 로그아웃 실행 (테스트용)
+    console.log('🔍 바로 로그아웃 실행 시작');
+    try {
+      console.log('🔍 직접 authService.logout() 호출 시작');
+      // 직접 authService.logout() 호출로 테스트
+      const result = await authService.logout();
+      console.log('🔍 authService.logout() 결과:', result);
+      
+      // 성공 시 로컬 정리
+      if (result.success) {
+        console.log('🔍 로그아웃 성공 - 로컬 정리 시작');
+        // 토큰 삭제
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          localStorage.removeItem('access_token');
+        } else {
+          await AsyncStorage.removeItem('access_token');
+        }
+        
+        // Redux 상태 초기화
+        dispatch(logout());
+        
+        console.log('🔍 로그아웃 완료 - 랜딩페이지로 이동');
+      }
+    } catch (error) {
+      console.error('❌ 로그아웃 실패:', error);
+      // 에러가 발생해도 로컬 토큰은 삭제
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        localStorage.removeItem('access_token');
+      } else {
+        await AsyncStorage.removeItem('access_token');
+      }
+      dispatch(logout());
+    }
   };
 
   const renderPersonalInfo = () => (
