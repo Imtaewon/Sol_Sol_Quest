@@ -371,6 +371,60 @@ class QuestRecommendationSystem:
             print(f"추천 저장 중 오류 발생: {e}")
             raise
 
+    def recommend_quests_with_full_details(self, db: Session, user_id: str) -> List[Dict]:
+        """추천 퀸스트의 전체 정보를 반환하는 메인 추천 함수"""
+        try:
+            # 추천 시스템을 통해 quest ID 얻기
+            quest_ids = self.recommend_quests(db, user_id)
+            
+            # 추천된 퀸스트의 전체 정보 조회
+            return self._get_quests_full_details(db, quest_ids)
+            
+        except Exception as e:
+            print(f"추천 시스템 오류: {e}")
+            # 오류 발생 시 기본 추천
+            default_ids = self._get_default_recommendations(db)
+            return self._get_quests_full_details(db, default_ids)
+    
+    def _get_quests_full_details(self, db: Session, quest_ids: List[str]) -> List[Dict]:
+        """퀸스트 ID 목록을 받아 전체 정보를 조회"""
+        if not quest_ids:
+            return []
+        
+        # IN 절에 사용할 placeholder 생성
+        placeholders = ",".join(f"'{qid}'" for qid in quest_ids)
+        
+        query = text(f"""
+            SELECT id, type, title, category, verify_method, verify_params,
+                   reward_exp, target_count, period_scope, active, lat, lng,
+                   quest_link_url, created_at
+            FROM quests 
+            WHERE id IN ({placeholders}) AND active = TRUE
+            ORDER BY FIELD(id, {placeholders})
+        """)
+        
+        results = db.execute(query).fetchall()
+        
+        return [
+            {
+                "id": result.id,
+                "type": result.type,
+                "title": result.title,
+                "category": result.category,
+                "verify_method": result.verify_method,
+                "verify_params": result.verify_params,
+                "reward_exp": result.reward_exp,
+                "target_count": result.target_count,
+                "period_scope": result.period_scope,
+                "active": result.active,
+                "lat": float(result.lat) if result.lat else None,
+                "lng": float(result.lng) if result.lng else None,
+                "quest_link_url": result.quest_link_url,
+                "created_at": result.created_at.isoformat() if result.created_at else None
+            }
+            for result in results
+        ]
+
     def recommend_quests(self, db: Session, user_id: str) -> List[str]:
         """메인 추천 함수 - 3개의 퀘스트 ID 반환 및 DB 저장"""
         try:
