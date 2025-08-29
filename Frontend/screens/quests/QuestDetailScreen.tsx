@@ -213,7 +213,13 @@ export const QuestDetailScreen: React.FC = () => {
     linkUrl: quest.link_url,
     questKeys: Object.keys(quest), // quest 객체의 모든 키 확인
     questType: typeof quest.verify_method,
-    isLinkQuest: quest.verify_method === 'LINK'
+    isLinkQuest: quest.verify_method === 'LINK',
+    // 추가 디버깅 정보
+    questRawData: quest,
+    verifyMethodExists: 'verify_method' in quest,
+    verifyMethodValue: quest.verify_method,
+    verifyMethodStrictEqual: quest.verify_method === 'LINK',
+    verifyMethodLooseEqual: quest.verify_method == 'LINK'
   });
 
   const canStart = false; // 시작 버튼 제거 (적금 가입 시 자동 시작)
@@ -276,6 +282,8 @@ export const QuestDetailScreen: React.FC = () => {
                 </Text>
               </View>
             </View>
+
+
 
             <View style={styles.noSavingsOverlay}>
               <Ionicons name="lock-closed" size={48} color={COLORS.gray[400]} />
