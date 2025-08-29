@@ -260,15 +260,6 @@ export const baseApi = createApi({
       }),
       invalidatesTags: ['Attendance'],
     }),
-
-    // 로그아웃 (useAuth.ts의 useLogout 훅에서 처리하므로 주석 처리)
-    // logout: builder.mutation<any, void>({
-    //   query: () => ({
-    //     url: '/api/v1/auth/logout',
-    //     method: 'POST',
-    //   }),
-    //   invalidatesTags: ['User'],
-    // }),
   }),
 });
 
@@ -276,7 +267,6 @@ export const {
   // 인증
   useLoginMutation,
   useSignupMutation,
-  // useLogoutMutation, // useAuth.ts의 useLogout 훅 사용
   
   // 사용자
   useGetUserInfoQuery,
