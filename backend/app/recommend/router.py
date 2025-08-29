@@ -26,7 +26,7 @@ class QuestDetailResponse(BaseModel):
     recommendation_score: int = None
 
 # 라우터 생성
-recommendation_router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
+recommendation_router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
 @recommendation_router.get("/quests", response_model=QuestRecommendationResponse)
 async def get_recommended_quests(

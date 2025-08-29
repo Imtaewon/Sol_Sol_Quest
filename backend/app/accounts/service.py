@@ -295,7 +295,7 @@ async def create_savings_account(*, db: Session, user_id: str, deposit_balance: 
     isa = InstallmentSavingsAccount(
         id=_gen_id_26(),
         user_id=user_id,
-        product_code=savings_no,         # 상품 코드로 고정값 사용
+        product_code=savings_no,
         linked_dd_account_id=linked_dd_account_id,
         term_months=term_months,
         monthly_amount=Decimal(str(deposit_balance)),   # 요청의 가입금액(원)
