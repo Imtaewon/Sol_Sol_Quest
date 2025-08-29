@@ -36,6 +36,7 @@ import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constant
 import { QuestWithAttempt, QuestAttempt } from '../../types/database';
 
 import { useCompleteQuestMutation } from '../../store/api/baseApi';
+import { useSavingsAccount } from '../../hooks/useUser';
 import { HomeStackParamList } from '../../navigation/HomeStack';
 
 type QuestDetailRouteProp = RouteProp<HomeStackParamList, 'QuestDetail'>;
@@ -93,6 +94,12 @@ export const QuestDetailScreen: React.FC = () => {
   
   // QuestsScreen에서 전달받은 퀘스트 객체 (별도 API 호출 없음)
   const { quest } = route.params;
+
+  // 적금 계좌 정보 조회
+  const { data: savingsAccount } = useSavingsAccount();
+  
+  // 적금 가입 여부 판단 (실제 계좌 데이터 기반)
+  const hasSavings = savingsAccount?.data?.data && savingsAccount.data.data.length > 0;
 
   // 퀘스트 제출 중 로딩 상태 관리
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -202,6 +209,61 @@ export const QuestDetailScreen: React.FC = () => {
       <AppHeader title="퀘스트 상세" showBackButton />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* 적금 비가입자인 경우 간단한 정보만 표시 */}
+        {!hasSavings ? (
+          <View style={styles.simpleContainer}>
+            <View style={styles.questHeader}>
+              <View style={styles.questTypeContainer}>
+                <View 
+                  style={[
+                    styles.questTypeIndicator, 
+                    { backgroundColor: QUEST_TYPE_COLORS[quest.type.toLowerCase() as keyof typeof QUEST_TYPE_COLORS] }
+                  ]} 
+                />
+                <Text style={styles.questTypeText}>
+                  {quest.type === 'LIFE' ? '일상' : quest.type === 'GROWTH' ? '성장' : '돌발'}
+                </Text>
+              </View>
+              
+              <View style={styles.questReward}>
+                <Ionicons name="star" size={20} color={COLORS.secondary} />
+                <Text style={styles.questRewardText}>{quest.reward_exp} EXP</Text>
+              </View>
+            </View>
+
+            <View style={styles.questTitleContainer}>
+              <Ionicons 
+                name={QUEST_CATEGORY_ICONS[quest.category] as any} 
+                size={24} 
+                color={COLORS.gray[600]} 
+              />
+              <Text style={styles.questTitle}>{quest.title}</Text>
+            </View>
+
+            <View style={styles.descriptionContainer}>
+              <Text style={styles.sectionTitle}>퀘스트 설명</Text>
+              <View style={styles.descriptionCard}>
+                <Text style={styles.descriptionText}>
+                  이 퀘스트는 {quest.category === 'STUDY' ? '학업' :
+                              quest.category === 'HEALTH' ? '건강' :
+                              quest.category === 'ECON' ? '경제' :
+                              quest.category === 'LIFE' ? '일상' :
+                              quest.category === 'ENT' ? '엔터테인먼트' : '저축'} 
+                  카테고리에 속하며, {quest.target_count}회 달성을 목표로 합니다.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.noSavingsOverlay}>
+              <Ionicons name="lock-closed" size={48} color={COLORS.gray[400]} />
+              <Text style={styles.noSavingsText}>적금 가입 후 이용 가능합니다</Text>
+              <Text style={styles.noSavingsSubtext}>
+                퀘스트 진행, 경험치 획득, 상세 정보 확인이 가능합니다
+              </Text>
+            </View>
+          </View>
+        ) : (
+          // 적금 가입자인 경우 상세 정보 표시
         {/* 퀘스트 헤더 */}
         <View style={styles.questHeader}>
           <View style={styles.questTypeContainer}>
@@ -313,18 +375,62 @@ export const QuestDetailScreen: React.FC = () => {
 
         {/* 액션 버튼 */}
         <View style={styles.actionContainer}>
+          {/* 링크 퀘스트인 경우 링크 열기 버튼 */}
+          {quest.verify_method === 'LINK' && quest.link && (
+            <TouchableOpacity
+              style={styles.linkButton}
+              onPress={() => {
+                // 링크 열기 로직 (실제로는 Linking.openURL 사용)
+                Alert.alert(
+                  '링크 열기',
+                  '외부 링크로 이동하시겠습니까?',
+                  [
+                    { text: '취소', style: 'cancel' },
+                    { 
+                      text: '열기', 
+                      onPress: () => {
+                        // 실제 링크 열기 구현 필요
+                        Alert.alert('링크 열기', `링크: ${quest.link}`);
+                      }
+                    }
+                  ]
+                );
+              }}
+            >
+              <Ionicons name="open-outline" size={20} color={COLORS.white} />
+              <Text style={styles.linkButtonText}>링크 열기</Text>
+            </TouchableOpacity>
+          )}
 
-
-          {canVerify && (
+          {/* 진행중인 퀘스트의 경우 계속하기 버튼 */}
+          {quest.attempt?.status === 'IN_PROGRESS' && (
             <PrimaryButton
-              title="퀘스트 완료"
+              title="계속하기"
               onPress={handleVerifyQuest}
               size="large"
-              variant="secondary"
+              variant="primary"
             />
           )}
 
+          {/* 목표 달성한 퀘스트의 경우 완료하기 버튼 */}
+          {canSubmit && (
+            <PrimaryButton
+              title="완료하기"
+              onPress={handleVerifyQuest}
+              size="large"
+              variant="success"
+            />
+          )}
 
+          {/* 미시작 퀘스트의 경우 시작하기 버튼 */}
+          {!quest.attempt && (
+            <PrimaryButton
+              title="시작하기"
+              onPress={handleVerifyQuest}
+              size="large"
+              variant="primary"
+            />
+          )}
 
           {/* 시연용 퀘스트 즉시 완료 버튼 */}
           {!isCompleted && (
@@ -576,6 +682,46 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
   },
   retryButtonText: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
+  },
+  // 적금 비가입자용 스타일
+  simpleContainer: {
+    flex: 1,
+  },
+  noSavingsOverlay: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl * 2,
+    marginTop: SPACING.xl,
+  },
+  noSavingsText: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.gray[500],
+    textAlign: 'center',
+    marginTop: SPACING.md,
+    fontWeight: '600',
+  },
+  noSavingsSubtext: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray[400],
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+    lineHeight: 20,
+  },
+  // 링크 버튼 스타일
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+  linkButtonText: {
     color: COLORS.white,
     fontSize: FONT_SIZES.md,
     fontWeight: '600',

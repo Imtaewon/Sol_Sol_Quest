@@ -102,12 +102,27 @@ export const HomeScreen: React.FC = () => {
   } = useMySchoolRank();
   
   // 추천 퀘스트 조회 (has_savings가 false면 API 요청 안함)
+  // 404 에러로 인해 임시 주석처리
+  /*
   const { 
     data: recommendedQuests, 
     isLoading: questsLoading, 
     error: questsError, 
     refetch: refetchQuests 
   } = useRecommendedQuests(hasSavings);
+  */
+  
+  // 임시로 빈 데이터 사용 (404 에러 해결 전까지)
+  const recommendedQuests = { 
+    data: { 
+      data: [],
+      quest_ids: [],
+      message: ''
+    } 
+  };
+  const questsLoading = false;
+  const questsError = null;
+  const refetchQuests = async () => {};
 
   // API 요청 로그
   console.log('🏠 HomeScreen API 상태:', {
@@ -131,21 +146,21 @@ export const HomeScreen: React.FC = () => {
       await refetchRank();
       await refetchSavings();
       await refetchDeposit();
-      await refetchQuests(); // has_savings가 false면 자동으로 무시됨
+      // await refetchQuests(); // 404 에러로 인해 임시 주석처리
     } finally {
       setRefreshing(false);
     }
   };
 
   // 로딩 상태 처리
-  const isLoading = userLoading || rankLoading || savingsLoading || depositLoading || questsLoading;
+  const isLoading = userLoading || rankLoading || savingsLoading || depositLoading; // questsLoading 제거
   
   console.log('🏠 HomeScreen 로딩 상태:', {
     userLoading,
     savingsLoading,
     depositLoading,
     rankLoading,
-    questsLoading,
+    // questsLoading, // 404 에러로 인해 임시 주석처리
     hasSavings,
     isLoading
   });
@@ -156,7 +171,7 @@ export const HomeScreen: React.FC = () => {
   }
 
   // 에러 상태 처리
-  const hasError = userError || rankError || savingsError || depositError || questsError;
+  const hasError = userError || rankError || savingsError || depositError; // questsError 제거
   if (hasError) {
     return (
       <ErrorView 

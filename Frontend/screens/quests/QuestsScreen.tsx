@@ -43,6 +43,7 @@ import {
   useSurpriseQuests,
   useClaimQuest
 } from '../../hooks/useQuests';
+import { useSavingsAccount } from '../../hooks/useUser';
 import { RootState } from '../../store';
 import { HomeStackParamList } from '../../navigation/HomeStack';
 
@@ -94,6 +95,12 @@ export const QuestsScreen: React.FC = () => {
   
   // Redux에서 사용자 정보 가져오기
   const user = useSelector((state: RootState) => state.user.user);
+  
+  // 적금 계좌 정보 조회
+  const { data: savingsAccount } = useSavingsAccount();
+  
+  // 적금 가입 여부 판단 (실제 계좌 데이터 기반)
+  const hasSavings = savingsAccount?.data?.data && savingsAccount.data.data.length > 0;
   
   // 선택된 퀘스트 타입 (일상/성장/돌발)
   const [selectedType, setSelectedType] = useState<'daily' | 'growth' | 'surprise'>('daily');
@@ -151,8 +158,24 @@ export const QuestsScreen: React.FC = () => {
     dailyQuests: { loading: dailyLoading, error: dailyError, data: dailyQuests?.data ? `${dailyQuests.data.length}개` : '없음' },
     surpriseQuests: { loading: surpriseLoading, error: surpriseError, data: surpriseQuests?.data ? `${surpriseQuests.data.length}개` : '없음' },
     selectedType,
-    currentQuests: { loading: isLoading, error, data: quests ? `${quests.length}개` : '없음' }
+    currentQuests: { loading: isLoading, error, data: quests ? `${quests.length}개` : '없음' },
+    hasSavings
   });
+
+  // 퀘스트 데이터 상세 로그
+  if (quests && quests.length > 0) {
+    console.log('🎯 QuestsScreen 퀘스트 데이터 상세:', quests.map(quest => ({
+      id: quest.id,
+      title: quest.title,
+      category: quest.category,
+      expReward: quest.expReward,
+      progress: quest.progress,
+      maxProgress: quest.maxProgress,
+      isCompleted: quest.isCompleted,
+      isClaimed: quest.isClaimed,
+      progressPercent: quest.progress && quest.maxProgress ? Math.round((quest.progress / quest.maxProgress) * 100) : 0
+    })));
+  }
 
   /**
    * 퀘스트 상태별 정렬
@@ -232,8 +255,19 @@ export const QuestsScreen: React.FC = () => {
    * 각 퀘스트의 정보를 카드 형태로 표시
    */
   const renderQuestCard = ({ item: quest }: { item: any }) => {
+    console.log('🎯 renderQuestCard 호출됨:', {
+      questId: quest.id,
+      questTitle: quest.title,
+      hasSavings,
+      progress: quest.progress,
+      maxProgress: quest.maxProgress,
+      isCompleted: quest.isCompleted,
+      isClaimed: quest.isClaimed
+    });
+
     // 적금 미가입자인 경우 간단한 카드 표시
-    if (!user?.hasSavings) {
+    if (!hasSavings) {
+      console.log('🎯 적금 비가입자용 간단 카드 렌더링');
       return (
         <TouchableOpacity 
           style={styles.questCardSimple}
@@ -255,6 +289,8 @@ export const QuestsScreen: React.FC = () => {
     }
 
     // 적금 가입자인 경우 기존 상세 카드 표시
+    console.log('🎯 적금 가입자용 상세 카드 렌더링');
+    
     // 퀘스트 진행률 및 상태 정보 계산
     const progress = getQuestProgress(quest);
     const statusText = getQuestStatusText(quest);
@@ -263,6 +299,14 @@ export const QuestsScreen: React.FC = () => {
     const isInProgress = quest.progress && quest.progress > 0 && !quest.isCompleted;
     const canClaim = quest.isCompleted && !quest.isClaimed;
     const isCompleted = quest.isClaimed;
+
+    console.log('🎯 퀘스트 상태 계산:', {
+      progress,
+      statusText,
+      isInProgress,
+      canClaim,
+      isCompleted
+    });
 
     return (
       <TouchableOpacity 
