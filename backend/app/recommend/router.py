@@ -31,7 +31,7 @@ recommendation_router = APIRouter(prefix="/recommendations", tags=["recommendati
 @recommendation_router.get("/quests", response_model=QuestRecommendationResponse)
 async def get_recommended_quests(
     db: Session = Depends(get_db),
-    current_user: Dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     현재 사용자를 위한 퀘스트 추천
@@ -42,7 +42,7 @@ async def get_recommended_quests(
     """
     try:
         # current_user 객체에서 user_id 추출
-        user_id = current_user.get("id") if isinstance(current_user, dict) else str(current_user)
+        user_id = current_user.id
         
         recommendation_system = QuestRecommendationSystem()
         quest_ids = recommendation_system.recommend_quests(db, user_id)
@@ -52,15 +52,13 @@ async def get_recommended_quests(
             message=f"사용자 {user_id}를 위한 {len(quest_ids)}개의 맞춤 퀘스트를 추천했습니다."
         )
     
-    except HTTPException:
-        raise HTTPException(status_code=404, detail="추천 퀘스트를 찾을 수 없습니다.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"추천 시스템 오류: {str(e)}")
 
 @recommendation_router.get("/quests/detailed", response_model=List[QuestDetailResponse])
 async def get_recommended_quests_with_details(
     db: Session = Depends(get_db),
-    current_user: Dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     현재 사용자를 위한 상세 정보가 포함된 퀘스트 추천
@@ -70,7 +68,7 @@ async def get_recommended_quests_with_details(
     """
     try:
         # current_user 객체에서 user_id 추출
-        user_id = current_user.get("id") if isinstance(current_user, dict) else str(current_user)
+        user_id = current_user.id
         
         recommendation_system = QuestRecommendationSystem()
         
@@ -84,14 +82,16 @@ async def get_recommended_quests_with_details(
             category_scores = recommendation_system.analyze_user_preferences(user_info, survey_answers)
             scored_quests = recommendation_system.score_quests(available_quests, category_scores)
             recommended_quests = recommendation_system._select_diverse_quests(scored_quests, 3)
+            
+            # DB에 추천 기록 저장
+            quest_ids = [quest["id"] for quest in recommended_quests]
+            recommendation_system._save_recommendations_to_db(db, user_id, quest_ids)
         else:
             # 기본 추천
             default_ids = recommendation_system._get_default_recommendations(db)
+            # DB에 기본 추천 저장
+            recommendation_system._save_recommendations_to_db(db, user_id, default_ids)
             recommended_quests = [q for q in available_quests if q["id"] in default_ids][:3]
-        
-        # DB에 추천 기록 저장
-        quest_ids = [quest["id"] for quest in recommended_quests]
-        recommendation_system._save_recommendations_to_db(db, user_id, quest_ids)
         
         return [
             QuestDetailResponse(
@@ -108,15 +108,13 @@ async def get_recommended_quests_with_details(
             for quest in recommended_quests
         ]
     
-    except HTTPException:
-        raise HTTPException(status_code=404, detail="추천 퀘스트를 찾을 수 없습니다2.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"추천 시스템 오류: {str(e)}")
 
 @recommendation_router.get("/user/preferences")
 async def get_user_preferences(
     db: Session = Depends(get_db),
-    current_user: Dict = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
     사용자의 선호도 분석 결과 조회
@@ -125,7 +123,7 @@ async def get_user_preferences(
     """
     try:
         # current_user 객체에서 user_id 추출
-        user_id = current_user.get("id") if isinstance(current_user, dict) else str(current_user)
+        user_id = current_user.id
         
         recommendation_system = QuestRecommendationSystem()
         user_info = recommendation_system.get_user_info(db, user_id)
@@ -144,7 +142,7 @@ async def get_user_preferences(
             "top_categories": sorted(category_scores.items(), key=lambda x: x[1], reverse=True)[:3]
         }
     
-    except HTTPException:
-        raise HTTPException(status_code=404, detail="선호도 분석 결과를 찾을 수 없습니다.")
     except Exception as e:
+        if "not found" in str(e).lower() or "설문조사" in str(e):
+            raise HTTPException(status_code=404, detail="선호도 분석 결과를 찾을 수 없습니다.")
         raise HTTPException(status_code=500, detail=f"선호도 분석 오류: {str(e)}")

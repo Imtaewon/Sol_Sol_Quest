@@ -154,7 +154,7 @@ class QuestRecommendationSystem:
             SELECT id, type, title, category, verify_method, reward_exp, 
                    target_count, period_scope
             FROM quests 
-            WHERE type IN ('life', 'growth')
+            WHERE type IN ('LIFE', 'GROWTH') AND active = TRUE
         """)
         results = db.execute(query).fetchall()
         
@@ -359,8 +359,8 @@ class QuestRecommendationSystem:
                         "user_id": user_id,
                         "quest_id": quest_id,
                         "recommendation_date": today,
-                        "is_click": 0,  # 초기값: False
-                        "is_cleared": 0  # 초기값: False
+                        "is_click": False,  # TINYINT(1)에서 False = 0
+                        "is_cleared": False  # TINYINT(1)에서 False = 0
                     })
             
             db.commit()
@@ -399,6 +399,9 @@ class QuestRecommendationSystem:
             if not survey_answers:
                 # 설문조사 답변이 없는 경우 기본 추천
                 quest_ids = self._get_default_recommendations(db)
+                # DB에 추천 기록 저장
+                self._save_recommendations_to_db(db, user_id, quest_ids)
+                return quest_ids
             else:
                 # 3. 사용 가능한 퀘스트 조회
                 available_quests = self.get_available_quests(db)
@@ -781,13 +784,17 @@ class QuestRecommendationSystem:
             return quest_ids
         
         # 퀘스트 정보 조회
-        query = text("""
+        if not quest_ids:
+            return []
+            
+        placeholders = ",".join(f"'{qid}'" for qid in quest_ids)
+        query = text(f"""
             SELECT id, category, type
             FROM quests
-            WHERE id IN :quest_ids
+            WHERE id IN ({placeholders})
         """)
         
-        results = db.execute(query, {"quest_ids": tuple(quest_ids)}).fetchall()
+        results = db.execute(query).fetchall()
         
         # 카테고리별로 그룹화
         category_groups = defaultdict(list)
@@ -836,12 +843,13 @@ class QuestRecommendationSystem:
         ]
         
         # DB에서 실제 존재하는 퀘스트만 반환 (SURPRISE 제외)
-        query = text("""
+        placeholders = ",".join(f"'{qid}'" for qid in default_quest_ids)
+        query = text(f"""
             SELECT id FROM quests 
-            WHERE id IN :quest_ids AND type IN ('life', 'growth')
+            WHERE id IN ({placeholders}) AND type IN ('LIFE', 'GROWTH') AND active = TRUE
             LIMIT 3
         """)
-        results = db.execute(query, {"quest_ids": tuple(default_quest_ids)}).fetchall()
+        results = db.execute(query).fetchall()
         
         return [result.id for result in results] if results else default_quest_ids
 
