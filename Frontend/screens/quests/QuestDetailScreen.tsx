@@ -203,6 +203,7 @@ export const QuestDetailScreen: React.FC = () => {
   const canSubmit = quest.attempt?.status === 'CLEAR';
   const canVerify = quest.attempt?.status === 'IN_PROGRESS' || !quest.attempt; // 미시작도 인증 가능으로 표시
   const isCompleted = quest.attempt?.status === 'APPROVED';
+  const canClaimReward = quest.attempt?.status === 'CLEAR'; // 경험치 받기 가능 여부
 
   return (
     <View style={styles.container}>
@@ -213,18 +214,6 @@ export const QuestDetailScreen: React.FC = () => {
         {!hasSavings ? (
           <View style={styles.simpleContainer}>
             <View style={styles.questHeader}>
-              <View style={styles.questTypeContainer}>
-                <View 
-                  style={[
-                    styles.questTypeIndicator, 
-                    { backgroundColor: QUEST_TYPE_COLORS[quest.type.toLowerCase() as keyof typeof QUEST_TYPE_COLORS] }
-                  ]} 
-                />
-                <Text style={styles.questTypeText}>
-                  {quest.type === 'LIFE' ? '일상' : quest.type === 'GROWTH' ? '성장' : '돌발'}
-                </Text>
-              </View>
-              
               <View style={styles.questReward}>
                 <Ionicons name="star" size={20} color={COLORS.secondary} />
                 <Text style={styles.questRewardText}>{quest.reward_exp} EXP</Text>
@@ -267,18 +256,6 @@ export const QuestDetailScreen: React.FC = () => {
           <>
             {/* 퀘스트 헤더 */}
             <View style={styles.questHeader}>
-          <View style={styles.questTypeContainer}>
-            <View 
-              style={[
-                styles.questTypeIndicator, 
-                { backgroundColor: QUEST_TYPE_COLORS[quest.type.toLowerCase() as keyof typeof QUEST_TYPE_COLORS] }
-              ]} 
-            />
-            <Text style={styles.questTypeText}>
-              {quest.type === 'LIFE' ? '일상' : quest.type === 'GROWTH' ? '성장' : '돌발'}
-            </Text>
-          </View>
-          
           <View style={styles.questReward}>
             <Ionicons name="star" size={20} color={COLORS.secondary} />
             <Text style={styles.questRewardText}>{quest.reward_exp} EXP</Text>
@@ -374,10 +351,10 @@ export const QuestDetailScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 액션 버튼 */}
+                {/* 액션 버튼 */}
         <View style={styles.actionContainer}>
           {/* 링크 퀘스트인 경우 링크 열기 버튼 */}
-          {quest.verify_method === 'LINK' && quest.link_url && (
+          {quest.verify_method === 'LINK' && (
             <TouchableOpacity
               style={styles.linkButton}
               onPress={() => {
@@ -390,8 +367,8 @@ export const QuestDetailScreen: React.FC = () => {
                     { 
                       text: '열기', 
                       onPress: () => {
-                                               // 실제 링크 열기 구현 필요
-                       Alert.alert('링크 열기', `링크: ${quest.link_url}`);
+                        // 실제 링크 열기 구현 필요
+                        Alert.alert('링크 열기', `링크: ${quest.link_url || '링크 URL 없음'}`);
                       }
                     }
                   ]
@@ -413,13 +390,14 @@ export const QuestDetailScreen: React.FC = () => {
             />
           )}
 
-          {/* 목표 달성한 퀘스트의 경우 완료하기 버튼 */}
-          {canSubmit && (
+          {/* 목표 달성한 퀘스트의 경우 경험치 받기 버튼 */}
+          {canClaimReward && (
             <PrimaryButton
-              title="완료하기"
-              onPress={handleVerifyQuest}
+              title={`${quest.reward_exp} EXP 받기`}
+              onPress={handleCompleteQuest}
               size="large"
               variant="success"
+              loading={isSubmitting}
             />
           )}
 
@@ -434,7 +412,7 @@ export const QuestDetailScreen: React.FC = () => {
           )}
 
           {/* 시연용 퀘스트 즉시 완료 버튼 */}
-          {!isCompleted && (
+          {!isCompleted && !canClaimReward && (
             <PrimaryButton
               title="퀘스트 즉시 완료 (시연용)"
               onPress={handleCompleteQuest}
@@ -472,7 +450,7 @@ const styles = StyleSheet.create({
   },
   questHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginBottom: SPACING.lg,
   },

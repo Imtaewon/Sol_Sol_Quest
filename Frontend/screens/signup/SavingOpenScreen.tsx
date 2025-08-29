@@ -113,7 +113,7 @@ export const SavingOpenScreen: React.FC = () => {
     isSurveyError,
     surveyError,
     surveyQuestion,
-    hasData: !!surveyQuestion?.data
+    hasData: !!surveyQuestion
   });
 
   // 설문 에러 처리
@@ -150,7 +150,7 @@ export const SavingOpenScreen: React.FC = () => {
   console.log('💰 SavingOpenScreen API 상태:', {
     userInfo: { loading: isUserInfoLoading, error: userInfoError, data: userInfo ? '있음' : '없음' },
     depositAccount: { loading: isDepositLoading, error: depositError, data: depositAccount?.data ? '있음' : '없음' },
-    surveyQuestion: { loading: isSurveyLoading, data: surveyQuestion?.data ? '있음' : '없음' },
+    surveyQuestion: { loading: isSurveyLoading, data: surveyQuestion ? '있음' : '없음' },
     currentStep,
     currentQuestion: surveyState.currentQuestion
   });
@@ -158,10 +158,9 @@ export const SavingOpenScreen: React.FC = () => {
   // 설문 데이터 상세 로그
   console.log('📝 설문 데이터 상세:', {
     surveyQuestion: surveyQuestion,
-    surveyQuestionData: surveyQuestion?.data,
-    options: surveyQuestion?.data?.options,
-    optionsLength: surveyQuestion?.data?.options?.length,
-    question: surveyQuestion?.data?.question,
+    options: surveyQuestion?.options,
+    optionsLength: surveyQuestion?.options?.length,
+    question: surveyQuestion?.question,
     currentStep,
     isSurveyLoading,
     surveyError: surveyError
@@ -258,11 +257,11 @@ export const SavingOpenScreen: React.FC = () => {
       currentQuestion: surveyState.currentQuestion,
       answer: answer,
       beforeResponses: surveyState.responses,
-      currentQuestionData: surveyQuestion?.data
+      currentQuestionData: surveyQuestion
     });
 
          // 현재 문제의 정보 가져오기
-     const currentQuestionData = surveyQuestion?.data;
+     const currentQuestionData = surveyQuestion;
      const selectedOption = currentQuestionData?.options?.[answer - 1]; // answer는 1부터 시작하므로 -1
 
     setSurveyState(prev => {
@@ -357,7 +356,7 @@ export const SavingOpenScreen: React.FC = () => {
              console.log('📝 변환된 설문 응답 데이터:', {
          surveyAnswers: surveyAnswers,
          responsesLength: surveyAnswers.length,
-         currentQuestion: surveyQuestion?.data || surveyQuestion
+                   currentQuestion: surveyQuestion
        });
 
       // 3. 설문 응답 제출 (백엔드 요구사항에 맞춤)
@@ -589,15 +588,15 @@ export const SavingOpenScreen: React.FC = () => {
               <View style={styles.surveyContainer}>
                                  <View style={styles.questionCard}>
                    <Text style={styles.questionText}>
-                     {surveyQuestion?.data?.question}
+                     {surveyQuestion?.question}
                    </Text>
                  </View>
 
                  {/* 답변 옵션 */}
-                 {surveyQuestion?.data?.options && 
-                  surveyQuestion?.data?.options?.length > 0 && (
+                 {surveyQuestion?.options && 
+                  surveyQuestion?.options?.length > 0 && (
                    <View style={styles.optionsContainer}>
-                     {surveyQuestion?.data?.options?.map((option: any, index: number) => (
+                     {surveyQuestion?.options?.map((option: any, index: number) => (
                       <TouchableOpacity
                         key={option.id}
                                                  style={[
