@@ -420,7 +420,7 @@ class QuestRecommendationSystem:
                 "lat": float(result.lat) if result.lat else None,
                 "lng": float(result.lng) if result.lng else None,
                 "quest_link_url": result.quest_link_url,
-                "created_at": str(result.created_at) if result.created_at else None
+                "created_at": result.created_at.isoformat() if result.created_at else None
             }
             for result in results
         ]
