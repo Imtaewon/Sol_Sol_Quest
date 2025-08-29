@@ -10,6 +10,7 @@ export interface UniversityItem {
   avg_exp: number;
   rank_overall?: number;
   rank_avg?: number;
+  user_total_exp?: number;
 }
 
 export interface UniversityLeaderboardResponse {
@@ -76,6 +77,15 @@ export const rankService = {
         hasTop10Avg: !!response.data.data?.top10_avg,
         responseKeys: Object.keys(response.data),
         dataKeys: response.data.data ? Object.keys(response.data.data) : []
+      });
+      
+      // 백엔드 응답 데이터 상세 로그
+      console.log('🌐 rankService.getMySchoolRank 백엔드 응답 상세:', {
+        success: response.data.success,
+        data: response.data.data,
+        my_university: response.data.data?.my_university,
+        top10_overall: response.data.data?.top10_overall?.length || 0,
+        top10_avg: response.data.data?.top10_avg?.length || 0
       });
       
       // my_university 데이터를 MySchoolRank 형식으로 변환
@@ -145,7 +155,7 @@ export const rankService = {
         totalExp: myUniversity.total_exp,
         averageExp: myUniversity.avg_exp,
         memberCount: myUniversity.savings_students,
-        myTotalExp: 0 // 백엔드에서 제공하지 않는 경우 0으로 설정
+        myTotalExp: myUniversity.user_total_exp || 0
       };
 
       console.log('🌐 rankService.getMySchoolRankWithUser 변환된 데이터:', JSON.stringify(result, null, 2));
