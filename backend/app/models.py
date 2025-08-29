@@ -184,6 +184,7 @@ class Quest(Base):
     lat = Column(DECIMAL(10, 6))
     lng = Column(DECIMAL(10, 6))
     quest_link_url = Column(String(2048))
+    created_at = Column(DateTime, nullable=False)
 
     attempts = relationship("QuestAttempt", back_populates="quest")
     recos = relationship("QuestRecommendation", back_populates="quest")
