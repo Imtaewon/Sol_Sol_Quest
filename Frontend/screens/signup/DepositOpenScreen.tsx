@@ -27,7 +27,7 @@ export const DepositOpenScreen: React.FC = () => {
 
   const handleDepositSignup = async () => {
     try {
-      const result = await depositSignupMutation.mutateAsync({ user_id: userInfo?.id || '' });
+      const result = await depositSignupMutation.mutateAsync({ user_id: userInfo?.user_id || '' });
       if (result.success) {
         // 예금 가입 성공 후 메인 화면으로 이동
         navigation.navigate('Home');

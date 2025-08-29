@@ -36,6 +36,7 @@ import {
   Alert,
   SafeAreaView,
   Image,
+  Platform,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
@@ -50,6 +51,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useLogout } from '../../hooks/useAuth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useUserInfo, useSavingsAccount, useDepositAccount } from '../../hooks/useUser';
+import { authService } from '../../services/authService';
 
 // 카드 너비를 고정값으로 설정 (Dimensions 제거)
 const CARD_WIDTH = 300;
@@ -177,6 +179,7 @@ export const MyPageScreen: React.FC = () => {
 
 
   const handleLogout = async () => {
+    console.log('🔍 handleLogout 함수 호출됨');
     Alert.alert(
       '로그아웃',
       '정말 로그아웃하시겠습니까?',
@@ -186,12 +189,37 @@ export const MyPageScreen: React.FC = () => {
           text: '로그아웃',
           style: 'destructive',
           onPress: async () => {
+            console.log('🔍 로그아웃 확인 버튼 클릭됨');
             try {
-              // useLogout 훅 사용
-              await logoutMutation.mutateAsync();
-              // useLogout 훅에서 자동으로 토큰 삭제, Redux 상태 초기화, 랜딩페이지로 이동 처리
+              console.log('🔍 직접 authService.logout() 호출 시작');
+              // 직접 authService.logout() 호출로 테스트
+              const result = await authService.logout();
+              console.log('🔍 authService.logout() 결과:', result);
+              
+              // 성공 시 로컬 정리
+              if (result.success) {
+                console.log('🔍 로그아웃 성공 - 로컬 정리 시작');
+                // 토큰 삭제
+                if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                  localStorage.removeItem('access_token');
+                } else {
+                  await AsyncStorage.removeItem('access_token');
+                }
+                
+                // Redux 상태 초기화
+                dispatch(logout());
+                
+                console.log('🔍 로그아웃 완료 - 랜딩페이지로 이동');
+              }
             } catch (error) {
-              console.error('로그아웃 실패:', error);
+              console.error('❌ 로그아웃 실패:', error);
+              // 에러가 발생해도 로컬 토큰은 삭제
+              if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                localStorage.removeItem('access_token');
+              } else {
+                await AsyncStorage.removeItem('access_token');
+              }
+              dispatch(logout());
             }
           },
         },
@@ -212,10 +240,21 @@ export const MyPageScreen: React.FC = () => {
             />
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{userInfo?.data?.name || '사용자'}</Text>
-            <Text style={styles.userDetails}>
-              {userInfo?.data?.university_name || '학교 미설정'} • {'학과 미설정'} • {'학년 미설정'}
-            </Text>
+            {userInfoLoading ? (
+              <>
+                <View style={styles.skeletonName} />
+                <View style={styles.skeletonDetails} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.userName}>
+                  {userInfo?.data?.name || '사용자'}
+                </Text>
+                <Text style={styles.userDetails}>
+                  {`${userInfo?.data?.university_name || '학교 미설정'} • ${userInfo?.data?.major || '학과 미설정'} • ${userInfo?.data?.grade ? `${userInfo.data.grade}학년` : '학년 미설정'}`}
+                </Text>
+              </>
+            )}
           </View>
           <TouchableOpacity style={styles.editButton}>
             <Ionicons name="pencil" size={16} color={COLORS.primary} />
@@ -703,6 +742,20 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.lg,
     color: COLORS.gray[600],
     textAlign: 'center',
+  },
+  // 스켈레톤 UI 스타일
+  skeletonName: {
+    width: 120,
+    height: 24,
+    backgroundColor: COLORS.gray[200],
+    borderRadius: 4,
+    marginBottom: SPACING.xs,
+  },
+  skeletonDetails: {
+    width: 200,
+    height: 16,
+    backgroundColor: COLORS.gray[200],
+    borderRadius: 4,
   },
 });
 

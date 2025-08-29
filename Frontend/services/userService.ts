@@ -10,6 +10,8 @@ export interface UserInfo {
   current_tier?: string;
   total_exp?: number;
   has_savings?: boolean;
+  major?: string;
+  grade?: number;
 }
 
 // 계좌 정보 타입

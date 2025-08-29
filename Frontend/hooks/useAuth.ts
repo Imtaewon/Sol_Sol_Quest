@@ -302,16 +302,25 @@ export const useLogout = () => {
   const dispatch = useDispatch();
 
   return useMutation({
-    mutationFn: () => authService.logout(),
+    mutationFn: async () => {
+      console.log('🔍 useLogout mutationFn 호출됨');
+      const result = await authService.logout();
+      console.log('🔍 authService.logout() 완료:', result);
+      return result;
+    },
     onSuccess: async () => {
+      console.log('🔍 useLogout onSuccess 호출됨');
       // 토큰 삭제 (AsyncStorage와 Redux 모두)
       await clearStorage();
+      console.log('🔍 clearStorage 완료');
       
       // Redux state도 클리어
       dispatch(logout());
+      console.log('🔍 Redux logout 액션 디스패치 완료');
       
       // 모든 쿼리 캐시 초기화
       queryClient.clear();
+      console.log('🔍 queryClient.clear() 완료');
       
       Toast.show({
         type: 'success',
@@ -320,7 +329,7 @@ export const useLogout = () => {
       });
     },
     onError: async (error) => {
-      console.error('로그아웃 실패:', error);
+      console.error('❌ useLogout onError 호출됨:', error);
       // 에러가 발생해도 로컬 토큰은 삭제
       await clearStorage();
       queryClient.clear();

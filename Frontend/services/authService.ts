@@ -115,7 +115,16 @@ export const authService = {
 
   // 로그아웃
   logout: async (): Promise<ApiResponse> => {
-    const response = await apiClient.post<ApiResponse>('/api/v1/auth/logout');
-    return response.data;
+    console.log('🔍 authService.logout() 호출됨');
+    console.log('📡 로그아웃 API 요청 시작: /api/v1/auth/logout');
+    try {
+      const response = await apiClient.post<ApiResponse>('/api/v1/auth/logout');
+      console.log('📡 로그아웃 API 요청 완료:', response.status);
+      console.log('📡 로그아웃 API 응답:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ 로그아웃 API 요청 실패:', error);
+      throw error;
+    }
   },
 };

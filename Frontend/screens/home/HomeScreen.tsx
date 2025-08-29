@@ -37,6 +37,7 @@ import {
   TouchableOpacity,
   Dimensions,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
@@ -59,6 +60,12 @@ import { useMySchoolRank, useMySchoolRankWithUser } from '../../hooks/useRanks';
 import { useRecommendedQuests, useClaimQuest } from '../../hooks/useQuests';
 
 const { width } = Dimensions.get('window');
+
+// 캐러셀 슬라이드 폭 계산
+const H_PADDING = SPACING.lg;                   // 바깥 패딩(섹션)
+const GUTTER = SPACING.md;                      // 카드 사이 간격
+const CARD_WIDTH = width - H_PADDING * 2;       // 카드 실제 폭(현재 스타일과 동일)
+const SLIDE = CARD_WIDTH + GUTTER;              // 스냅 간격(=가로 스크롤 단위)
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<HomeStackParamList, 'Home'>,
@@ -160,18 +167,12 @@ export const HomeScreen: React.FC = () => {
   }
 
   const handleCarouselScroll = (event: any) => {
-    const slideSize = width - SPACING.lg * 2;
-    const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
-    setCurrentCarouselIndex(index);
+    const x = event.nativeEvent.contentOffset.x;
+    setCurrentCarouselIndex(Math.round(x / SLIDE));
   };
 
   const scrollToIndex = (index: number) => {
-    const slideSize = width - SPACING.lg * 2;
-    carouselRef.current?.scrollTo({
-      x: index * slideSize,
-      animated: true
-    });
-    setCurrentCarouselIndex(index);
+    carouselRef.current?.scrollTo({ x: index * SLIDE, animated: true });
   };
 
   // 퀘스트 수령 처리
@@ -194,8 +195,8 @@ export const HomeScreen: React.FC = () => {
         pagingEnabled
         onScroll={handleCarouselScroll}
         scrollEventThrottle={16}
-        decelerationRate={0.8}
-        snapToInterval={width - SPACING.lg * 2}
+        decelerationRate={Platform.select({ ios: 0.9, android: 0.8 })}
+        snapToInterval={SLIDE}
         snapToAlignment="start"
       >
         {hasSavings ? (
@@ -453,22 +454,23 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   carouselContainer: {
-    paddingHorizontal: SPACING.lg,
+    // ❗️여긴 추가 패딩을 주지 않습니다(중복 방지)
+    // paddingHorizontal: SPACING.lg,  ← 제거
     flexDirection: 'row',
     alignItems: 'center',
   },
   accountCard: {
+    width: CARD_WIDTH,                // 카드 폭 고정
+    marginRight: GUTTER,              // 카드 간격
+    height: 200,
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
-    marginRight: SPACING.md,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    width: width - SPACING.lg * 2,
-    height: 200, // 고정 높이 설정
     flexShrink: 0,
   },
   accountHeader: {
@@ -579,8 +581,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   blurredText: {
-    opacity: 0.3,
-    filter: 'blur(1px)',
+    // RN에선 filter 미지원 → 제거/대체
+    // filter: 'blur(1px)',
+    opacity: 0.4,
   },
   questsHeader: {
     flexDirection: 'row',
