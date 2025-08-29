@@ -60,6 +60,7 @@ def read_me(current_user: User = Depends(get_current_user), db: Session = Depend
             "gender": current_user.gender.value if current_user.gender else None,
             "major": current_user.department,
             "grade": current_user.grade,
+            "birth_year": current_user.birth_year,
         },
     }
 

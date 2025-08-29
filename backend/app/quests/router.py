@@ -54,6 +54,8 @@ def list_quests(
             Quest.id, Quest.type, Quest.title, Quest.verify_method, Quest.category,
             Quest.verify_params, Quest.reward_exp, Quest.target_count, Quest.period_scope,
             Quest.active, Quest.created_at, Quest.lat, Quest.lng,
+            Quest.quest_link_url.label("link_url"),   # ✅ 추가: DB 컬럼을 응답 필드명으로 라벨링
+
 
             QA.id.label("attempt_id"),
             QA.status.label("user_status"),
@@ -71,7 +73,7 @@ def list_quests(
         (
             quest_id, quest_type, title, verify_method, category,
             verify_params, reward_exp, target_count, period_scope,
-            active, created_at, lat, lng,
+            active, created_at, lat, lng, link_url,
             attempt_id, user_status, progress_count, user_target_count,
             started_at, submitted_at, approved_at
         ) = row
@@ -95,6 +97,7 @@ def list_quests(
             created_at=created_at,
             lat=lat,
             lng=lng,
+            link_url=link_url,   # ✅ 여기!
             attempt_id=attempt_id,
             user_status=user_status,
             progress_count=progress_count,
