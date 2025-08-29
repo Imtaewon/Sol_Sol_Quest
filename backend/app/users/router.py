@@ -89,12 +89,12 @@ def update_me(
         current_user.grade = data["grade"]
     if "name" in data:
         current_user.real_name = data["name"]
-    if "gender" in data:
-        # Enum 검증은 Pydantic 스키마에서 처리된다고 가정
-        current_user.gender = data["gender"]
-    # 나이 대신 출생연도 사용(스키마가 age만 준다면 스키마 조정 권장)
-    if "birth_year" in data:
-        current_user.birth_year = data["birth_year"]
+    # if "gender" in data:
+    #     # Enum 검증은 Pydantic 스키마에서 처리된다고 가정
+    #     current_user.gender = data["gender"]
+    # # 나이 대신 출생연도 사용(스키마가 age만 준다면 스키마 조정 권장)
+    # if "birth_year" in data:
+    #     current_user.birth_year = data["birth_year"]
 
     # 비밀번호 변경
     if "password" in data and data["password"]:

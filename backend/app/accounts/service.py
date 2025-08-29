@@ -35,6 +35,7 @@ def _unique_no(dt: datetime) -> str:
     # YYYYMMDDHHMMSS + 6자리
     return dt.strftime("%Y%m%d%H%M%S") + str(uuid.uuid4().int)[-6:]
 
+# ssafy 공통 헤더
 def _build_header(user_key: str, api_name: str) -> dict:
     now = _now_kst()
     return {
@@ -48,6 +49,24 @@ def _build_header(user_key: str, api_name: str) -> dict:
         "apiKey": apiKey,
         "userKey": user_key,
     }
+
+# 성공 여부 확인
+def _ensure_success(body: dict, *, default_fail_msg: str) -> dict:
+    # Header.responseCode 가 H0000 이면 성공
+    code = (
+        body.get("Header", {}).get("responseCode")
+        or body.get("rsp_code") or body.get("rspCode") or body.get("code") or ""
+    )
+    ok = str(code).strip().upper() in {"H0000", "0000", "SUCCESS", "0"}
+    if not ok:
+        msg = (
+            body.get("Header", {}).get("responseMessage")
+            or body.get("rsp_msg") or body.get("message") or default_fail_msg
+        )
+        raise ValueError(f"[외부API] {msg}")
+    # 데이터 컨테이너(REC 우선) 반환
+    return body.get("REC") or body
+
 
 def _resolve_account_model():
     # 모델은 수정하지 않으므로, 존재하는 것으로만 시도
@@ -85,15 +104,19 @@ def _insert_account_orm(db: Session, user_id: str, account_no: str):
     return True
 
 # SQL로 계좌 정보 삽입
-def _insert_account_sql(db: Session, user_id: str, account_no: str):
-    # ORM 모델명이 없거나 칼럼명이 달라도 최소 요건으로 raw SQL 백업
-    # 테이블/칼럼이 다르면 여기만 프로젝트에 맞게 바꾸면 됨.
+def _insert_account_sql(db, user_id, account_no):
     ins = text("""
-        INSERT INTO demand_deposit_accounts (id, user_id, account_no)
-        VALUES (:id, :user_id, :account_no)
+        INSERT INTO demand_deposit_accounts (id, user_id, account_no, opened_at)
+        VALUES (:id, :user_id, :account_no, :opened_at)
     """)
-    db.execute(ins, {"id": _gen_id_26(), "user_id": user_id, "account_no": account_no})
+    db.execute(ins, {
+        "id": _gen_id_26(),
+        "user_id": user_id,
+        "account_no": str(account_no).strip(),
+        "opened_at": _now_kst(),
+    })
     db.commit()
+
     return True
 
 # 수시입출금 계좌 생성
@@ -127,15 +150,12 @@ async def create_demand_deposit_account(*, db: Session, user_id: str, timeout: f
         body = resp.json()
 
     # 4) 성공 판정 및 accountNo 추출
-    rsp_code = body.get("rsp_code") or body.get("rspCode") or body.get("code") or ""
-    ok = str(rsp_code) in ("0000", "SUCCESS", "0", 0)
-    if not ok:
-        msg = body.get("rsp_msg") or body.get("message") or "계좌 생성 실패"
-        raise ValueError(f"[외부API] {msg}")
-
-    account_no = body.get("accountNo") or body.get("account_number")
+    # (기존) rsp_code/ok/account_no 블록 전부 지우고 ↓ 로 교체
+    rec = _ensure_success(body, default_fail_msg="계좌 생성 실패")
+    account_no = rec.get("accountNo") or rec.get("account_number") or body.get("accountNo")
     if not account_no:
-        raise ValueError("응답에 accountNo가 없습니다.")
+        raise ValueError("[외부API] 응답에 accountNo가 없습니다.")
+
 
     # 5) DB 저장: 우선 ORM → 실패 시 raw SQL 백업
     try:
@@ -157,21 +177,19 @@ async def create_demand_deposit_account(*, db: Session, user_id: str, timeout: f
 
 
 # 기존: 수시입출금 계좌번호만 반환 → id와 번호를 같이 반환하도록 헬퍼 추가
-def _get_latest_dd_account(db: Session, user_id: str) -> dict | None:
-    row = db.execute(
-        text("""
-            SELECT id, account_no
-            FROM demand_deposit_accounts
-            WHERE user_id = :uid
-            ORDER BY opened_at DESC
-            LIMIT 1
-        """),
-        {"uid": user_id}
-    ).fetchone()
-    if not row:
-        return None
-    # SQLAlchemy Row 객체 호환
-    return {"id": getattr(row, "id", None), "account_no": getattr(row, "account_no", None)}
+def _get_latest_dd_account(db, user_id):
+    row = db.execute(text("""
+        SELECT id, account_no
+        FROM demand_deposit_accounts
+        WHERE user_id = :uid
+        ORDER BY opened_at DESC
+        LIMIT 1
+    """), {"uid": user_id}).fetchone()
+    if not row: return None
+    rid = getattr(row, "id", None)  or (row[0] if len(row) > 0 else None)
+    rno = getattr(row, "account_no", None) or (row[1] if len(row) > 1 else None)
+    return {"id": rid, "account_no": rno}
+
 
 # YYYYMMDD 형식 문자열을 date 객체로 변환 (실패 시 None)
 def _parse_date_yyyymmdd(s: str | None) -> date | None:
@@ -246,19 +264,12 @@ async def create_savings_account(*, db: Session, user_id: str, deposit_balance: 
         body = resp.json()
 
     # 5) 성공 여부/계좌번호 추출
-    rsp_code = body.get("rsp_code") or body.get("rspCode") or body.get("code") or ""
-    ok = str(rsp_code) in ("0000", "SUCCESS", "0", 0)
-    if not ok:
-        msg = body.get("rsp_msg") or body.get("message") or "적금계좌 생성 실패"
-        raise ValueError(f"[외부API] {msg}")
-
-    # 응답 스펙(이미지) 대응: REC 래핑 유무 모두 처리
-    rec = body.get("REC") or body
-
-    # 적금 계좌번호(프론트 반환용)
-    savings_no = rec.get("savingsAccountNo") or rec.get("accountNo") or rec.get("savings_account_no")
+    # (기존) rsp_code/ok/rec/savings_no 블록 전부 지우고 ↓ 로 교체
+    rec = _ensure_success(body, default_fail_msg="적금계좌 생성 실패")
+    savings_no = rec.get("savingsAccountNo") or rec.get("accountNo") or body.get("savingsAccountNo")
     if not savings_no:
-        raise ValueError("응답에 적금 계좌번호가 없습니다.")
+        raise ValueError("[외부API] 응답에 적금 계좌번호가 없습니다.")
+
 
     # ---- ⬇ DB에 installment_savings_accounts 저장 ----
     # 파싱/보정

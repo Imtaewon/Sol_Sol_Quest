@@ -54,7 +54,7 @@ async def create_savings_account_endpoint(
     try:
         result = await svc_create_savings(
             db=db,
-            user_id=req.user_id,
+            user_id=me.id,
             deposit_balance=req.deposit_balance,
         )
     except ValueError as ve:
