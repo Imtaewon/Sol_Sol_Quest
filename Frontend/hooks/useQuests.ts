@@ -29,7 +29,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { questService, ClaimQuestRequest, categorizeQuests, convertQuestListItemToQuest, RecommendedQuestDetail } from '../services/questService';
+import { questService, ClaimQuestRequest, categorizeQuests, convertQuestListItemToQuest, RecommendedQuestDetail, RecommendedQuestsResponse } from '../services/questService';
 import Toast from 'react-native-toast-message';
 
 // 추천 퀘스트 조회 훅

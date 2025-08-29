@@ -210,7 +210,10 @@ export const QuestDetailScreen: React.FC = () => {
     progressCount: quest.attempt?.progress_count,
     targetCount: quest.attempt?.target_count,
     verifyMethod: quest.verify_method,
-    linkUrl: quest.link_url
+    linkUrl: quest.link_url,
+    questKeys: Object.keys(quest), // quest 객체의 모든 키 확인
+    questType: typeof quest.verify_method,
+    isLinkQuest: quest.verify_method === 'LINK'
   });
 
   const canStart = false; // 시작 버튼 제거 (적금 가입 시 자동 시작)
@@ -376,66 +379,6 @@ export const QuestDetailScreen: React.FC = () => {
 
                 {/* 액션 버튼 */}
         <View style={styles.actionContainer}>
-                     {/* 링크 퀘스트인 경우 링크 열기 버튼 */}
-           {(() => {
-             console.log('🎯 링크 버튼 조건 확인:', {
-               verifyMethod: quest.verify_method,
-               isLink: quest.verify_method === 'LINK',
-               linkUrl: quest.link_url
-             });
-             return quest.verify_method === 'LINK';
-           })() && (
-                            <TouchableOpacity
-                 style={[
-                   styles.linkButton,
-                   isSubmitting && styles.linkButtonDisabled
-                 ]}
-                 onPress={() => {
-                 // 링크 열기 및 퀘스트 완료 처리
-                 Alert.alert(
-                   '링크 열기',
-                   '외부 링크로 이동하고 퀘스트를 완료하시겠습니까?',
-                   [
-                     { text: '취소', style: 'cancel' },
-                     { 
-                       text: '열기 및 완료', 
-                       onPress: async () => {
-                         try {
-                           setIsSubmitting(true);
-                           console.log('🎯 링크 퀘스트 완료 요청:', quest.id);
-                           
-                           // 퀘스트 완료 API 호출
-                           await completeQuest({ quest_id: quest.id });
-                           
-                           Alert.alert(
-                             '퀘스트 완료!', 
-                             `링크를 열고 ${quest.reward_exp} EXP를 획득했습니다!`,
-                             [
-                               {
-                                 text: '확인',
-                                 onPress: () => navigation.goBack()
-                               }
-                             ]
-                           );
-                         } catch (error) {
-                           console.error('🎯 링크 퀘스트 완료 실패:', error);
-                           Alert.alert('오류', '퀘스트 완료에 실패했습니다.');
-                         } finally {
-                           setIsSubmitting(false);
-                         }
-                       }
-                     }
-                   ]
-                 );
-               }}
-               disabled={isSubmitting}
-             >
-               <Ionicons name="open-outline" size={20} color={COLORS.white} />
-               <Text style={styles.linkButtonText}>
-                 {isSubmitting ? '처리중...' : '링크 열기'}
-               </Text>
-             </TouchableOpacity>
-           )}
 
           {/* 진행중인 퀘스트의 경우 계속하기 버튼 */}
           {quest.attempt?.status === 'IN_PROGRESS' && (
@@ -447,8 +390,59 @@ export const QuestDetailScreen: React.FC = () => {
             />
           )}
 
-          {/* 목표 달성한 퀘스트의 경우 경험치 받기 버튼 */}
-          {canClaimReward && (
+          {/* 목표 달성한 퀘스트의 경우 경험치 받기 버튼 또는 링크 열기 버튼 */}
+          {canClaimReward && quest.verify_method === 'LINK' ? (
+            <TouchableOpacity
+              style={[
+                styles.linkButton,
+                isSubmitting && styles.linkButtonDisabled
+              ]}
+              onPress={() => {
+                // 링크 열기 및 퀘스트 완료 처리
+                Alert.alert(
+                  '링크 열기',
+                  '외부 링크로 이동하고 퀘스트를 완료하시겠습니까?',
+                  [
+                    { text: '취소', style: 'cancel' },
+                    { 
+                      text: '열기 및 완료', 
+                      onPress: async () => {
+                        try {
+                          setIsSubmitting(true);
+                          console.log('🎯 링크 퀘스트 완료 요청:', quest.id);
+                          
+                          // 퀘스트 완료 API 호출
+                          await completeQuest({ quest_id: quest.id });
+                          
+                          Alert.alert(
+                            '퀘스트 완료!', 
+                            `링크를 열고 ${quest.reward_exp} EXP를 획득했습니다!`,
+                            [
+                              {
+                                text: '확인',
+                                onPress: () => navigation.goBack()
+                              }
+                            ]
+                          );
+                        } catch (error) {
+                          console.error('🎯 링크 퀘스트 완료 실패:', error);
+                          Alert.alert('오류', '퀘스트 완료에 실패했습니다.');
+                        } finally {
+                          setIsSubmitting(false);
+                        }
+                      }
+                    }
+                  ]
+                );
+              }}
+              disabled={isSubmitting}
+            >
+              <Ionicons name="open-outline" size={20} color={COLORS.white} />
+              <Text style={styles.linkButtonText}>
+                {isSubmitting ? '처리중...' : '링크 열기'}
+              </Text>
+            </TouchableOpacity>
+          ) : canClaimReward && (
             <PrimaryButton
               title={`${quest.reward_exp} EXP 받기`}
               onPress={handleCompleteQuest}

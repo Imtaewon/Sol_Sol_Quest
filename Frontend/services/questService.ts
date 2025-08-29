@@ -107,8 +107,9 @@ export interface RecommendedQuestDetail {
   created_at?: string;
 }
 
+// 백엔드 응답 구조에 맞는 타입
 export interface RecommendedQuestsResponse {
-  quest_ids: string[];
+  quests: RecommendedQuestDetail[];
   message: string;
 }
 
@@ -146,10 +147,12 @@ export const questService = {
   getRecommendedQuests: async (): Promise<RecommendedQuestDetail[]> => {
     console.log('🌐 questService.getRecommendedQuests HTTP 요청 시작');
     try {
-      const response = await apiClient.get<RecommendedQuestDetail[]>('/api/v1/recommendations/quests');
+      const response = await apiClient.get<RecommendedQuestsResponse>('/api/v1/recommendations/quests');
       console.log('🌐 questService.getRecommendedQuests HTTP 요청 완료:', response.status);
       console.log('🌐 questService.getRecommendedQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
-      return response.data;
+      
+      // 백엔드 응답 구조에서 quests 배열만 반환
+      return response.data.quests || [];
     } catch (error: unknown) {
       console.error('🌐 questService.getRecommendedQuests 에러:', error);
       if (error instanceof Error) {
