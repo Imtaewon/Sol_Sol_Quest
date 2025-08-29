@@ -7,6 +7,7 @@ from decimal import Decimal
 # 응답: 최소한의 정보만 DTO로 제공 (원하면 확장)
 class AccountDTO(BaseModel):
     account_no: str
+    balance: Decimal | None = None
 
 # 요청: userId만 받음
 class CreateDemandDepositAccountRequest(BaseModel):

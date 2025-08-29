@@ -72,6 +72,8 @@ async def create_savings_account_endpoint(
 
 # ------------ (신규) GET 조회 엔드포인트들 ------------
 
+# app/accounts/router.py
+
 @router.get(
     "/demand-deposit",
     response_model=DemandDepositAccountsResponse,
@@ -82,7 +84,6 @@ def list_demand_deposit_accounts(
     db: Session = Depends(get_db),
     me: User = Depends(get_current_user),
 ):
-    # 본인 계정만 조회 허용(필요 시 정책 변경)
     if me.id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="권한이 없습니다.")
 
@@ -93,14 +94,21 @@ def list_demand_deposit_accounts(
           .all()
     )
 
-    data = [AccountDTO(account_no=r.account_no or "") for r in rows if r.account_no]
+    data = [
+        AccountDTO(
+            account_no=r.account_no or "",
+            balance=r.balance
+        )
+        for r in rows
+        if r.account_no
+    ]
     return DemandDepositAccountsResponse(success=True, data=data, message=None)
 
 
 @router.get(
     "/savings",
     response_model=SavingsAccountsResponse,
-    summary="적금 계좌(계약) 목록 조회",
+    summary="적금 계좌 목록 조회",
 )
 def list_savings_accounts(
     user_id: str = Query(..., min_length=1, max_length=64),
@@ -131,3 +139,6 @@ def list_savings_accounts(
         for r in rows
     ]
     return SavingsAccountsResponse(success=True, data=data, message=None)
+
+
+
