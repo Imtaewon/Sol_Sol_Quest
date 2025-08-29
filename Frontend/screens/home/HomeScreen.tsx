@@ -62,10 +62,8 @@ import { useRecommendedQuests, useClaimQuest } from '../../hooks/useQuests';
 const { width } = Dimensions.get('window');
 
 // 캐러셀 슬라이드 폭 계산
-const H_PADDING = SPACING.lg;                   // 바깥 패딩(섹션)
-const GUTTER = SPACING.md;                      // 카드 사이 간격
-const CARD_WIDTH = width - H_PADDING * 2;       // 카드 실제 폭(현재 스타일과 동일)
-const SLIDE = CARD_WIDTH + GUTTER;              // 스냅 간격(=가로 스크롤 단위)
+// 캐러셀 관련 상수들 (마이페이지와 동일하게 고정값 사용)
+const CARD_WIDTH = 300; // 마이페이지와 동일한 고정값
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<HomeStackParamList, 'Home'>,
@@ -99,14 +97,13 @@ export const HomeScreen: React.FC = () => {
     refetch: refetchRank 
   } = useMySchoolRank();
   
-  // has_savings가 true일 때만 추천 퀘스트 조회
-  const questsQuery = hasSavings ? useRecommendedQuests(hasSavings) : { data: undefined, isLoading: false, error: undefined, refetch: () => Promise.resolve() };
+  // 추천 퀘스트 조회 (has_savings가 false면 API 요청 안함)
   const { 
     data: recommendedQuests, 
     isLoading: questsLoading, 
     error: questsError, 
     refetch: refetchQuests 
-  } = questsQuery;
+  } = useRecommendedQuests(hasSavings);
 
   // API 요청 로그
   console.log('🏠 HomeScreen API 상태:', {
@@ -125,20 +122,16 @@ export const HomeScreen: React.FC = () => {
     try {
       await refetchUser();
       await refetchRank();
-      
-      // has_savings가 true일 때만 계좌 정보 새로고침
-      if (hasSavings) {
-        await refetchSavings();
-        await refetchDeposit();
-        await refetchQuests();
-      }
+      await refetchSavings();
+      await refetchDeposit();
+      await refetchQuests(); // has_savings가 false면 자동으로 무시됨
     } finally {
       setRefreshing(false);
     }
   };
 
-  // 로딩 상태 처리 - has_savings가 false면 계좌 관련 로딩은 무시
-  const isLoading = userLoading || rankLoading || (hasSavings && (savingsLoading || depositLoading || questsLoading));
+  // 로딩 상태 처리
+  const isLoading = userLoading || rankLoading || savingsLoading || depositLoading || questsLoading;
   
   console.log('🏠 HomeScreen 로딩 상태:', {
     userLoading,
@@ -156,7 +149,7 @@ export const HomeScreen: React.FC = () => {
   }
 
   // 에러 상태 처리
-  const hasError = userError || rankError || (hasSavings && (savingsError || depositError || questsError));
+  const hasError = userError || rankError || savingsError || depositError || questsError;
   if (hasError) {
     return (
       <ErrorView 
@@ -168,11 +161,13 @@ export const HomeScreen: React.FC = () => {
 
   const handleCarouselScroll = (event: any) => {
     const x = event.nativeEvent.contentOffset.x;
-    setCurrentCarouselIndex(Math.round(x / SLIDE));
+    const slideSize = CARD_WIDTH + SPACING.md; // 마이페이지와 동일한 계산
+    setCurrentCarouselIndex(Math.round(x / slideSize));
   };
 
   const scrollToIndex = (index: number) => {
-    carouselRef.current?.scrollTo({ x: index * SLIDE, animated: true });
+    const slideSize = CARD_WIDTH + SPACING.md; // 마이페이지와 동일한 계산
+    carouselRef.current?.scrollTo({ x: index * slideSize, animated: true });
   };
 
   // 퀘스트 수령 처리
@@ -192,12 +187,8 @@ export const HomeScreen: React.FC = () => {
         horizontal 
         showsHorizontalScrollIndicator={false} 
         contentContainerStyle={styles.carouselContainer}
-        pagingEnabled
         onScroll={handleCarouselScroll}
         scrollEventThrottle={16}
-        decelerationRate={Platform.select({ ios: 0.9, android: 0.8 })}
-        snapToInterval={SLIDE}
-        snapToAlignment="start"
       >
         {hasSavings ? (
           // 가입자: 실제 계좌 정보 표시
@@ -308,35 +299,47 @@ export const HomeScreen: React.FC = () => {
     </View>
   );
 
-  const renderSchoolRanking = () => (
-    <View style={styles.rankingCard}>
-      <View style={styles.rankingHeader}>
-        <Text style={styles.rankingTitle}>학교 랭킹</Text>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('Leaderboard')}
-          accessibilityRole="button"
-          accessibilityLabel="리더보드 더보기"
-        >
-          <Text style={styles.rankingMore}>더보기</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.rankingContent}>
-        <View style={styles.rankingItem}>
-          <Text style={styles.rankingRank}>#{schoolRank?.data?.rank}</Text>
-          <Text style={styles.rankingSchool}>{schoolRank?.data?.school}</Text>
-          <Text style={styles.rankingScore}>{formatNumber(schoolRank?.data?.totalExp || 0)}점</Text>
+  const renderSchoolRanking = () => {
+    // 리더보드 데이터 디버깅 로그
+    console.log('🏆 renderSchoolRanking 호출됨');
+    console.log('🏆 schoolRank 전체 데이터:', schoolRank);
+    console.log('🏆 schoolRank?.data:', schoolRank?.data);
+    console.log('🏆 schoolRank?.data?.rank:', schoolRank?.data?.rank);
+    console.log('🏆 schoolRank?.data?.school:', schoolRank?.data?.school);
+    console.log('🏆 schoolRank?.data?.totalExp:', schoolRank?.data?.totalExp);
+    console.log('🏆 schoolRank?.data?.memberCount:', schoolRank?.data?.memberCount);
+    console.log('🏆 schoolRank?.data?.myTotalExp:', schoolRank?.data?.myTotalExp);
+    
+    return (
+      <View style={styles.rankingCard}>
+        <View style={styles.rankingHeader}>
+          <Text style={styles.rankingTitle}>학교 랭킹</Text>
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Leaderboard')}
+            accessibilityRole="button"
+            accessibilityLabel="리더보드 더보기"
+          >
+            <Text style={styles.rankingMore}>더보기</Text>
+          </TouchableOpacity>
         </View>
-        <Text style={styles.rankingMemberCount}>
-          {schoolRank?.data?.memberCount}명 참여
-        </Text>
-        {hasSavings && schoolRank?.data?.myTotalExp && (
-          <Text style={styles.myExpText}>
-            내 누적 경험치: {formatNumber(schoolRank.data.myTotalExp)}점
+        <View style={styles.rankingContent}>
+          <View style={styles.rankingItem}>
+            <Text style={styles.rankingRank}>#{schoolRank?.data?.rank}</Text>
+            <Text style={styles.rankingSchool}>{schoolRank?.data?.school}</Text>
+            <Text style={styles.rankingScore}>{formatNumber(schoolRank?.data?.totalExp || 0)}점</Text>
+          </View>
+          <Text style={styles.rankingMemberCount}>
+            {schoolRank?.data?.memberCount}명 참여
           </Text>
-        )}
+          {hasSavings && schoolRank?.data?.myTotalExp && (
+            <Text style={styles.myExpText}>
+              내 누적 경험치: {formatNumber(schoolRank.data.myTotalExp)}점
+            </Text>
+          )}
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderQuestsPreview = () => (
     <View style={styles.questsCard}>
@@ -363,7 +366,7 @@ export const HomeScreen: React.FC = () => {
       </View>
       
       {hasSavings ? (
-        recommendedQuests?.data && recommendedQuests.data.quest_ids && recommendedQuests.data.quest_ids.length > 0 ? (
+        recommendedQuests?.data?.quest_ids && Array.isArray(recommendedQuests.data.quest_ids) && recommendedQuests.data.quest_ids.length > 0 ? (
           <View style={styles.questsList}>
             {recommendedQuests.data.quest_ids.slice(0, 3).map((questId, index) => (
               <View key={questId} style={styles.questItem}>
@@ -420,6 +423,7 @@ export const HomeScreen: React.FC = () => {
         {/* 계좌 캐러셀 */}
         {renderAccountCarousel()}
 
+
         {/* 학교 랭킹 */}
         <View style={styles.rankingSection}>
           {renderSchoolRanking()}
@@ -454,14 +458,11 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   carouselContainer: {
-    // ❗️여긴 추가 패딩을 주지 않습니다(중복 방지)
-    // paddingHorizontal: SPACING.lg,  ← 제거
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingRight: SPACING.lg, // 마이페이지와 동일하게 오른쪽 패딩만
   },
   accountCard: {
-    width: CARD_WIDTH,                // 카드 폭 고정
-    marginRight: GUTTER,              // 카드 간격
+    width: CARD_WIDTH, // 마이페이지와 동일한 고정 너비
+    marginRight: SPACING.md, // 마이페이지와 동일한 간격
     height: 200,
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
@@ -471,7 +472,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    flexShrink: 0,
+    // flexShrink: 0 제거 (마이페이지에는 없음)
   },
   accountHeader: {
     flexDirection: 'row',

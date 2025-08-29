@@ -35,6 +35,12 @@ export const useMySchoolRank = () => {
       console.log('📡 useMySchoolRank API 호출 시작');
       const result = await rankService.getMySchoolRank();
       console.log('📡 useMySchoolRank API 호출 완료:', result.success ? '성공' : '실패');
+      console.log('📡 useMySchoolRank 결과 데이터 구조:', {
+        hasData: !!result.data,
+        resultKeys: Object.keys(result),
+        dataKeys: result.data ? Object.keys(result.data) : []
+      });
+      console.log('📡 useMySchoolRank 결과 데이터:', JSON.stringify(result, null, 2));
       return result;
     },
     staleTime: 2 * 60 * 1000, // 2분

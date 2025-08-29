@@ -96,7 +96,7 @@ export const QuestsScreen: React.FC = () => {
   const user = useSelector((state: RootState) => state.user.user);
   
   // 선택된 퀘스트 타입 (일상/성장/돌발)
-  const [selectedType, setSelectedType] = useState<'daily' | 'growth' | 'surprise'>('surprise');
+  const [selectedType, setSelectedType] = useState<'daily' | 'growth' | 'surprise'>('daily');
   
   // 새로고침 상태 관리
   const [refreshing, setRefreshing] = useState(false);
