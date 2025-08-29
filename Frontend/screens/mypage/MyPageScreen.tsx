@@ -258,8 +258,11 @@ export const MyPageScreen: React.FC = () => {
                 <Text style={styles.userName}>
                   {userInfo?.data?.name || '사용자'}
                 </Text>
+                <Text style={styles.userSchool}>
+                  {userInfo?.data?.university_name || '학교 미설정'}
+                </Text>
                 <Text style={styles.userDetails}>
-                  {`${userInfo?.data?.university_name || '학교 미설정'} • ${userInfo?.data?.major || '학과 미설정'} • ${userInfo?.data?.grade ? `${userInfo.data.grade}학년` : '학년 미설정'}`}
+                  {`${userInfo?.data?.major || '학과 미설정'} • ${userInfo?.data?.grade ? `${userInfo.data.grade}학년` : '학년 미설정'}`}
                 </Text>
               </>
             )}
@@ -519,6 +522,12 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: SPACING.xs,
+  },
+  userSchool: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
     color: COLORS.dark,
     marginBottom: SPACING.xs,
   },
