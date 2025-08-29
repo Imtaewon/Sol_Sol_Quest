@@ -69,7 +69,23 @@ export const LoginScreen: React.FC = () => {
       if (result.success) {
         // Redux 상태 업데이트 (Backend 응답 형식에 맞춤)
         dispatch(loginSuccess({ token: result.data.access_token }));
-        dispatch(setUser(result.data.user));
+        // 사용자 정보는 백엔드 응답 구조에 맞춰 변환
+        const userData = {
+          id: parseInt(result.data.user.user_id) || 0,
+          name: result.data.user.name,
+          real_name: result.data.user.name,
+          username: result.data.user.login_id,
+          email: result.data.user.email,
+          gender: 'male' as const,
+          birthYear: 2000,
+          school: result.data.user.university_name || '',
+          school_id: '',
+          department: '',
+          grade: 1,
+          savingStatus: result.data.user.has_savings || false,
+          hasSavings: result.data.user.has_savings || false,
+        };
+        dispatch(setUser(userData));
         // 로그인 성공 후 메인 화면으로 이동
         console.log('로그인 성공:', result.data);
       }

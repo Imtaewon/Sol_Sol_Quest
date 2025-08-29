@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { Config } from '../../config/env';
 import { Platform } from 'react-native';
+import { Quest, QuestAttempt, User, SchoolLeaderboard, DemandDepositAccount, InstallmentSavingsAccount, AccountTransaction } from '../../types/database';
 
 // 타입 정의
 export interface LoginRequest {

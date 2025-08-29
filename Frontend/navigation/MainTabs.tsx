@@ -23,10 +23,20 @@ export type MainTabsParamList = {
   QRPay: undefined;
 };
 
+// 탭 아이콘 props 타입 정의
+interface CustomTabIconProps {
+  route: {
+    name: string;
+  };
+  focused: boolean;
+  color: string;
+  size: number;
+}
+
 const Tab = createBottomTabNavigator<MainTabsParamList>();
 
 // 커스텀 아이콘 컴포넌트
-const CustomTabIcon = ({ route, focused, color, size }: any) => {
+const CustomTabIcon = ({ route, focused, color, size }: CustomTabIconProps) => {
   let iconName: keyof typeof Ionicons.glyphMap;
 
   if (route.name === 'Home') {

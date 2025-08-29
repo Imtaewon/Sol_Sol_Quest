@@ -175,7 +175,7 @@ export const HomeScreen: React.FC = () => {
   };
 
   // 퀘스트 수령 처리
-  const handleClaimQuest = async (questId: number, expReward: number) => {
+  const handleClaimQuest = async (questId: string, expReward: number) => {
     try {
       await claimQuestMutation.mutateAsync({ questId, expReward });
     } catch (error) {

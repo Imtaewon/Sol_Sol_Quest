@@ -171,7 +171,7 @@ export const MyPageScreen: React.FC = () => {
     return benefits[tier as keyof typeof benefits] || '0.3%';
   };
 
-  const totalExp = userInfo?.data?.totalExp || 0;
+  const totalExp = userInfo?.data?.total_exp || 0;
   const { currentTier, nextTier, expToNextTier } = calculateTierInfo(totalExp);
   const tierBenefit = getTierBenefit(currentTier);
 
@@ -214,7 +214,7 @@ export const MyPageScreen: React.FC = () => {
           <View style={styles.profileInfo}>
             <Text style={styles.userName}>{userInfo?.data?.name || '사용자'}</Text>
             <Text style={styles.userDetails}>
-              {userInfo?.data?.university_name || '학교 미설정'} • {userInfo?.data?.major || '학과 미설정'} • {userInfo?.data?.grade || '학년 미설정'}학년
+              {userInfo?.data?.university_name || '학교 미설정'} • {'학과 미설정'} • {'학년 미설정'}
             </Text>
           </View>
           <TouchableOpacity style={styles.editButton}>

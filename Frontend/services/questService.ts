@@ -1,6 +1,41 @@
 import apiClient from './apiClient';
 import { ApiResponse } from './apiClient';
 
+// 퀘스트 인증 파라미터 타입 정의
+export interface QuestVerifyParams {
+  // GPS 인증
+  latitude?: number;
+  longitude?: number;
+  radius?: number;
+  
+  // 스텝 카운터 인증
+  steps?: number;
+  target_steps?: number;
+  
+  // 결제 인증
+  payment_amount?: number;
+  merchant_id?: string;
+  
+  // 링크 인증
+  url?: string;
+  
+  // 업로드 인증
+  file_url?: string;
+  
+  // 출석 인증
+  attendance_date?: string;
+  
+  // 인증서 인증
+  certificate_url?: string;
+  
+  // 대회 인증
+  contest_result?: string;
+  
+  // 퀴즈 인증
+  quiz_answers?: string[];
+  correct_count?: number;
+}
+
 // 백엔드 QuestListItem 구조에 맞춘 퀘스트 타입
 export interface QuestListItem {
   id: string;
@@ -8,7 +43,7 @@ export interface QuestListItem {
   title: string;
   verify_method: 'GPS' | 'STEPS' | 'LINK' | 'UPLOAD' | 'PAYMENT' | 'ATTENDANCE' | 'CERTIFICATION' | 'CONTEST' | 'QUIZ';
   category: 'STUDY' | 'HEALTH' | 'ECON' | 'LIFE' | 'ENT' | 'SAVING'; // 백엔드 QuestCategoryEnum과 정확히 일치
-  verify_params: any;
+  verify_params: QuestVerifyParams;
   reward_exp: number;
   target_count: number;
   period_scope: 'ANY' | 'DAILY' | 'WEEKLY' | 'MONTHLY'; // 백엔드 PeriodScopeEnum과 정확히 일치
@@ -95,9 +130,12 @@ export const questService = {
       console.log('🌐 questService.getRecommendedQuests HTTP 요청 완료:', response.status);
       console.log('🌐 questService.getRecommendedQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('🌐 questService.getRecommendedQuests 에러:', error);
-      throw error;
+      if (error instanceof Error) {
+        throw new Error(`추천 퀘스트 조회 실패: ${error.message}`);
+      }
+      throw new Error('추천 퀘스트 조회 중 알 수 없는 오류가 발생했습니다.');
     }
   },
 

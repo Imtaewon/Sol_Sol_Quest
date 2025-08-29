@@ -31,6 +31,7 @@ import Toast from 'react-native-toast-message';
 import { useDispatch } from 'react-redux';
 import { loginSuccess, logout } from '../store/slices/authSlice';
 import { Platform } from 'react-native';
+import { LoginResponseData } from '../types/auth';
 
 // AsyncStorage fallback 함수들
 const setStorageItem = async (key: string, value: string): Promise<void> => {
@@ -104,24 +105,24 @@ export const useLogin = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
 
-  return useMutation({
+  return useMutation<LoginResponseData, Error, LoginRequest>({
     mutationFn: async (data: LoginRequest) => {
       console.log('🔄 useLogin mutationFn 호출됨');
-      console.log('전송할 데이터:', data);
+      console.log('전송할 데이터:', JSON.stringify(data, null, 2));
       
-      // AsyncStorage 클리어
+      // AsyncStorage 클리어 (로그인 시도 전)
       try {
-        await clearStorage();
-        console.log('🧹 AsyncStorage 클리어 완료');
-        
-        // 클리어 후 확인
-        const allKeys = await AsyncStorage.getAllKeys();
-        console.log('🧹 클리어 후 AsyncStorage 키들:', allKeys);
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          localStorage.clear();
+        } else {
+          await AsyncStorage.clear();
+        }
       } catch (error) {
         console.error('❌ AsyncStorage 클리어 실패:', error);
       }
       
-      return authService.login(data);
+      const response = await authService.login(data);
+      return response.data as LoginResponseData;
     },
     onSuccess: async (response: any) => {
       console.log('로그인 응답:', response);
@@ -211,8 +212,71 @@ export const useSignup = () => {
       console.log('전송할 데이터:', JSON.stringify(data, null, 2));
       return authService.signup(data);
     },
-    onSuccess: (response) => {
-      console.log('회원가입 성공:', response.data);
+    onSuccess: async (response: any) => {
+      console.log('🎉 회원가입 성공 콜백 호출됨');
+      console.log('전체 응답:', JSON.stringify(response, null, 2));
+      console.log('응답 타입:', typeof response);
+      console.log('response.success:', response.success);
+      console.log('response.data:', response.data);
+      
+      try {
+        // 회원가입 성공 후 자동 로그인 처리
+        // 다양한 응답 구조에 대응
+        let access_token: string | undefined;
+        let user: any | undefined;
+        
+        if (response.success && response.data) {
+          // 표준 응답 구조
+          access_token = response.data.access_token;
+          user = response.data.user;
+        } else if (response.data?.access_token) {
+          // data 안에 직접 토큰이 있는 경우
+          access_token = response.data.access_token;
+          user = response.data.user;
+        } else if (response.access_token) {
+          // 최상위에 토큰이 있는 경우
+          access_token = response.access_token;
+          user = response.user;
+        }
+        
+        console.log('추출된 토큰:', access_token ? `${access_token.substring(0, 20)}...` : 'null');
+        console.log('추출된 사용자 정보:', user);
+        
+        if (access_token && user) {
+          // 토큰 저장
+          await setStorageItem('access_token', access_token);
+          console.log('🔐 회원가입 후 토큰 저장 완료');
+          
+          // 사용자 정보 캐시에 저장
+          queryClient.setQueryData(['user'], user);
+          queryClient.setQueryData(['token'], access_token);
+          queryClient.setQueryData(['savingStatus'], user.has_savings);
+          
+          // Redux store 업데이트 (자동 로그인)
+          dispatch(loginSuccess({ token: access_token }));
+          console.log('🔐 회원가입 후 Redux loginSuccess 액션 호출됨');
+          
+          Toast.show({
+            type: 'success',
+            text1: '회원가입 성공',
+            text2: '환영합니다!',
+          });
+        } else {
+          console.warn('⚠️ 토큰 또는 사용자 정보를 찾을 수 없음');
+          Toast.show({
+            type: 'info',
+            text1: '회원가입 완료',
+            text2: '로그인 후 이용해주세요.',
+          });
+        }
+      } catch (error) {
+        console.error('❌ 회원가입 후 자동 로그인 처리 중 에러:', error);
+        Toast.show({
+          type: 'error',
+          text1: '회원가입 완료',
+          text2: '로그인 후 이용해주세요.',
+        });
+      }
     },
     onError: (error) => {
       console.error('❌ useSignup onError 호출됨');

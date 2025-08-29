@@ -184,9 +184,8 @@ export const QuestsScreen: React.FC = () => {
    * 퀘스트 카드 클릭 처리 함수
    * 퀘스트 상세 화면으로 이동
    */
-  const handleQuestPress = async (quest: QuestWithAttempt) => {
-    // 퀘스트 상세 화면으로 이동 (quest 객체 전체 전달)
-    navigation.navigate('QuestDetail', { quest: quest });
+  const handleQuestPress = (quest: QuestWithAttempt) => {
+    navigation.navigate('QuestDetail', { quest: quest as any });
   };
 
 

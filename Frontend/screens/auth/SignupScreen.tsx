@@ -119,13 +119,23 @@ export const SignupScreen: React.FC = () => {
       console.log('4. signupMutation.mutateAsync 완료');
       console.log('API 응답 전체:', JSON.stringify(result, null, 2));
       
-             if (result.success) {
-                 console.log('✅ 회원가입 성공!');
-         console.log('성공 응답 데이터:', JSON.stringify(result, null, 2));
+      if (result.success) {
+        console.log('✅ 회원가입 성공!');
+        console.log('성공 응답 데이터:', JSON.stringify(result, null, 2));
         console.log('useSignup 훅에서 자동으로 Redux store를 업데이트하여 메인 화면으로 이동합니다.');
+        
+        // 회원가입 성공 후 폼 초기화
+        reset();
+        setSelectedSchool(null);
+        
+        // 성공 메시지 표시 (useSignup 훅에서 처리하므로 중복 방지)
+        console.log('🎉 회원가입 프로세스 완료 - 자동 로그인 처리 중...');
       } else {
         console.error('❌ 회원가입 실패: API 응답에서 success가 false입니다.');
         console.log('실패 응답:', JSON.stringify(result, null, 2));
+        
+        // 실패 시 사용자에게 알림
+        alert('회원가입에 실패했습니다. 다시 시도해주세요.');
       }
     } catch (error) {
       console.error('❌ 회원가입 중 예외 발생:', error);

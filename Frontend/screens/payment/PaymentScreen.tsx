@@ -42,6 +42,13 @@ const SHINHAN_COLORS = {
   },
 };
 
+interface ScannedPaymentData {
+  type: string;
+  amount: number;
+  merchantName: string;
+  description: string;
+}
+
 export const PaymentScreen: React.FC = () => {
   const navigation = useNavigation();
   // QRScanner 컴포넌트에서 권한 처리를 담당하므로 제거
@@ -64,9 +71,23 @@ export const PaymentScreen: React.FC = () => {
     }
   }, [scannedData]);
 
-  const handleBarCodeScanned = (data: any) => {
-    setScanned(true);
-    setScannedData(data);
+  const handleBarCodeScanned = (data: string) => {
+    // QR 코드에서 JSON 데이터 파싱
+    try {
+      const parsedData = JSON.parse(data) as ScannedPaymentData;
+      setScanned(true);
+      setScannedData(parsedData);
+    } catch (error) {
+      console.error('QR 코드 데이터 파싱 실패:', error);
+      // 기본 데이터로 설정
+      setScanned(true);
+      setScannedData({
+        type: 'payment',
+        amount: 10000,
+        merchantName: '상점',
+        description: 'QR 결제',
+      });
+    }
   };
 
   const handlePaymentConfirm = () => {

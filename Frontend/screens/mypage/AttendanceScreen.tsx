@@ -67,11 +67,11 @@ export const AttendanceScreen: React.FC = () => {
   const checkAttendanceMutation = useCheckAttendance();
 
   // 백엔드 API 응답 구조에 맞춰 수정
-  const attendanceDays = attendanceData?.data?.attendance_dates || [];
+  const attendanceDays = attendanceData?.attendance_dates || [];
 
   // API 요청 로그
   console.log('📅 AttendanceScreen API 상태:', {
-    attendanceData: { loading: isLoading, error, data: attendanceData?.data ? '있음' : '없음' },
+    attendanceData: { loading: isLoading, error, data: attendanceData?.attendance_dates ? '있음' : '없음' },
     year,
     month,
     attendanceDays: attendanceDays.length

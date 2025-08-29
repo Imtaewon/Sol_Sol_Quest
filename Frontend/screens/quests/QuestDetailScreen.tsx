@@ -113,14 +113,13 @@ export const QuestDetailScreen: React.FC = () => {
    * 퀘스트 상태 텍스트 반환 함수
    * @returns 상태에 따른 한글 텍스트
    */
-  const getQuestStatusText = () => {
-    if (!quest.attempt) return '미시작';
-    
-    switch (quest.attempt.status) {
-      case 'in_progress': return '진행중';
-      case 'clear': return '목표 달성';
-      case 'submitted': return '제출됨';
-      case 'approved': return '완료';
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'DEACTIVE': return '비활성';
+      case 'IN_PROGRESS': return '진행중';
+      case 'CLEAR': return '목표 달성';
+      case 'SUBMITTED': return '제출됨';
+      case 'APPROVED': return '완료';
       default: return '미시작';
     }
   };
@@ -129,14 +128,13 @@ export const QuestDetailScreen: React.FC = () => {
    * 퀘스트 상태 색상 반환 함수
    * @returns 상태에 따른 색상
    */
-  const getQuestStatusColor = () => {
-    if (!quest.attempt) return COLORS.gray[400];
-    
-    switch (quest.attempt.status) {
-      case 'in_progress': return COLORS.primary;
-      case 'clear': return COLORS.success;
-      case 'submitted': return COLORS.warning;
-      case 'approved': return COLORS.success;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'DEACTIVE': return COLORS.gray[500];
+      case 'IN_PROGRESS': return COLORS.primary;
+      case 'CLEAR': return COLORS.success;
+      case 'SUBMITTED': return COLORS.warning;
+      case 'APPROVED': return COLORS.success;
       default: return COLORS.gray[400];
     }
   };
@@ -195,9 +193,9 @@ export const QuestDetailScreen: React.FC = () => {
   };
 
   const canStart = false; // 시작 버튼 제거 (적금 가입 시 자동 시작)
-  const canSubmit = quest.attempt?.status === 'clear';
-  const canVerify = quest.attempt?.status === 'in_progress' || !quest.attempt; // 미시작도 인증 가능으로 표시
-  const isCompleted = quest.attempt?.status === 'approved';
+  const canSubmit = quest.attempt?.status === 'CLEAR';
+  const canVerify = quest.attempt?.status === 'IN_PROGRESS' || !quest.attempt; // 미시작도 인증 가능으로 표시
+  const isCompleted = quest.attempt?.status === 'APPROVED';
 
   return (
     <View style={styles.container}>
@@ -210,11 +208,11 @@ export const QuestDetailScreen: React.FC = () => {
             <View 
               style={[
                 styles.questTypeIndicator, 
-                { backgroundColor: QUEST_TYPE_COLORS[quest.type] }
+                { backgroundColor: QUEST_TYPE_COLORS[quest.type.toLowerCase() as keyof typeof QUEST_TYPE_COLORS] }
               ]} 
             />
             <Text style={styles.questTypeText}>
-              {quest.type === 'life' ? '일상' : quest.type === 'growth' ? '성장' : '돌발'}
+              {quest.type === 'LIFE' ? '일상' : quest.type === 'GROWTH' ? '성장' : '돌발'}
             </Text>
           </View>
           
@@ -240,10 +238,10 @@ export const QuestDetailScreen: React.FC = () => {
             <View 
               style={[
                 styles.statusDot, 
-                { backgroundColor: getQuestStatusColor() }
+                { backgroundColor: getStatusColor(quest.attempt?.status || 'DEACTIVE') }
               ]} 
             />
-            <Text style={styles.statusText}>{getQuestStatusText()}</Text>
+            <Text style={styles.statusText}>{getStatusText(quest.attempt?.status || 'DEACTIVE')}</Text>
           </View>
         </View>
 
@@ -262,7 +260,7 @@ export const QuestDetailScreen: React.FC = () => {
                   styles.progressFill, 
                   { 
                     width: `${getQuestProgress()}%`,
-                    backgroundColor: isCompleted ? COLORS.success : QUEST_TYPE_COLORS[quest.type]
+                    backgroundColor: isCompleted ? COLORS.success : QUEST_TYPE_COLORS[quest.type.toLowerCase() as keyof typeof QUEST_TYPE_COLORS]
                   }
                 ]} 
               />
@@ -281,7 +279,7 @@ export const QuestDetailScreen: React.FC = () => {
                    quest.verify_method === 'ATTENDANCE' ? 'calendar' :
                    'checkmark-circle'} 
               size={24} 
-              color={QUEST_TYPE_COLORS[quest.type]} 
+              color={QUEST_TYPE_COLORS[quest.type.toLowerCase() as keyof typeof QUEST_TYPE_COLORS]} 
             />
             <View style={styles.verifyMethodContent}>
               <Text style={styles.verifyMethodTitle}>
@@ -292,7 +290,7 @@ export const QuestDetailScreen: React.FC = () => {
                  '일반 인증'}
               </Text>
               <Text style={styles.verifyMethodDescription}>
-                {VERIFY_METHOD_DESCRIPTIONS[quest.verify_method]}
+                {VERIFY_METHOD_DESCRIPTIONS[quest.verify_method as keyof typeof VERIFY_METHOD_DESCRIPTIONS]}
               </Text>
             </View>
           </View>
