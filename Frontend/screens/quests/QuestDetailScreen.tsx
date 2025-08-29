@@ -228,7 +228,15 @@ export const QuestDetailScreen: React.FC = () => {
     isCompleted,
     verifyMethod: quest.verify_method,
     hasLink: !!quest.link_url,
-    linkButtonShouldShow: quest.verify_method === 'LINK'
+    linkButtonShouldShow: quest.verify_method === 'LINK',
+    questData: {
+      id: quest.id,
+      title: quest.title,
+      verify_method: quest.verify_method,
+      link_url: quest.link_url,
+      user_status: quest.user_status,
+      attempt: quest.attempt
+    }
   });
 
   return (
@@ -380,18 +388,16 @@ export const QuestDetailScreen: React.FC = () => {
                 {/* 액션 버튼 */}
         <View style={styles.actionContainer}>
 
-          {/* 진행중인 퀘스트의 경우 계속하기 버튼 */}
-          {quest.attempt?.status === 'IN_PROGRESS' && (
-            <PrimaryButton
-              title="계속하기"
-              onPress={handleVerifyQuest}
-              size="large"
-              variant="primary"
-            />
-          )}
-
-          {/* 링크 퀘스트의 경우 링크 열기 버튼 (상태와 관계없이) */}
-          {quest.verify_method === 'LINK' ? (
+          {/* 링크 퀘스트의 경우 링크 열기 버튼 (가장 우선순위) */}
+          {(() => {
+            console.log('🎯 링크 버튼 조건 체크:', {
+              verify_method: quest.verify_method,
+              isLink: quest.verify_method === 'LINK',
+              questId: quest.id,
+              questTitle: quest.title
+            });
+            return quest.verify_method === 'LINK';
+          })() ? (
             <TouchableOpacity
               style={[
                 styles.linkButton,
@@ -463,24 +469,39 @@ export const QuestDetailScreen: React.FC = () => {
                  quest.user_status === 'CLEAR' ? '링크 열기 및 완료' : '링크 열기'}
               </Text>
             </TouchableOpacity>
-          ) : canClaimReward && (
-            <PrimaryButton
-              title={`${quest.reward_exp} EXP 받기`}
-              onPress={handleCompleteQuest}
-              size="large"
-              variant="success"
-              loading={isSubmitting}
-            />
-          )}
+          ) : (
+            <>
+              {/* 진행중인 퀘스트의 경우 계속하기 버튼 */}
+              {quest.attempt?.status === 'IN_PROGRESS' && (
+                <PrimaryButton
+                  title="계속하기"
+                  onPress={handleVerifyQuest}
+                  size="large"
+                  variant="primary"
+                />
+              )}
 
-          {/* 미시작 퀘스트의 경우 시작하기 버튼 */}
-          {(!quest.attempt || quest.attempt.status === 'DEACTIVE') && (
-            <PrimaryButton
-              title="시작하기"
-              onPress={handleVerifyQuest}
-              size="large"
-              variant="primary"
-            />
+              {/* EXP 받기 가능한 경우 */}
+              {canClaimReward && (
+                <PrimaryButton
+                  title={`${quest.reward_exp} EXP 받기`}
+                  onPress={handleCompleteQuest}
+                  size="large"
+                  variant="success"
+                  loading={isSubmitting}
+                />
+              )}
+
+              {/* 미시작 퀘스트의 경우 시작하기 버튼 */}
+              {(!quest.attempt || quest.attempt.status === 'DEACTIVE') && (
+                <PrimaryButton
+                  title="시작하기"
+                  onPress={handleVerifyQuest}
+                  size="large"
+                  variant="primary"
+                />
+              )}
+            </>
           )}
 
           {/* 시연용 퀘스트 즉시 완료 버튼 */}

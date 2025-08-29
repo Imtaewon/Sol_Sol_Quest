@@ -350,24 +350,13 @@ export const HomeScreen: React.FC = () => {
     <View style={styles.questsCard}>
       <View style={styles.questsHeader}>
         <Text style={styles.questsTitle}>추천 퀘스트</Text>
-        <View style={styles.questsHeaderButtons}>
-          <TouchableOpacity 
-            style={styles.questTrackerButton}
-            onPress={() => navigation.navigate('QuestTracker')}
-            accessibilityRole="button"
-            accessibilityLabel="퀘스트 추적기"
-          >
-            <Ionicons name="location" size={16} color={COLORS.primary} />
-            <Text style={styles.questTrackerText}>추적기</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('Quests')}
-            accessibilityRole="button"
-            accessibilityLabel="퀘스트 전체보기"
-          >
-            <Text style={styles.questsMore}>전체보기</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('Quests')}
+          accessibilityRole="button"
+          accessibilityLabel="퀘스트 전체보기"
+        >
+          <Text style={styles.questsMore}>전체보기</Text>
+        </TouchableOpacity>
       </View>
       
       {hasSavings ? (
@@ -597,25 +586,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.md,
   },
-  questsHeaderButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-  },
-  questTrackerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.gray[100],
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-    gap: SPACING.xs,
-  },
-  questTrackerText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.primary,
-    fontWeight: '500',
-  },
+
+
   questsTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '600',
