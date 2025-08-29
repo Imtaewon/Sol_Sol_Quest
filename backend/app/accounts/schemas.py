@@ -51,3 +51,20 @@ class SavingsAccountsResponse(BaseModel):
     success: bool = True
     data: list[SavingsAccountDTO] = []
     message: str | None = None
+
+
+class DepositToDemandDepositRequest(BaseModel):
+    user_id: str
+    account_no: str
+    amount: int
+
+class DepositResultDTO(BaseModel):
+    account_no: str
+    balance: int
+    amount: int
+
+class DepositToDemandDepositResponse(BaseModel):
+    success: bool
+    message: str | None = None
+    data: DepositResultDTO | None = None
+

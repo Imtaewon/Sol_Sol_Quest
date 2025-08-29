@@ -6,6 +6,7 @@ import httpx
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
+from fastapi import HTTPException
 
 from decimal import Decimal
 from math import ceil
@@ -14,11 +15,14 @@ from app.ENV import API_KEY as apiKey, DEPOSIT_ACCOUNT_UNIQUE_NO, SAVINGS_ACCOUN
 from app.models import User, InstallmentSavingsAccount
 import app.models as models
 from app.models import User, InstallmentSavingsAccount, SchoolLeaderboard, Quest, QuestAttempt, QuestAttemptStatusEnum, PeriodScopeEnum
+from app.accounts.schemas import DepositToDemandDepositRequest, DepositToDemandDepositResponse, DepositResultDTO
 
 
 BASE_URL = "https://finopenapi.ssafy.io/ssafy/api/v1/edu/"
 DEPOSIT_CREATE_URL = BASE_URL+"demandDeposit/createDemandDepositAccount"
-DEPOSIT_API_NAME  = "createDemandDepositAccount"
+DEPOSIT_CREATE_API_NAME  = "createDemandDepositAccount"
+DEPOSIT_API_NAME = "updateDemandDepositAccountDeposit"
+DEPOSIT_URL = BASE_URL+"/demandDeposit/updateDemandDepositAccountDeposit"
 SAVINGS_CREATE_URL = BASE_URL+"savings/createAccount"
 SAVINGS_API_NAME   = "createAccount"
 INST_CODE = "00100"
@@ -132,7 +136,7 @@ async def create_demand_deposit_account(*, db: Session, user_id: str, timeout: f
 
     # 2) 고정 DEPOSIT_ACCOUNT_UNIQUE_NO 사용
     payload = {
-        "Header": _build_header(user_key, DEPOSIT_API_NAME),
+        "Header": _build_header(user_key, DEPOSIT_CREATE_API_NAME),
         "accountTypeUniqueNo": DEPOSIT_ACCOUNT_UNIQUE_NO,
     }
 
@@ -376,3 +380,85 @@ def _recalc_avg(lb: SchoolLeaderboard) -> None:
     t = int(lb.total_exp or 0)
     lb.avg_exp = (Decimal(t) / Decimal(s)) if s > 0 else Decimal("0")
 
+# 수시입출금 계좌 입금
+async def deposit_to_demand_deposit_with_ssafy(
+    db: Session,
+    me: User,
+    req: DepositToDemandDepositRequest,
+    timeout: float = 10.0,
+) -> DepositToDemandDepositResponse:
+    # 0) 권한/소유 검증
+    if me.id != req.user_id:
+        raise HTTPException(status_code=403, detail="본인 계좌에만 입금할 수 있습니다.")
+
+    # 1) 계좌 확인(+ 잠금)
+    account: models.DemandDepositAccount | None = (
+        db.query(models.DemandDepositAccount)
+          .filter(
+              models.DemandDepositAccount.user_id == req.user_id,
+              models.DemandDepositAccount.account_no == req.account_no,
+          )
+          .with_for_update(nowait=False)
+          .first()
+    )
+    if not account:
+        return DepositToDemandDepositResponse(success=False, message="계좌를 찾을 수 없습니다.", data=None)
+
+    # 2) userKey 확보
+    user_key = getattr(me, "user_key", None) or getattr(me, "external_user_key", None)
+    if not user_key:
+        return DepositToDemandDepositResponse(success=False, message="userKey가 없습니다.", data=None)
+
+    # 3) SSAFY 요청 바디(예제처럼 Header 포함한 랩핑 JSON)
+    header = _build_header(user_key=user_key, api_name=DEPOSIT_API_NAME)
+
+    # Long 정수만 허용 → 문자열로 전달(예제와 동일 포맷)
+    try:
+        amt_int = int(Decimal(req.amount))
+    except Exception:
+        return DepositToDemandDepositResponse(success=False, message="amount는 정수여야 합니다.", data=None)
+
+    payload = {
+        "Header": header,
+        "accountNo": req.account_no,
+        "transactionBalance": str(amt_int),
+        "transactionSummary": "(수시입출금) : 입금",
+    }
+
+    # 4) 외부 호출
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            resp = await client.post(DEPOSIT_URL, json=payload)
+            resp.raise_for_status()
+            # 응답 스펙이 불명확 → 본 구현은 성공 코드만 확인하고 DB 반영
+            # 필요 시 resp.json()에서 afterBalance 등 키를 파싱하여 사용 가능
+    except httpx.HTTPStatusError as e:
+        # 외부 에러 메시지 포워딩
+        try:
+            detail = resp.json()
+        except Exception:
+            detail = resp.text
+        return DepositToDemandDepositResponse(
+            success=False,
+            message=f"입금 실패: {detail}",
+            data=None,
+        )
+    except Exception as e:
+        return DepositToDemandDepositResponse(success=False, message=f"입금 실패: {e}", data=None)
+
+    # 5) DB balance 반영(최소 구현: 기존 + amount)
+    current = Decimal(account.balance or 0)
+    account.balance = current + Decimal(amt_int)
+    db.add(account)
+    db.commit()
+    db.refresh(account)
+
+    return DepositToDemandDepositResponse(
+        success=True,
+        message="입금이 완료되었습니다.",
+        data=DepositResultDTO(
+            account_no=account.account_no,
+            balance=Decimal(account.balance),
+            amount=Decimal(amt_int),
+        ),
+    )

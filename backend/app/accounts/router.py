@@ -12,8 +12,15 @@ from app.accounts.schemas import (
     DemandDepositAccountsResponse,
     SavingsAccountsResponse,
     SavingsAccountDTO,
+    DepositToDemandDepositRequest,
+    DepositToDemandDepositResponse,
+    DepositResultDTO,
 )
-from app.accounts.service import create_demand_deposit_account as svc_create, create_savings_account as svc_create_savings
+from app.accounts.service import (
+    create_demand_deposit_account as svc_create, 
+    create_savings_account as svc_create_savings,
+    deposit_to_demand_deposit_with_ssafy as svc_deposit
+)
 from app.auth.deps import get_current_user
 from app.database import get_db
 from app.models import User, DemandDepositAccount, InstallmentSavingsAccount
@@ -22,7 +29,6 @@ router = APIRouter(prefix="/accounts", tags=["Accounts"])
 
 
 # 수시입출금 계좌 생성
-
 @router.post(
     "/demand-deposit",
     response_model=CreateDemandDepositAccountResponse,
@@ -44,7 +50,12 @@ async def create_demand_deposit_account_endpoint(
     return CreateDemandDepositAccountResponse(success=True, data=dto, message="계좌 생성 및 저장 완료")
 
 # 적금 계좌 생성
-@router.post("/savings", response_model=CreateSavingsAccountResponse, summary="적금 계좌 생성")
+@router.post(
+        "/savings", 
+        response_model=CreateSavingsAccountResponse, 
+        status_code=status.HTTP_201_CREATED,
+        summary="적금 계좌 생성"
+)
 async def create_savings_account_endpoint(
     req: CreateSavingsAccountRequest,
     db: Session = Depends(get_db),
@@ -72,8 +83,7 @@ async def create_savings_account_endpoint(
 
 # ------------ (신규) GET 조회 엔드포인트들 ------------
 
-# app/accounts/router.py
-
+# 수시입출금 계좌 목록 조회
 @router.get(
     "/demand-deposit",
     response_model=DemandDepositAccountsResponse,
@@ -104,7 +114,7 @@ def list_demand_deposit_accounts(
     ]
     return DemandDepositAccountsResponse(success=True, data=data, message=None)
 
-
+# 적금 계좌 목록 조회
 @router.get(
     "/savings",
     response_model=SavingsAccountsResponse,
@@ -140,5 +150,16 @@ def list_savings_accounts(
     ]
     return SavingsAccountsResponse(success=True, data=data, message=None)
 
-
-
+# 수시입출금 계좌 입금
+@router.post(
+    "/demand-deposit/deposit",
+    response_model=DepositToDemandDepositResponse,
+    status_code=status.HTTP_200_OK,
+    summary="수시입출금 계좌 입금(SSAFY API 연동)",
+)
+async def deposit_demand_deposit_endpoint(
+    body: DepositToDemandDepositRequest,
+    db: Session = Depends(get_db),
+    me: User = Depends(get_current_user),
+):
+    return await svc_deposit(db=db, me=me, req=body)
