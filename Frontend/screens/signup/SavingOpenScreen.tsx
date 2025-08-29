@@ -160,9 +160,9 @@ export const SavingOpenScreen: React.FC = () => {
   console.log('📝 설문 데이터 상세:', {
     surveyQuestion: surveyQuestion,
     surveyQuestionData: surveyQuestion?.data,
-    options: surveyQuestion?.data?.options,
-    optionsLength: surveyQuestion?.data?.options?.length,
-    question: surveyQuestion?.data?.question,
+    options: surveyQuestion?.options || surveyQuestion?.data?.options,
+    optionsLength: (surveyQuestion?.options || surveyQuestion?.data?.options)?.length,
+    question: surveyQuestion?.question || surveyQuestion?.data?.question,
     currentStep,
     isSurveyLoading,
     surveyError: surveyError
@@ -262,9 +262,9 @@ export const SavingOpenScreen: React.FC = () => {
       currentQuestionData: surveyQuestion?.data
     });
 
-    // 현재 문제의 정보 가져오기
-    const currentQuestionData = surveyQuestion?.data;
-    const selectedOption = currentQuestionData?.options?.[answer - 1]; // answer는 1부터 시작하므로 -1
+         // 현재 문제의 정보 가져오기
+     const currentQuestionData = surveyQuestion?.data || surveyQuestion;
+     const selectedOption = currentQuestionData?.options?.[answer - 1]; // answer는 1부터 시작하므로 -1
 
     setSurveyState(prev => {
       const newState = {
@@ -355,11 +355,11 @@ export const SavingOpenScreen: React.FC = () => {
         option_id: responseData.optionId,
       }));
 
-      console.log('📝 변환된 설문 응답 데이터:', {
-        surveyAnswers: surveyAnswers,
-        responsesLength: surveyAnswers.length,
-        currentQuestion: surveyQuestion?.data
-      });
+             console.log('📝 변환된 설문 응답 데이터:', {
+         surveyAnswers: surveyAnswers,
+         responsesLength: surveyAnswers.length,
+         currentQuestion: surveyQuestion?.data || surveyQuestion
+       });
 
       // 3. 설문 응답 제출 (백엔드 요구사항에 맞춤)
       await submitSurveyResponses({ items: surveyAnswers }).unwrap();
@@ -582,16 +582,17 @@ export const SavingOpenScreen: React.FC = () => {
               </View>
             ) : (
               <View style={styles.surveyContainer}>
-                <View style={styles.questionCard}>
-                  <Text style={styles.questionText}>
-                    {surveyQuestion?.data?.question}
-                  </Text>
-                </View>
+                                 <View style={styles.questionCard}>
+                   <Text style={styles.questionText}>
+                     {surveyQuestion?.question || surveyQuestion?.data?.question}
+                   </Text>
+                 </View>
 
-                {/* 답변 옵션 */}
-                {surveyQuestion?.data?.options && surveyQuestion.data.options.length > 0 && (
-                  <View style={styles.optionsContainer}>
-                    {surveyQuestion.data.options.map((option, index) => (
+                 {/* 답변 옵션 */}
+                 {(surveyQuestion?.options || surveyQuestion?.data?.options) && 
+                  (surveyQuestion?.options || surveyQuestion?.data?.options)?.length > 0 && (
+                   <View style={styles.optionsContainer}>
+                     {(surveyQuestion?.options || surveyQuestion?.data?.options)?.map((option, index) => (
                       <TouchableOpacity
                         key={option.id}
                                                  style={[
