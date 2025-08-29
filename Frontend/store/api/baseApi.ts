@@ -194,7 +194,7 @@ export const baseApi = createApi({
       page?: number;
       limit?: number;
     }>({
-      query: ({ type, category, page = 1, limit = 20 }) => ({
+      query: ({ type, category, page = 1, limit = 1000 }) => ({  // 20에서 1000으로 변경
         url: `/api/v1/quests?page=${page}&limit=${limit}${type ? `&type=${type}` : ''}${category ? `&category=${category}` : ''}`,
         method: 'GET',
       }),

@@ -55,7 +55,7 @@ type QuestsScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'Quest
  * - surprise: 돌발 퀘스트 (하늘색)
  */
 const QUEST_TYPE_COLORS: Record<string, string> = {
-  life: COLORS.primary,
+  daily: COLORS.primary,
   growth: COLORS.secondary,
   surprise: COLORS.accent,
 };
@@ -96,7 +96,7 @@ export const QuestsScreen: React.FC = () => {
   const user = useSelector((state: RootState) => state.user.user);
   
   // 선택된 퀘스트 타입 (일상/성장/돌발)
-  const [selectedType, setSelectedType] = useState<'life' | 'growth' | 'surprise'>('life');
+  const [selectedType, setSelectedType] = useState<'daily' | 'growth' | 'surprise'>('daily');
   
   // 새로고침 상태 관리
   const [refreshing, setRefreshing] = useState(false);
@@ -134,7 +134,7 @@ export const QuestsScreen: React.FC = () => {
     switch (selectedType) {
       case 'growth':
         return { data: growthQuests?.data || [], loading: growthLoading, error: growthError, refetch: refetchGrowth };
-      case 'life':
+      case 'daily':
         return { data: dailyQuests?.data || [], loading: dailyLoading, error: dailyError, refetch: refetchDaily };
       case 'surprise':
         return { data: surpriseQuests?.data || [], loading: surpriseLoading, error: surpriseError, refetch: refetchSurprise };
@@ -255,7 +255,7 @@ export const QuestsScreen: React.FC = () => {
               ]} 
             />
             <Text style={styles.questTypeText}>
-              {quest.type === 'life' ? '일상' : quest.type === 'growth' ? '성장' : '돌발'}
+              {quest.type === 'daily' ? '일상' : quest.type === 'growth' ? '성장' : '돌발'}
             </Text>
           </View>
           
@@ -330,7 +330,7 @@ export const QuestsScreen: React.FC = () => {
    * 퀘스트 타입 탭 렌더링 함수
    * 일상/성장/돌발 탭을 생성
    */
-  const renderTypeTab = (type: 'life' | 'growth' | 'surprise', label: string) => (
+  const renderTypeTab = (type: 'daily' | 'growth' | 'surprise', label: string) => (
     <TouchableOpacity
       style={[
         styles.typeTab,
@@ -368,7 +368,7 @@ export const QuestsScreen: React.FC = () => {
       
       {/* 퀘스트 타입 탭 */}
       <View style={styles.typeTabs}>
-        {renderTypeTab('life', '일상')}
+        {renderTypeTab('daily', '일상')}
         {renderTypeTab('growth', '성장')}
         {renderTypeTab('surprise', '돌발')}
       </View>
@@ -399,7 +399,7 @@ export const QuestsScreen: React.FC = () => {
             <View style={styles.emptyContainer}>
               <Ionicons name="trophy-outline" size={48} color={COLORS.gray[400]} />
               <Text style={styles.emptyText}>
-                {selectedType === 'life' ? '일상' : selectedType === 'growth' ? '성장' : '돌발'} 퀘스트가 없습니다
+                {selectedType === 'daily' ? '일상' : selectedType === 'growth' ? '성장' : '돌발'} 퀘스트가 없습니다
               </Text>
             </View>
           )
