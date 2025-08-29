@@ -46,7 +46,12 @@ export const LandingScreen: React.FC = () => {
       <View style={styles.content}>
         {/* 로고 영역 */}
         <View style={styles.logoSection}>
-          <Text style={styles.mainTitle}>헤이영</Text>
+          <Image
+            source={require('../../assets/heyoung_logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+            accessibilityLabel="Heyoung logo"
+          />
           <Text style={styles.subTitle}>쏠쏠한 퀘스트</Text>
           <Text style={styles.slogan}>
             성장이 이자가 되고{'\n'}경쟁이 나눔이 되다
@@ -109,6 +114,11 @@ const styles = StyleSheet.create({
     color: '#1428A0', // 신한 블루
     marginBottom: SPACING.xs,
     textAlign: 'center',
+  },
+  logoImage: {
+    width: 220,
+    height: 80,
+    marginBottom: SPACING.sm,
   },
   subTitle: {
     fontSize: FONT_SIZES.lg,
