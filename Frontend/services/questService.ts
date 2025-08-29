@@ -75,6 +75,7 @@ export interface Quest {
   isCompleted?: boolean;
   isClaimed?: boolean;
   link_url?: string; // 백엔드와 일치하도록 추가
+  verify_method?: string; // verify_method 필드 추가
   user_status?: string; // 원본 상태 정보
 }
 
@@ -277,6 +278,8 @@ export const convertQuestListItemToQuest = (questItem: QuestListItem): Quest => 
     maxProgress,
     progressPercent,
     user_status: questItem.user_status,
+    verify_method: questItem.verify_method,
+    link_url: questItem.link_url,
     isCompleted,
     isClaimed
   });
@@ -293,6 +296,7 @@ export const convertQuestListItemToQuest = (questItem: QuestListItem): Quest => 
     isCompleted,
     isClaimed,
     link_url: questItem.link_url, // 백엔드 link_url 필드 매핑
+    verify_method: questItem.verify_method, // verify_method 필드 추가
     user_status: questItem.user_status // 원본 상태 정보도 포함
   };
 };

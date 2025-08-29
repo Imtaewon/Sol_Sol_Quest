@@ -224,7 +224,8 @@ export const QuestDetailScreen: React.FC = () => {
     canVerify,
     isCompleted,
     verifyMethod: quest.verify_method,
-    hasLink: !!quest.link_url
+    hasLink: !!quest.link_url,
+    linkButtonShouldShow: quest.verify_method === 'LINK'
   });
 
   return (
@@ -376,7 +377,14 @@ export const QuestDetailScreen: React.FC = () => {
                 {/* 액션 버튼 */}
         <View style={styles.actionContainer}>
           {/* 링크 퀘스트인 경우 링크 열기 버튼 */}
-          {quest.verify_method === 'LINK' && (
+          {(() => {
+            console.log('🎯 링크 버튼 조건 확인:', {
+              verifyMethod: quest.verify_method,
+              isLink: quest.verify_method === 'LINK',
+              linkUrl: quest.link_url
+            });
+            return quest.verify_method === 'LINK';
+          })() && (
             <TouchableOpacity
               style={styles.linkButton}
               onPress={() => {

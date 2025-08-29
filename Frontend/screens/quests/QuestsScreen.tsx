@@ -330,22 +330,6 @@ export const QuestsScreen: React.FC = () => {
         style={styles.questCard}
         onPress={() => handleQuestPress(quest)}
       >
-        <View style={styles.questHeader}>
-          <View style={styles.questTypeContainer}>
-            <View 
-              style={[
-                styles.questTypeIndicator, 
-                { backgroundColor: QUEST_TYPE_COLORS[quest.type] }
-              ]} 
-            />
-          </View>
-          
-          <View style={styles.questReward}>
-            <Ionicons name="star" size={16} color={COLORS.secondary} />
-            <Text style={styles.questRewardText}>{quest.expReward} EXP</Text>
-          </View>
-        </View>
-
         <View style={styles.questContent}>
           <View style={styles.questTitleRow}>
             <Ionicons 
@@ -373,33 +357,38 @@ export const QuestsScreen: React.FC = () => {
             </Text>
           </View>
 
-          <View style={styles.questFooter}>
-            <View style={styles.questStatus}>
-              <View 
-                style={[
-                  styles.statusDot, 
-                  { backgroundColor: isCompleted ? COLORS.success : isInProgress ? COLORS.primary : COLORS.gray[400] }
-                ]} 
-              />
-              <Text style={styles.statusText}>{statusText}</Text>
-            </View>
+                     <View style={styles.questFooter}>
+             <View style={styles.questStatus}>
+               <View 
+                 style={[
+                   styles.statusDot, 
+                   { backgroundColor: isCompleted ? COLORS.success : isInProgress ? COLORS.primary : COLORS.gray[400] }
+                 ]} 
+               />
+               <Text style={styles.statusText}>{statusText}</Text>
+             </View>
 
-            {canClaim && (
-              <TouchableOpacity
-                style={[styles.startButton, styles.claimButton]}
-                onPress={() => handleClaimQuest(quest)}
-              >
-                <Text style={styles.startButtonText}>수령하기</Text>
-              </TouchableOpacity>
-            )}
+             <View style={styles.questReward}>
+               <Ionicons name="star" size={16} color={COLORS.secondary} />
+               <Text style={styles.questRewardText}>{quest.expReward} EXP</Text>
+             </View>
 
-            {isCompleted && (
-              <View style={styles.completedBadge}>
-                <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
-                <Text style={styles.completedText}>완료</Text>
-              </View>
-            )}
-          </View>
+             {canClaim && (
+               <TouchableOpacity
+                 style={[styles.startButton, styles.claimButton]}
+                 onPress={() => handleClaimQuest(quest)}
+               >
+                 <Text style={styles.startButtonText}>수령하기</Text>
+               </TouchableOpacity>
+             )}
+
+             {isCompleted && (
+               <View style={styles.completedBadge}>
+                 <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+                 <Text style={styles.completedText}>완료</Text>
+               </View>
+             )}
+           </View>
         </View>
       </TouchableOpacity>
     );
@@ -536,7 +525,7 @@ const styles = StyleSheet.create({
   questHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: SPACING.md,
   },
   questTypeContainer: {
@@ -601,6 +590,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: SPACING.sm,
   },
   questStatus: {
     flexDirection: 'row',
