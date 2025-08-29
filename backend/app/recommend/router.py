@@ -10,6 +10,22 @@ from ..models import User
 
 
 # 응답 모델 정의
+class QuestFullDetailResponse(BaseModel):
+    id: str
+    type: str
+    title: str
+    category: str
+    verify_method: str
+    verify_params: str = None
+    reward_exp: int
+    target_count: int
+    period_scope: str
+    active: bool
+    lat: float = None
+    lng: float = None
+    quest_link_url: str = None
+    created_at: str = None
+
 class QuestRecommendationResponse(BaseModel):
     quest_ids: List[str]
     message: str
@@ -28,17 +44,60 @@ class QuestDetailResponse(BaseModel):
 # 라우터 생성
 recommendation_router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
-@recommendation_router.get("/quests", response_model=QuestRecommendationResponse)
+@recommendation_router.get("/quests", response_model=List[QuestFullDetailResponse])
 async def get_recommended_quests(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    현재 사용자를 위한 퀘스트 추천
+    현재 사용자를 위한 전체 정보가 포함된 퀘스트 추천
     
     - 사용자의 개인정보와 설문조사 답변을 분석하여 맞춤형 퀘스트 3개를 추천합니다.
     - LIFE, GROWTH 타입의 퀘스트를 추천합니다. (SURPRISE 타입은 제외)
-    - 1회성 추천으로, 사용자의 시도 이력은 고려하지 않습니다.
+    - 추천된 퀘스트의 모든 상세 정보를 반환합니다.
+    - quest_recommendations 테이블에 추천 기록을 저장합니다.
+    """
+    try:
+        # current_user 객체에서 user_id 추출
+        user_id = current_user.id
+        
+        recommendation_system = QuestRecommendationSystem()
+        quest_details = recommendation_system.recommend_quests_with_full_details(db, user_id)
+        
+        return [
+            QuestFullDetailResponse(
+                id=quest["id"],
+                type=quest["type"],
+                title=quest["title"],
+                category=quest["category"],
+                verify_method=quest["verify_method"],
+                verify_params=quest["verify_params"],
+                reward_exp=quest["reward_exp"],
+                target_count=quest["target_count"],
+                period_scope=quest["period_scope"],
+                active=quest["active"],
+                lat=quest["lat"],
+                lng=quest["lng"],
+                quest_link_url=quest["quest_link_url"],
+                created_at=quest["created_at"]
+            )
+            for quest in quest_details
+        ]
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"추천 시스템 오류: {str(e)}")
+
+@recommendation_router.get("/quests/ids-only", response_model=QuestRecommendationResponse)
+async def get_recommended_quest_ids_only(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    현재 사용자를 위한 퀘스트 추천 (ID만 반환)
+    
+    - 사용자의 개인정보와 설문조사 답변을 분석하여 맞춤형 퀘스트 3개를 추천합니다.
+    - LIFE, GROWTH 타입의 퀘스트를 추천합니다. (SURPRISE 타입은 제외)
+    - 퀘스트 ID만 반환합니다.
     """
     try:
         # current_user 객체에서 user_id 추출
