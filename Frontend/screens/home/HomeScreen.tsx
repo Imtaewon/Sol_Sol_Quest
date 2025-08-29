@@ -372,7 +372,7 @@ export const HomeScreen: React.FC = () => {
       {hasSavings ? (
         recommendedQuests?.data?.quest_ids && Array.isArray(recommendedQuests.data.quest_ids) && recommendedQuests.data.quest_ids.length > 0 ? (
           <View style={styles.questsList}>
-            {recommendedQuests.data.quest_ids.slice(0, 3).map((questId, index) => (
+            {recommendedQuests.data.quest_ids.slice(0, 3).map((questId: string, index: number) => (
               <View key={questId} style={styles.questItem}>
                 <View style={styles.questInfo}>
                   <Text style={styles.questTitle}>추천 퀘스트 {index + 1}</Text>
