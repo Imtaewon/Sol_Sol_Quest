@@ -317,7 +317,7 @@ export const SavingOpenScreen: React.FC = () => {
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학과</Text>
-                  <Text style={styles.infoValue}>{userInfo?.department}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.major}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학년</Text>

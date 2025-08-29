@@ -3,7 +3,7 @@ import { ApiResponse } from './apiClient';
 
 // 예금 가입 요청 타입
 export interface DepositSignupRequest {
-  isOpened: boolean;
+  user_id: string;
 }
 
 // 예금 가입 응답 타입
