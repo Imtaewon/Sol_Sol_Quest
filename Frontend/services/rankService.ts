@@ -61,13 +61,29 @@ export const rankService = {
   // 내 학교 랭킹 조회 (비가입자) - 기존 호환성을 위해 유지
   getMySchoolRank: async (): Promise<ApiResponse<MySchoolRank>> => {
     console.log('🌐 rankService.getMySchoolRank HTTP 요청 시작');
+    console.log('🌐 rankService.getMySchoolRank 요청 URL:', '/api/v1/universities/leaderboard');
     try {
       const response = await apiClient.get<ApiResponse<UniversityLeaderboardResponse>>('/api/v1/universities/leaderboard');
       console.log('🌐 rankService.getMySchoolRank HTTP 요청 완료:', response.status);
+      console.log('🌐 rankService.getMySchoolRank 응답 헤더:', response.headers);
+      console.log('🌐 rankService.getMySchoolRank 전체 응답 데이터:', JSON.stringify(response.data, null, 2));
+      
+      // 응답 구조 분석
+      console.log('🌐 rankService.getMySchoolRank 응답 구조 분석:', {
+        hasData: !!response.data.data,
+        hasMyUniversity: !!response.data.data?.my_university,
+        hasTop10Overall: !!response.data.data?.top10_overall,
+        hasTop10Avg: !!response.data.data?.top10_avg,
+        responseKeys: Object.keys(response.data),
+        dataKeys: response.data.data ? Object.keys(response.data.data) : []
+      });
       
       // my_university 데이터를 MySchoolRank 형식으로 변환
       const myUniversity = response.data.data?.my_university;
+      console.log('🌐 rankService.getMySchoolRank my_university 원본 데이터:', myUniversity);
+      
       if (!myUniversity) {
+        console.log('🌐 rankService.getMySchoolRank my_university 데이터 없음 - 기본값 반환');
         return {
           success: true,
           data: {
@@ -89,9 +105,13 @@ export const rankService = {
       };
 
       console.log('🌐 rankService.getMySchoolRank 변환된 데이터:', JSON.stringify(result, null, 2));
+      console.log('🌐 rankService.getMySchoolRank 최종 반환 데이터:', { success: true, data: result });
       return { success: true, data: result };
-    } catch (error) {
+    } catch (error: any) {
       console.error('🌐 rankService.getMySchoolRank 에러:', error);
+      console.error('🌐 rankService.getMySchoolRank 에러 메시지:', error.message);
+      console.error('🌐 rankService.getMySchoolRank 에러 응답:', error.response?.data);
+      console.error('🌐 rankService.getMySchoolRank 에러 상태:', error.response?.status);
       throw error;
     }
   },

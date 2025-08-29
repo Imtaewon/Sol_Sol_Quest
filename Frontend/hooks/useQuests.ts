@@ -36,13 +36,23 @@ import Toast from 'react-native-toast-message';
 export const useRecommendedQuests = (hasSavings: boolean = false) => {
   console.log('🔍 useRecommendedQuests 훅 호출됨, hasSavings:', hasSavings);
   return useQuery({
-    queryKey: ['quests', 'recommended'],
+    queryKey: ['quests', 'recommended', hasSavings],
     queryFn: async () => {
       console.log('📡 useRecommendedQuests API 호출 시작');
       const result = await questService.getRecommendedQuests();
       console.log('📡 useRecommendedQuests API 호출 완료:', result.success ? '성공' : '실패');
+      console.log('📡 useRecommendedQuests 결과 데이터 구조:', {
+        hasData: !!result.data,
+        hasQuestIds: !!result.data?.quest_ids,
+        isQuestIdsArray: Array.isArray(result.data?.quest_ids),
+        questIdsLength: result.data?.quest_ids?.length || 0,
+        resultKeys: Object.keys(result),
+        dataKeys: result.data ? Object.keys(result.data) : []
+      });
+      console.log('📡 useRecommendedQuests 결과 데이터:', JSON.stringify(result, null, 2));
       return result;
     },
+    enabled: hasSavings, // has_savings가 true일 때만 API 요청
     staleTime: 1 * 60 * 1000, // 1분
     gcTime: 3 * 60 * 1000, // 3분
   });
