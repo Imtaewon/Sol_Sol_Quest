@@ -30,6 +30,11 @@ export interface DepositMoneyRequest {
 
 // 입금 API 호출
 export const depositMoney = async (data: DepositMoneyRequest): Promise<ApiResponse> => {
+  console.log('🔍 depositMoney API 호출됨');
+  console.log('API 엔드포인트:', '/api/v1/accounts/demand-deposit/deposit');
+  console.log('요청 데이터:', data);
+  
   const response = await apiClient.post<ApiResponse>('/api/v1/accounts/demand-deposit/deposit', data);
+  console.log('✅ API 응답:', response.data);
   return response.data;
 };

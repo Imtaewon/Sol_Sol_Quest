@@ -61,6 +61,11 @@ export const DepositMoneyScreen: React.FC = () => {
   const { data: userInfo, isLoading: userLoading, error: userError } = useUserInfo();
   const { data: depositAccount, isLoading: depositLoading, error: depositError } = useDepositAccount();
   const depositMoneyMutation = useDepositMoney();
+  
+  console.log('🔍 DepositMoneyScreen 렌더링됨');
+  console.log('userInfo:', userInfo);
+  console.log('depositAccount:', depositAccount);
+  console.log('depositMoneyMutation:', depositMoneyMutation);
 
   // 입력된 값 감시
   const amount = watch('amount');
@@ -108,25 +113,37 @@ export const DepositMoneyScreen: React.FC = () => {
    * 입금 처리
    */
   const handleDeposit = async (data: DepositFormData) => {
+    console.log('🔍 handleDeposit 함수 호출됨');
+    console.log('입력 데이터:', data);
+    
     try {
       if (!userInfo?.data?.user_id) {
+        console.log('❌ user_id 없음');
         Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
         return;
       }
 
       if (!data.amount || data.amount <= 0) {
+        console.log('❌ 금액 없음 또는 0 이하');
         Alert.alert('오류', '입금 금액을 입력해주세요.');
         return;
       }
 
+      console.log('✅ 입금 조건 확인 완료');
+      console.log('계좌번호:', depositAccountInfo.account_no);
+      console.log('사용자ID:', userInfo.data.user_id);
+      console.log('입금금액:', data.amount);
+
       setIsDepositing(true);
 
       // 입금 API 호출
+      console.log('🔍 depositMoneyMutation.mutateAsync 호출 시작');
       const result = await depositMoneyMutation.mutateAsync({
         account_no: depositAccountInfo.account_no,
         user_id: userInfo.data.user_id,
         amount: data.amount,
       });
+      console.log('✅ mutateAsync 완료:', result);
 
       if (result.success) {
         Alert.alert(

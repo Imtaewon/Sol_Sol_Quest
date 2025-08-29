@@ -185,6 +185,14 @@ export const useLogin = () => {
         console.log('🔐 Redux loginSuccess 액션 호출됨');
         console.log('토큰:', token);
         
+        // 로그인 성공 후 캐시 무효화 (새로운 사용자 정보 로드)
+        console.log('🔄 로그인 후 캐시 무효화 시작');
+        queryClient.invalidateQueries({ queryKey: ['user'] });
+        queryClient.invalidateQueries({ queryKey: ['account'] });
+        queryClient.invalidateQueries({ queryKey: ['savingsAccount'] });
+        queryClient.invalidateQueries({ queryKey: ['depositAccount'] });
+        console.log('✅ 캐시 무효화 완료');
+        
         Toast.show({
           type: 'success',
           text1: '로그인 성공',

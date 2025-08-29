@@ -91,6 +91,9 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     try {
+      // 설문 API 호출인지 확인
+      const isSurveyApi = config.url?.includes('/saving/survey');
+      
       // 더미 키 확인으로 AsyncStorage 기능 테스트
       const dummyValue = await getStorageItem('dummy_key');
       console.log('DEBUG: Interceptor - AsyncStorage dummy_key:', dummyValue);
@@ -102,6 +105,7 @@ apiClient.interceptors.request.use(
       console.log('🔑 API 요청 토큰 확인:', {
         url: config.url,
         method: config.method,
+        isSurveyApi,
         hasToken,
         tokenLength,
         dummyKeyExists: !!dummyValue,
@@ -129,10 +133,38 @@ apiClient.interceptors.request.use(
 // 응답 인터셉터 - 에러 처리
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
+    // 설문 API 응답인지 확인
+    const isSurveyApi = response.config.url?.includes('/saving/survey');
+    
+    if (isSurveyApi) {
+      console.log('📡 설문 API 응답 성공:', {
+        url: response.config.url,
+        status: response.status,
+        statusText: response.statusText,
+        data: response.data,
+        dataKeys: Object.keys(response.data || {}),
+        hasData: !!response.data?.data
+      });
+    }
+    
     return response;
   },
   async (error: AxiosError<ApiResponse>) => {
     const originalRequest = error.config;
+    
+    // 설문 API 에러인지 확인
+    const isSurveyApi = originalRequest?.url?.includes('/saving/survey');
+    
+    if (isSurveyApi) {
+      console.error('❌ 설문 API 에러:', {
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        errorData: error.response?.data,
+        errorMessage: error.message
+      });
+    }
     
     // 401 에러 (토큰 만료) 처리
     if (error.response?.status === 401 && originalRequest) {

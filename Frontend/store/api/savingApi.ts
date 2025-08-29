@@ -41,10 +41,33 @@ export const savingApi = baseApi.injectEndpoints({
      * 특정 번호의 설문 문제 조회
      */
     getSurveyQuestion: builder.query<ApiResponse<SurveyQuestion>, number>({
-      query: (questionNumber) => ({
-        url: `/api/v1/saving/survey/questions/${questionNumber}`,
-        method: 'GET',
-      }),
+      query: (questionNumber) => {
+        console.log('🔍 설문 문제 조회 API 호출:', questionNumber);
+        console.log('🔍 API URL:', `/api/v1/saving/survey/questions/${questionNumber}`);
+        return {
+          url: `/api/v1/saving/survey/questions/${questionNumber}`,
+          method: 'GET',
+        };
+      },
+      onSuccess: (data) => {
+        console.log('✅ 설문 문제 조회 성공:', data);
+        console.log('✅ 응답 데이터 구조:', {
+          success: data.success,
+          data: data.data,
+          message: data.message,
+          hasData: !!data.data,
+          dataKeys: data.data ? Object.keys(data.data) : 'no data'
+        });
+      },
+      onError: (error) => {
+        console.error('❌ 설문 문제 조회 실패:', error);
+        console.error('❌ 에러 상세:', {
+          status: error?.status,
+          statusText: error?.statusText,
+          data: error?.data,
+          message: error?.message
+        });
+      },
     }),
 
     /**

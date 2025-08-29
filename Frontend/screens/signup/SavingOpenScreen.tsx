@@ -95,10 +95,53 @@ export const SavingOpenScreen: React.FC = () => {
 
   const { 
     data: surveyQuestion, 
-    isLoading: isSurveyLoading 
+    isLoading: isSurveyLoading,
+    error: surveyError,
+    isFetching: isSurveyFetching,
+    isError: isSurveyError
   } = useGetSurveyQuestionQuery(surveyState.currentQuestion, {
     skip: currentStep !== 2,
+    retry: 1, // 재시도 횟수 제한
   });
+
+  // 설문 API 호출 상태 상세 로그
+  console.log('🔍 설문 API 호출 상태:', {
+    currentStep,
+    currentQuestion: surveyState.currentQuestion,
+    skip: currentStep !== 2,
+    isSurveyLoading,
+    isSurveyFetching,
+    isSurveyError,
+    surveyError,
+    surveyQuestion,
+    hasData: !!surveyQuestion?.data
+  });
+
+  // 설문 에러 처리
+  React.useEffect(() => {
+    if (surveyError && currentStep === 2) {
+      console.error('❌ 설문 문제 조회 실패:', surveyError);
+      Alert.alert(
+        '설문 조회 실패',
+        '설문 문제를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.',
+        [
+          {
+            text: '확인',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    }
+  }, [surveyError, currentStep, navigation]);
+
+  // currentStep 변경 감지
+  React.useEffect(() => {
+    console.log('🔄 currentStep 변경됨:', {
+      currentStep,
+      currentQuestion: surveyState.currentQuestion,
+      willSkip: currentStep !== 2
+    });
+  }, [currentStep, surveyState.currentQuestion]);
 
 
   const [createSavingsAccount, { isLoading: isCreatingSavings }] = useCreateSavingsAccountMutation();
@@ -115,13 +158,27 @@ export const SavingOpenScreen: React.FC = () => {
 
   // 설문 데이터 상세 로그
   console.log('📝 설문 데이터 상세:', {
-    surveyQuestion: surveyQuestion?.data,
+    surveyQuestion: surveyQuestion,
+    surveyQuestionData: surveyQuestion?.data,
     options: surveyQuestion?.data?.options,
     optionsLength: surveyQuestion?.data?.options?.length,
     question: surveyQuestion?.data?.question,
     currentStep,
-    isSurveyLoading
+    isSurveyLoading,
+    surveyError: surveyError
   });
+
+  // 설문 에러 상세 로그
+  if (surveyError) {
+    console.error('❌ 설문 에러 상세:', {
+      error: surveyError,
+      errorType: typeof surveyError,
+      errorKeys: Object.keys(surveyError || {}),
+      errorData: surveyError?.data,
+      errorStatus: surveyError?.status,
+      errorMessage: surveyError?.message
+    });
+  }
 
   // 사용자 정보 상세 로그
   console.log('👤 SavingOpenScreen 사용자 정보:', {
@@ -180,6 +237,12 @@ export const SavingOpenScreen: React.FC = () => {
 
       // 적금 정보를 임시 저장
       setSavingFormData(data);
+      
+      console.log('📝 설문 단계로 이동:', {
+        savingFormData: data,
+        beforeStep: currentStep,
+        afterStep: 2
+      });
       
       // 설문 단계로 이동
       setCurrentStep(2);

@@ -17,10 +17,18 @@ export const useDepositMoney = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: DepositMoneyRequest) => depositMoney(data),
-    onSuccess: () => {
+    mutationFn: (data: DepositMoneyRequest) => {
+      console.log('🔍 useDepositMoney 훅 호출됨');
+      console.log('입금 요청 데이터:', data);
+      return depositMoney(data);
+    },
+    onSuccess: (data) => {
+      console.log('✅ 입금 성공:', data);
       // 계좌 정보 캐시 무효화 (잔액 업데이트를 위해)
       queryClient.invalidateQueries({ queryKey: ['depositAccount'] });
+    },
+    onError: (error) => {
+      console.error('❌ 입금 실패:', error);
     },
   });
 };
