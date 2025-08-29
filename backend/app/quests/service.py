@@ -131,7 +131,7 @@ def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
 
 
     try:
-        quest_attempts = db.query(QuestAttempt).filter(QuestAttempt.id == quest_id, QuestAttempt.active == True).first()
+        quest_attempts = db.query(QuestAttempt).filter(QuestAttempt.quest_id == quest_id, QuestAttempt.user_id == user_id).first()
         if not quest_attempts:
             raise ValueError("존재하지 않거나 비활성화된 퀘스트입니다.")
 
