@@ -51,6 +51,7 @@ export interface QuestListItem {
   created_at?: string;
   lat?: number;
   lng?: number;
+  link_url?: string; // 백엔드와 일치하도록 link_url로 변경
   
   // 사용자 진행 상태
   attempt_id?: string;
@@ -73,6 +74,7 @@ export interface Quest {
   maxProgress?: number;
   isCompleted?: boolean;
   isClaimed?: boolean;
+  link_url?: string; // 백엔드와 일치하도록 추가
 }
 
 // 퀘스트 목록 응답 타입
@@ -241,6 +243,7 @@ export const convertQuestListItemToQuest = (questItem: QuestListItem): Quest => 
     progress: questItem.progress_count,
     maxProgress: questItem.user_target_count,
     isCompleted: questItem.user_status === 'APPROVED',
-    isClaimed: questItem.user_status === 'APPROVED'
+    isClaimed: questItem.user_status === 'APPROVED',
+    link_url: questItem.link_url // 백엔드 link_url 필드 매핑
   };
 };

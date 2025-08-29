@@ -102,6 +102,7 @@ export interface Quest {
   active: boolean; // 노출 여부
   lat?: number; // GPS 미션용 좌표
   lng?: number; // GPS 미션용 좌표
+  link_url?: string; // 백엔드와 일치하도록 link_url 필드 추가
 }
 
 export interface QuestAttempt {

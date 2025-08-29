@@ -101,7 +101,6 @@ export const SavingOpenScreen: React.FC = () => {
     isError: isSurveyError
   } = useGetSurveyQuestionQuery(surveyState.currentQuestion, {
     skip: currentStep !== 2,
-    retry: 1, // 재시도 횟수 제한
   });
 
   // 설문 API 호출 상태 상세 로그
@@ -160,9 +159,9 @@ export const SavingOpenScreen: React.FC = () => {
   console.log('📝 설문 데이터 상세:', {
     surveyQuestion: surveyQuestion,
     surveyQuestionData: surveyQuestion?.data,
-    options: surveyQuestion?.options || surveyQuestion?.data?.options,
-    optionsLength: (surveyQuestion?.options || surveyQuestion?.data?.options)?.length,
-    question: surveyQuestion?.question || surveyQuestion?.data?.question,
+    options: surveyQuestion?.data?.options,
+    optionsLength: surveyQuestion?.data?.options?.length,
+    question: surveyQuestion?.data?.question,
     currentStep,
     isSurveyLoading,
     surveyError: surveyError
@@ -174,9 +173,9 @@ export const SavingOpenScreen: React.FC = () => {
       error: surveyError,
       errorType: typeof surveyError,
       errorKeys: Object.keys(surveyError || {}),
-      errorData: surveyError?.data,
-      errorStatus: surveyError?.status,
-      errorMessage: surveyError?.message
+      errorData: 'error' in surveyError ? surveyError.error : undefined,
+      errorStatus: 'status' in surveyError ? surveyError.status : undefined,
+      errorMessage: 'message' in surveyError ? surveyError.message : undefined
     });
   }
 
@@ -263,7 +262,7 @@ export const SavingOpenScreen: React.FC = () => {
     });
 
          // 현재 문제의 정보 가져오기
-     const currentQuestionData = surveyQuestion?.data || surveyQuestion;
+     const currentQuestionData = surveyQuestion?.data;
      const selectedOption = currentQuestionData?.options?.[answer - 1]; // answer는 1부터 시작하므로 -1
 
     setSurveyState(prev => {
@@ -273,7 +272,7 @@ export const SavingOpenScreen: React.FC = () => {
           ...prev.responses,
           [prev.currentQuestion]: {
             answer: answer,
-            questionId: currentQuestionData?.id || '',
+                         questionId: currentQuestionData?.id || '1',
             optionId: selectedOption?.id || '',
           },
         },
@@ -370,7 +369,13 @@ export const SavingOpenScreen: React.FC = () => {
         [
           {
             text: '확인',
-            onPress: () => navigation.navigate('Home'),
+            onPress: () => {
+              // 네비게이션 스택을 초기화하고 메인페이지로 이동
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              });
+            },
           },
         ]
       );
@@ -584,15 +589,15 @@ export const SavingOpenScreen: React.FC = () => {
               <View style={styles.surveyContainer}>
                                  <View style={styles.questionCard}>
                    <Text style={styles.questionText}>
-                     {surveyQuestion?.question || surveyQuestion?.data?.question}
+                     {surveyQuestion?.data?.question}
                    </Text>
                  </View>
 
                  {/* 답변 옵션 */}
-                 {(surveyQuestion?.options || surveyQuestion?.data?.options) && 
-                  (surveyQuestion?.options || surveyQuestion?.data?.options)?.length > 0 && (
+                 {surveyQuestion?.data?.options && 
+                  surveyQuestion?.data?.options?.length > 0 && (
                    <View style={styles.optionsContainer}>
-                     {(surveyQuestion?.options || surveyQuestion?.data?.options)?.map((option, index) => (
+                     {surveyQuestion?.data?.options?.map((option: any, index: number) => (
                       <TouchableOpacity
                         key={option.id}
                                                  style={[

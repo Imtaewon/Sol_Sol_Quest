@@ -264,8 +264,9 @@ export const QuestDetailScreen: React.FC = () => {
           </View>
         ) : (
           // 적금 가입자인 경우 상세 정보 표시
-        {/* 퀘스트 헤더 */}
-        <View style={styles.questHeader}>
+          <>
+            {/* 퀘스트 헤더 */}
+            <View style={styles.questHeader}>
           <View style={styles.questTypeContainer}>
             <View 
               style={[
@@ -376,7 +377,7 @@ export const QuestDetailScreen: React.FC = () => {
         {/* 액션 버튼 */}
         <View style={styles.actionContainer}>
           {/* 링크 퀘스트인 경우 링크 열기 버튼 */}
-          {quest.verify_method === 'LINK' && quest.link && (
+          {quest.verify_method === 'LINK' && quest.link_url && (
             <TouchableOpacity
               style={styles.linkButton}
               onPress={() => {
@@ -389,8 +390,8 @@ export const QuestDetailScreen: React.FC = () => {
                     { 
                       text: '열기', 
                       onPress: () => {
-                        // 실제 링크 열기 구현 필요
-                        Alert.alert('링크 열기', `링크: ${quest.link}`);
+                                               // 실제 링크 열기 구현 필요
+                       Alert.alert('링크 열기', `링크: ${quest.link_url}`);
                       }
                     }
                   ]
@@ -453,6 +454,8 @@ export const QuestDetailScreen: React.FC = () => {
             </View>
           )}
         </View>
+          </>
+        )}
       </ScrollView>
     </View>
   );
