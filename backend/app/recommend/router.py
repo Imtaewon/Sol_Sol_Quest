@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Dict
+from sqlalchemy import text
+from typing import List, Dict, Optional
 from pydantic import BaseModel
+from datetime import datetime
 
 from .system import QuestRecommendationSystem
 from ..database import get_db
@@ -10,24 +12,24 @@ from ..models import User
 
 
 # 응답 모델 정의
-class QuestFullDetailResponse(BaseModel):
+class QuestInfo(BaseModel):
     id: str
     type: str
     title: str
     category: str
     verify_method: str
-    verify_params: str = None
+    verify_params: Optional[str] = None
     reward_exp: int
     target_count: int
     period_scope: str
     active: bool
-    lat: float = None
-    lng: float = None
-    quest_link_url: str = None
-    created_at: str = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    quest_link_url: Optional[str] = None
+    created_at: datetime
 
 class QuestRecommendationResponse(BaseModel):
-    quest_ids: List[str]
+    quests: List[QuestInfo]
     message: str
 
 class QuestDetailResponse(BaseModel):
@@ -44,60 +46,17 @@ class QuestDetailResponse(BaseModel):
 # 라우터 생성
 recommendation_router = APIRouter(prefix="/recommendations", tags=["recommendations"])
 
-@recommendation_router.get("/quests", response_model=List[QuestFullDetailResponse])
+@recommendation_router.get("/quests", response_model=QuestRecommendationResponse)
 async def get_recommended_quests(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    현재 사용자를 위한 전체 정보가 포함된 퀘스트 추천
+    현재 사용자를 위한 퀘스트 추천 (상세 정보 포함)
     
     - 사용자의 개인정보와 설문조사 답변을 분석하여 맞춤형 퀘스트 3개를 추천합니다.
     - LIFE, GROWTH 타입의 퀘스트를 추천합니다. (SURPRISE 타입은 제외)
-    - 추천된 퀘스트의 모든 상세 정보를 반환합니다.
-    - quest_recommendations 테이블에 추천 기록을 저장합니다.
-    """
-    try:
-        # current_user 객체에서 user_id 추출
-        user_id = current_user.id
-        
-        recommendation_system = QuestRecommendationSystem()
-        quest_details = recommendation_system.recommend_quests_with_full_details(db, user_id)
-        
-        return [
-            QuestFullDetailResponse(
-                id=quest["id"],
-                type=quest["type"],
-                title=quest["title"],
-                category=quest["category"],
-                verify_method=quest["verify_method"],
-                verify_params=quest["verify_params"],
-                reward_exp=quest["reward_exp"],
-                target_count=quest["target_count"],
-                period_scope=quest["period_scope"],
-                active=quest["active"],
-                lat=quest["lat"],
-                lng=quest["lng"],
-                quest_link_url=quest["quest_link_url"],
-                created_at=quest["created_at"]
-            )
-            for quest in quest_details
-        ]
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"추천 시스템 오류: {str(e)}")
-
-@recommendation_router.get("/quests/ids-only", response_model=QuestRecommendationResponse)
-async def get_recommended_quest_ids_only(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    현재 사용자를 위한 퀘스트 추천 (ID만 반환)
-    
-    - 사용자의 개인정보와 설문조사 답변을 분석하여 맞춤형 퀘스트 3개를 추천합니다.
-    - LIFE, GROWTH 타입의 퀘스트를 추천합니다. (SURPRISE 타입은 제외)
-    - 퀘스트 ID만 반환합니다.
+    - 추천된 퀘스트의 전체 정보를 반환합니다.
     """
     try:
         # current_user 객체에서 user_id 추출
@@ -106,9 +65,40 @@ async def get_recommended_quest_ids_only(
         recommendation_system = QuestRecommendationSystem()
         quest_ids = recommendation_system.recommend_quests(db, user_id)
         
+        # 추천된 퀘스트들의 전체 정보를 조회
+        quests_info = []
+        for quest_id in quest_ids:
+            query = text("""
+                SELECT id, type, title, category, verify_method, verify_params,
+                       reward_exp, target_count, period_scope, active,
+                       lat, lng, quest_link_url, created_at
+                FROM quests
+                WHERE id = :quest_id
+            """)
+            
+            result = db.execute(query, {"quest_id": quest_id}).fetchone()
+            
+            if result:
+                quests_info.append(QuestInfo(
+                    id=result.id,
+                    type=result.type,
+                    title=result.title,
+                    category=result.category,
+                    verify_method=result.verify_method,
+                    verify_params=result.verify_params,
+                    reward_exp=result.reward_exp,
+                    target_count=result.target_count,
+                    period_scope=result.period_scope,
+                    active=bool(result.active),
+                    lat=float(result.lat) if result.lat else None,
+                    lng=float(result.lng) if result.lng else None,
+                    quest_link_url=result.quest_link_url,
+                    created_at=result.created_at
+                ))
+        
         return QuestRecommendationResponse(
-            quest_ids=quest_ids,
-            message=f"사용자 {user_id}를 위한 {len(quest_ids)}개의 맞춤 퀘스트를 추천했습니다."
+            quests=quests_info,
+            message=f"사용자 {user_id}를 위한 {len(quests_info)}개의 맞춤 퀘스트를 추천했습니다."
         )
     
     except Exception as e:
@@ -205,7 +195,3 @@ async def get_user_preferences(
         if "not found" in str(e).lower() or "설문조사" in str(e):
             raise HTTPException(status_code=404, detail="선호도 분석 결과를 찾을 수 없습니다.")
         raise HTTPException(status_code=500, detail=f"선호도 분석 오류: {str(e)}")
-
-
-
-
