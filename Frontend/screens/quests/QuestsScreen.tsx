@@ -179,18 +179,32 @@ export const QuestsScreen: React.FC = () => {
 
   /**
    * 퀘스트 상태별 정렬
-   * 우선순위: 진행중 > 완료가능 > 미시작 > 완료
+   * 우선순위: 수령 가능 > 진행중(진행률 높은 순) > 미시작 > 완료
    * 사용자가 먼저 해야 할 퀘스트를 상단에 배치
    */
   const sortedQuests = [...quests].sort((a, b) => {
-    // 완료된 퀘스트를 뒤로, 진행중인 퀘스트를 앞으로
-    if (a.isCompleted && !b.isCompleted) return 1;
-    if (!a.isCompleted && b.isCompleted) return -1;
+    // 상태별 우선순위 점수 계산
+    const getStatusPriority = (quest: any) => {
+      if (quest.user_status === 'CLEAR') return 4;      // 수령 가능 (최우선)
+      if (quest.user_status === 'IN_PROGRESS') return 3; // 진행중
+      if (quest.user_status === 'DEACTIVE') return 2;    // 미시작
+      if (quest.user_status === 'APPROVED') return 1;    // 완료 (최후순위)
+      return 0;
+    };
+
+    const aPriority = getStatusPriority(a);
+    const bPriority = getStatusPriority(b);
+
+    // 상태가 다르면 우선순위로 정렬
+    if (aPriority !== bPriority) {
+      return bPriority - aPriority;
+    }
+
+    // 같은 상태 내에서는 진행률로 정렬 (진행률 높은 순)
+    const aProgressPercent = a.progress && a.maxProgress ? (a.progress / a.maxProgress) * 100 : 0;
+    const bProgressPercent = b.progress && b.maxProgress ? (b.progress / b.maxProgress) * 100 : 0;
     
-    // 진행률이 높은 퀘스트를 앞으로
-    const aProgress = a.progress || 0;
-    const bProgress = b.progress || 0;
-    return bProgress - aProgress;
+    return bProgressPercent - aProgressPercent;
   });
 
   /**
