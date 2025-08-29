@@ -21,14 +21,14 @@ router = APIRouter(prefix="/saving/survey", tags=["Saving Survey"])
 
 
 # 문항 전체 + 옵션
-@router.get("/questions", response_model=list[SurveyQuestionOut])
+@router.get("", response_model=list[SurveyQuestionOut])
 def get_questions(db: Session = Depends(get_db), user=Depends(get_current_user)):
     qs = list_all_questions(db)
     return qs
 
 
 # order_no로 단일 문항 + 옵션
-@router.get("/questions/{order_no}", response_model=SurveyQuestionOut)
+@router.get("/{order_no}", response_model=SurveyQuestionOut)
 def get_question(order_no: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
     q = get_question_by_order_no(db, order_no)
     if not q:
