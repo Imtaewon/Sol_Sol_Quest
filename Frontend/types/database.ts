@@ -247,6 +247,7 @@ export interface QuestWithAttempt extends Quest {
   attempt?: QuestAttempt;
   is_recommended?: boolean;
   is_clicked?: boolean;
+  user_status?: 'DEACTIVE' | 'IN_PROGRESS' | 'CLEAR' | 'SUBMITTED' | 'APPROVED'; // 백엔드에서 오는 사용자 상태
 }
 
 export interface QuestProgress {

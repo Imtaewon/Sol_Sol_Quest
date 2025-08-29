@@ -370,7 +370,7 @@ export const QuestsScreen: React.FC = () => {
              </Text>
            </View>
 
-           {/* 시작여부 (왼쪽) + 수령하기/완료 (오른쪽) */}
+           {/* 시작여부 (왼쪽) + 수령하기/완료/링크열기 (오른쪽) */}
            <View style={styles.questFooter}>
              <View style={styles.questStatus}>
                <View 
@@ -382,6 +382,34 @@ export const QuestsScreen: React.FC = () => {
                <Text style={styles.statusText}>{statusText}</Text>
              </View>
 
+             {/* 링크 퀘스트인 경우 링크 열기 버튼 */}
+             {quest.verify_method === 'LINK' && quest.link_url && (
+               <TouchableOpacity
+                 style={[styles.startButton, styles.linkButton]}
+                 onPress={() => {
+                   Alert.alert(
+                     '링크 열기',
+                     '외부 링크로 이동하시겠습니까?',
+                     [
+                       { text: '취소', style: 'cancel' },
+                       { 
+                         text: '열기', 
+                         onPress: () => {
+                           console.log('🔗 링크 열기:', quest.link_url);
+                           // 실제 링크 열기 구현 (Linking.openURL 등)
+                           Alert.alert('링크 열기', `링크: ${quest.link_url}`);
+                         }
+                       }
+                     ]
+                   );
+                 }}
+               >
+                 <Ionicons name="open-outline" size={16} color={COLORS.white} />
+                 <Text style={styles.startButtonText}>링크 열기</Text>
+               </TouchableOpacity>
+             )}
+
+             {/* EXP 받기 가능한 경우 */}
              {canClaim && (
                <TouchableOpacity
                  style={[styles.startButton, styles.claimButton]}
@@ -391,6 +419,7 @@ export const QuestsScreen: React.FC = () => {
                </TouchableOpacity>
              )}
 
+             {/* 완료된 경우 */}
              {isCompleted && (
                <View style={styles.completedBadge}>
                  <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
@@ -637,6 +666,12 @@ const styles = StyleSheet.create({
   },
   claimButton: {
     backgroundColor: COLORS.success,
+  },
+  linkButton: {
+    backgroundColor: COLORS.accent,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
   },
   startButtonText: {
     color: COLORS.white,

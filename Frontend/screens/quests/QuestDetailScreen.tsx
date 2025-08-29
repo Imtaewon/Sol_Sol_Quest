@@ -200,26 +200,28 @@ export const QuestDetailScreen: React.FC = () => {
     }
   };
 
-  // 링크 퀘스트 디버깅 로그 (링크 관련만)
-  if (quest.verify_method === 'LINK' || quest.link_url) {
-    console.log('🔗 링크 퀘스트 디버깅:', {
-      questId: quest.id,
-      questTitle: quest.title,
-      verifyMethod: quest.verify_method,
-      linkUrl: quest.link_url,
-      hasSavings,
-      userStatus: quest.user_status,
-      attemptStatus: quest.attempt?.status,
-      // 링크 버튼 표시 조건
-      shouldShowLinkButton: quest.verify_method === 'LINK',
-      // 링크 관련 필드 존재 여부
-      hasVerifyMethod: 'verify_method' in quest,
-      hasLinkUrl: 'link_url' in quest,
-      // 데이터 타입 확인
-      verifyMethodType: typeof quest.verify_method,
-      linkUrlType: typeof quest.link_url
-    });
-  }
+  // 전체 퀘스트 데이터 디버깅 (모든 퀘스트)
+  console.log('🔍 전체 퀘스트 데이터:', {
+    questId: quest.id,
+    questTitle: quest.title,
+    questType: quest.type,
+    questCategory: quest.category,
+    questRewardExp: quest.reward_exp,
+    questTargetCount: quest.target_count,
+    // 모든 필드 확인
+    questKeys: Object.keys(quest),
+    questValues: Object.values(quest),
+    // 링크 관련 필드
+    verifyMethod: quest.verify_method,
+    linkUrl: quest.link_url,
+    // 상태 관련 필드
+    userStatus: quest.user_status,
+    attempt: quest.attempt,
+    attemptStatus: quest.attempt?.status,
+    // 적금 관련
+    hasSavings,
+    savingsAccountData: savingsAccount?.data
+  });
 
   const canStart = false; // 시작 버튼 제거 (적금 가입 시 자동 시작)
   const canSubmit = quest.attempt?.status === 'CLEAR';
@@ -227,21 +229,23 @@ export const QuestDetailScreen: React.FC = () => {
   const isCompleted = quest.attempt?.status === 'APPROVED';
   const canClaimReward = quest.attempt?.status === 'CLEAR'; // 경험치 받기 가능 여부
 
-  // 링크 퀘스트 버튼 조건 디버깅 (링크 관련만)
-  if (quest.verify_method === 'LINK' || quest.link_url) {
-    console.log('🔗 링크 버튼 조건:', {
-      questId: quest.id,
-      questTitle: quest.title,
-      canClaimReward,
-      canVerify,
-      isCompleted,
-      verifyMethod: quest.verify_method,
-      hasLink: !!quest.link_url,
-      linkButtonShouldShow: quest.verify_method === 'LINK',
-      userStatus: quest.user_status,
-      attemptStatus: quest.attempt?.status
-    });
-  }
+  // 모든 퀘스트 버튼 조건 디버깅
+  console.log('🔍 버튼 조건 디버깅:', {
+    questId: quest.id,
+    questTitle: quest.title,
+    canClaimReward,
+    canVerify,
+    isCompleted,
+    verifyMethod: quest.verify_method,
+    hasLink: !!quest.link_url,
+    linkButtonShouldShow: quest.verify_method === 'LINK',
+    userStatus: quest.user_status,
+    attemptStatus: quest.attempt?.status,
+    hasSavings,
+    // 렌더링 조건들
+    shouldShowSimpleView: !hasSavings,
+    shouldShowDetailView: hasSavings
+  });
 
   return (
     <View style={styles.container}>
