@@ -59,18 +59,14 @@ export const LandingScreen: React.FC = () => {
           </Text> */}
         </View>
 
-        {/* 캐릭터 이미지 영역 */}
-        <View style={styles.characterSection}>
-          <View style={styles.characterContainer}>
-            <Image
-              source={require('../../assets/SolCharacter.png')}
-              style={styles.characterImage}
-              resizeMode="contain"
-            />
-          </View>
-        </View>
-        <View style={styles.subTitleWrapper}>
-          <Text style={styles.subTitle}>쏠쏠한 퀘스트</Text>
+        {/* 히어로 이미지 영역 (landing-cpu) */}
+        <View style={styles.heroSection}>
+          <Image
+            source={require('../../assets/landing-cpu.png')}
+            style={styles.heroImage}
+            resizeMode="contain"
+            accessibilityLabel="Landing hero"
+          />
         </View>
         {/* 버튼 영역 */}
         <View style={styles.buttonSection}>
@@ -103,13 +99,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: SPACING.lg,
-    justifyContent: 'space-between',
-    paddingTop: SPACING.xxl,
-    paddingBottom: SPACING.xl,
+  justifyContent: 'flex-start',
+  paddingTop: SPACING.xxl + SPACING.lg,
+  paddingBottom: SPACING.lg,
   },
   logoSection: {
-    alignItems: 'center',
-    marginTop: SPACING.xl,
+  alignItems: 'center',
+  marginBottom: SPACING.xxl + SPACING.md,
+  transform: [{ translateY: SPACING.sm }],
   },
   mainTitle: {
     fontSize: 36,
@@ -168,9 +165,24 @@ const styles = StyleSheet.create({
     width: 300,
     height: 400,
   },
+  heroSection: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginVertical: SPACING.xxl,
+  },
+  heroImage: {
+  width: '86%',
+  maxWidth: 360,
+  height: 230,
+  alignSelf: 'center',
+  },
   buttonSection: {
-  marginBottom: SPACING.xl,
-  gap: SPACING.sm,
+    position: 'absolute',
+    left: SPACING.lg,
+    right: SPACING.lg,
+    bottom: SPACING.xl,
+    gap: SPACING.sm,
+    alignItems: 'center',
   },
   loginButton: {
     backgroundColor: '#1428A0', // 신한 블루
