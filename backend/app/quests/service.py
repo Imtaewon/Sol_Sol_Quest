@@ -131,12 +131,12 @@ def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
 
 
     try:
-        quest = db.query(Quest).filter(Quest.id == quest_id, Quest.active == True).first()
-        if not quest:
+        quest_attempts = db.query(QuestAttempt).filter(QuestAttempt.id == quest_id, QuestAttempt.active == True).first()
+        if not quest_attempts:
             raise ValueError("존재하지 않거나 비활성화된 퀘스트입니다.")
 
         # 만약 quest user_status == 'APPROVED'라면
-        if quest.user_status == 'APPROVED':
+        if quest_attempts.user_status == 'APPROVED':
             raise ValueError("이미 완료된 퀘스트입니다.")
 
 
@@ -147,8 +147,8 @@ def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
             quest_id=quest_id,
             user_id=user_id,
             status=QuestAttemptStatusEnum.APPROVED,   # 바로 완료 처리
-            progress_count=quest.target_count or 1,
-            target_count=quest.target_count or 1,
+            progress_count=quest_attempts.progress_count or 1,
+            target_count=quest_attempts.target_count or 1,
             proof_url=None,
             period_scope=PeriodScopeEnum.ANY,         # 시현 간소화
             period_key="-",
