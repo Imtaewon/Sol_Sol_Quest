@@ -374,9 +374,6 @@ class QuestRecommendationSystem:
     def recommend_quests(self, db: Session, user_id: str) -> List[str]:
         """메인 추천 함수 - 3개의 퀘스트 ID 반환 및 DB 저장"""
         try:
-            # ========== 하이브리드 추천 시스템 (현재는 주석 처리) ==========
-            # 나중에 quest_recommendations 테이블에 데이터가 충분히 쌓이면 아래 주석을 해제하여 사용
-            """
             # 충분한 데이터가 있는지 종합적으로 체크
             is_data_sufficient, data_stats = self._check_data_sufficiency(db)
             
@@ -391,8 +388,7 @@ class QuestRecommendationSystem:
                     # DB에 추천 기록 저장
                     self._save_recommendations_to_db(db, user_id, quest_ids[:3])
                     return quest_ids[:3]
-            """
-            # ========== 하이브리드 추천 시스템 끝 ==========
+           
             
             # 1. 사용자 정보 조회 (Cold Start 추천)
             user_info = self.get_user_info(db, user_id)
@@ -458,7 +454,7 @@ class QuestRecommendationSystem:
         
         return selected[:count]
 
-    # ==================== 하이브리드 추천 시스템 메소드들 (주석 처리) ====================
+    # ==================== 하이브리드 추천 시스템 메소드들 ====================
    
     def _get_total_interactions(self, db: Session) -> int:
         """전체 상호작용 데이터 개수 조회"""
