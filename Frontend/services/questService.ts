@@ -3,23 +3,23 @@ import { ApiResponse } from './apiClient';
 
 // 백엔드 QuestListItem 구조에 맞춘 퀘스트 타입
 export interface QuestListItem {
-  id: string; // 백엔드와 일치하도록 string으로 변경
-  type: 'life' | 'growth' | 'surprise'; // 백엔드 QuestTypeEnum
+  id: string;
+  type: 'LIFE' | 'GROWTH' | 'SURPRISE'; // 백엔드 QuestTypeEnum과 정확히 일치
   title: string;
-  verify_method: string;
-  category: 'STUDY' | 'HEALTH' | 'ECON' | 'LIFE' | 'ENT' | 'SAVING'; // 백엔드 QuestCategoryEnum
+  verify_method: 'GPS' | 'STEPS' | 'LINK' | 'UPLOAD' | 'PAYMENT' | 'ATTENDANCE' | 'CERTIFICATION' | 'CONTEST' | 'QUIZ';
+  category: 'STUDY' | 'HEALTH' | 'ECON' | 'LIFE' | 'ENT' | 'SAVING'; // 백엔드 QuestCategoryEnum과 정확히 일치
   verify_params: any;
   reward_exp: number;
   target_count: number;
-  period_scope: string;
+  period_scope: 'ANY' | 'DAILY' | 'WEEKLY' | 'MONTHLY'; // 백엔드 PeriodScopeEnum과 정확히 일치
   active: boolean;
   created_at?: string;
   lat?: number;
   lng?: number;
   
   // 사용자 진행 상태
-  attempt_id?: string; // 백엔드와 일치하도록 string으로 변경
-  user_status: 'DEACTIVE' | 'IN_PROGRESS' | 'SUBMITTED' | 'APPROVED' | 'REJECTED';
+  attempt_id?: string;
+  user_status: 'DEACTIVE' | 'IN_PROGRESS' | 'CLEAR' | 'SUBMITTED' | 'APPROVED'; // 백엔드 QuestAttemptStatusEnum과 정확히 일치
   progress_count: number;
   user_target_count: number;
   started_at?: string;
@@ -29,7 +29,7 @@ export interface QuestListItem {
 
 // 프론트엔드에서 사용할 퀘스트 타입 (기존 호환성 유지)
 export interface Quest {
-  id: string; // 백엔드와 일치하도록 string으로 변경
+  id: string;
   title: string;
   description: string;
   category: 'growth' | 'daily' | 'surprise';
@@ -159,9 +159,9 @@ export const categorizeQuests = (quests: QuestListItem[]) => {
   });
   
   const categorized = {
-    growth: quests.filter(quest => quest.type === 'growth'),
-    daily: quests.filter(quest => quest.type === 'life'), // 백엔드의 'life'를 프론트의 'daily'로 매핑
-    surprise: quests.filter(quest => quest.type === 'surprise')
+    growth: quests.filter(quest => quest.type === 'GROWTH'),
+    daily: quests.filter(quest => quest.type === 'LIFE'), // 백엔드의 'life'를 프론트의 'daily'로 매핑
+    surprise: quests.filter(quest => quest.type === 'SURPRISE')
   };
   
   console.log('📊 퀘스트 카테고리별 분류 결과:', {
@@ -177,10 +177,11 @@ export const categorizeQuests = (quests: QuestListItem[]) => {
 // 백엔드 QuestListItem을 프론트엔드 Quest로 변환하는 함수
 export const convertQuestListItemToQuest = (questItem: QuestListItem): Quest => {
   return {
-    id: questItem.id, // 이미 string이므로 그대로 사용
+    id: questItem.id,
     title: questItem.title,
     description: questItem.title, // 백엔드에 description 필드가 없으므로 title 사용
-    category: questItem.type === 'life' ? 'daily' : questItem.type as 'growth' | 'daily' | 'surprise',
+    category: questItem.type === 'LIFE' ? 'daily' : 
+              questItem.type === 'GROWTH' ? 'growth' : 'surprise', // 백엔드 enum을 프론트엔드 카테고리로 매핑
     expReward: questItem.reward_exp,
     progress: questItem.progress_count,
     maxProgress: questItem.user_target_count,
