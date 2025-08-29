@@ -12,7 +12,7 @@ from app.attendance.service import check_in_and_clear_daily_quest
 from app.models import Attendance  # id, user_id, date, is_attend
 
 
-router = APIRouter(prefix="/api/attendance", tags=["Attendance"])
+router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
 # 출석 체크 및 데일리 퀘스트 클리어
 @router.post("/check-in", response_model=CheckInResponse)
