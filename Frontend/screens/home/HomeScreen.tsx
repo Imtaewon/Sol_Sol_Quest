@@ -421,6 +421,7 @@ export const HomeScreen: React.FC = () => {
           {renderSchoolRanking()}
         </View>
 
+
         {/* 퀘스트 미리보기 */}
         <View style={styles.questsSection}>
           {renderQuestsPreview()}
