@@ -74,6 +74,7 @@ async def get_recommended_quests(
                        lat, lng, quest_link_url, created_at
                 FROM quests
                 WHERE id = :quest_id
+                AND id != 'quest_daily_016'
             """)
             
             result = db.execute(query, {"quest_id": quest_id}).fetchone()

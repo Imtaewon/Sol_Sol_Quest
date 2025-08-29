@@ -99,7 +99,7 @@ class QuestRecommendationSystem:
                       "quest_daily_035"],
             "SAVING": ["quest_growth_005", "quest_growth_006", "quest_growth_007", "quest_growth_008", "quest_growth_009", 
                       "quest_growth_010", "quest_growth_011", "quest_growth_012", "quest_growth_013", "quest_growth_014", 
-                      "quest_daily_016", "quest_daily_025", "quest_daily_026", "quest_daily_027", "quest_daily_032"],
+                      "quest_daily_025", "quest_daily_026", "quest_daily_027", "quest_daily_032"],
             "ECON": ["quest_growth_015", "quest_daily_020", "quest_daily_021", "quest_daily_022", "quest_daily_033", 
                       "quest_daily_034"],
             "LIFE": ["quest_daily_017", "quest_daily_018", "quest_daily_019", "quest_daily_028", "quest_daily_029", 
@@ -149,12 +149,14 @@ class QuestRecommendationSystem:
         ]
 
     def get_available_quests(self, db: Session) -> List[Dict]:
-        """LIFE, GROWTH 타입 퀘스트만 조회 (SURPRISE 제외)"""
+        """LIFE, GROWTH 타입 퀘스트만 조회 (SURPRISE 제외, quest_daily_016 제외)"""
         query = text("""
             SELECT id, type, title, category, verify_method, reward_exp, 
                    target_count, period_scope
             FROM quests 
-            WHERE type IN ('LIFE', 'GROWTH') AND active = TRUE
+            WHERE type IN ('LIFE', 'GROWTH') 
+            AND active = TRUE
+            AND id != 'quest_daily_016'
         """)
         results = db.execute(query).fetchall()
         
@@ -399,7 +401,9 @@ class QuestRecommendationSystem:
                    reward_exp, target_count, period_scope, active, lat, lng,
                    quest_link_url, created_at
             FROM quests 
-            WHERE id IN ({placeholders}) AND active = TRUE
+            WHERE id IN ({placeholders}) 
+            AND active = TRUE
+            AND id != 'quest_daily_016'
             ORDER BY FIELD(id, {placeholders})
         """)
         
@@ -896,11 +900,14 @@ class QuestRecommendationSystem:
             "quest_daily_017"    # 쏠쏠한 적금 일일 출석 (습관 형성)
         ]
         
-        # DB에서 실제 존재하는 퀘스트만 반환 (SURPRISE 제외)
+        # DB에서 실제 존재하는 퀘스트만 반환 (SURPRISE 제외, quest_daily_016 제외)
         placeholders = ",".join(f"'{qid}'" for qid in default_quest_ids)
         query = text(f"""
             SELECT id FROM quests 
-            WHERE id IN ({placeholders}) AND type IN ('LIFE', 'GROWTH') AND active = TRUE
+            WHERE id IN ({placeholders}) 
+            AND type IN ('LIFE', 'GROWTH') 
+            AND active = TRUE
+            AND id != 'quest_daily_016'
             LIMIT 3
         """)
         results = db.execute(query).fetchall()
