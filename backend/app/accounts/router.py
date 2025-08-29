@@ -22,14 +22,19 @@ router = APIRouter(prefix="/accounts", tags=["Accounts"])
 
 
 # 수시입출금 계좌 생성
-@router.post("/demand-deposit", response_model=CreateDemandDepositAccountResponse, summary="수시입출금 계좌 생성")
+
+@router.post(
+    "/demand-deposit",
+    response_model=CreateDemandDepositAccountResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="수시입출금 계좌 생성(인증 사용자 기준)"
+)
 async def create_demand_deposit_account_endpoint(
-    req: CreateDemandDepositAccountRequest,
     db: Session = Depends(get_db),
     me: User = Depends(get_current_user),
 ):
     try:
-        result = await svc_create(db=db, user_id=req.user_id)
+        result = await svc_create(db=db, user_id=me.id)
     except ValueError as ve:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as e:
