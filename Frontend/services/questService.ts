@@ -149,6 +149,7 @@ export const questService = {
       console.log('🌐 questService.getAllQuests 응답 헤더:', response.headers);
       console.log('🌐 questService.getAllQuests 응답 데이터:', JSON.stringify(response.data, null, 2));
       
+      // API 응답 구조에 맞게 수정
       if (response.data?.data?.quests) {
         console.log('🌐 questService.getAllQuests 퀘스트 개수:', response.data.data.quests.length);
         console.log('🌐 questService.getAllQuests 첫 번째 퀘스트:', response.data.data.quests[0]);

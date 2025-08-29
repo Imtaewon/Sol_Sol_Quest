@@ -50,7 +50,7 @@ type QuestsScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'Quest
 
 /**
  * 퀘스트 타입별 색상 정의
- * - life: 일상 퀘스트 (파란색)
+ * - daily: 일상 퀘스트 (파란색)
  * - growth: 성장 퀘스트 (주황색)
  * - surprise: 돌발 퀘스트 (하늘색)
  */
@@ -96,7 +96,7 @@ export const QuestsScreen: React.FC = () => {
   const user = useSelector((state: RootState) => state.user.user);
   
   // 선택된 퀘스트 타입 (일상/성장/돌발)
-  const [selectedType, setSelectedType] = useState<'daily' | 'growth' | 'surprise'>('daily');
+  const [selectedType, setSelectedType] = useState<'daily' | 'growth' | 'surprise'>('surprise');
   
   // 새로고침 상태 관리
   const [refreshing, setRefreshing] = useState(false);
@@ -232,6 +232,33 @@ export const QuestsScreen: React.FC = () => {
    * 각 퀘스트의 정보를 카드 형태로 표시
    */
   const renderQuestCard = ({ item: quest }: { item: any }) => {
+    // 적금 미가입자인 경우 간단한 카드 표시
+    if (!user?.hasSavings) {
+      return (
+        <TouchableOpacity 
+          style={styles.questCardSimple}
+          onPress={() => handleQuestPress(quest)}
+        >
+          <View style={styles.questContentSimple}>
+            <View style={styles.questTitleRow}>
+              <Ionicons 
+                name="trophy" 
+                size={20} 
+                color={COLORS.gray[600]} 
+              />
+              <Text style={styles.questTitle}>{quest.title}</Text>
+            </View>
+            
+            <View style={styles.questRewardSimple}>
+              <Ionicons name="star" size={16} color={COLORS.secondary} />
+              <Text style={styles.questRewardText}>{quest.expReward} EXP</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    // 적금 가입자인 경우 기존 상세 카드 표시
     // 퀘스트 진행률 및 상태 정보 계산
     const progress = getQuestProgress(quest);
     const statusText = getQuestStatusText(quest);
@@ -302,8 +329,6 @@ export const QuestsScreen: React.FC = () => {
               />
               <Text style={styles.statusText}>{statusText}</Text>
             </View>
-
-
 
             {canClaim && (
               <TouchableOpacity
@@ -614,6 +639,25 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
+  },
+  questCardSimple: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  questContentSimple: {
+    flex: 1,
+  },
+  questRewardSimple: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.md,
   },
 });
 
