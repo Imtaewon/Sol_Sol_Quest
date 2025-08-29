@@ -200,27 +200,26 @@ export const QuestDetailScreen: React.FC = () => {
     }
   };
 
-  // 퀘스트 상태 디버깅 로그
-  console.log('🎯 QuestDetailScreen 퀘스트 상태:', {
-    questId: quest.id,
-    questTitle: quest.title,
-    hasSavings,
-    attempt: quest.attempt,
-    attemptStatus: quest.attempt?.status,
-    progressCount: quest.attempt?.progress_count,
-    targetCount: quest.attempt?.target_count,
-    verifyMethod: quest.verify_method,
-    linkUrl: quest.link_url,
-    questKeys: Object.keys(quest), // quest 객체의 모든 키 확인
-    questType: typeof quest.verify_method,
-    isLinkQuest: quest.verify_method === 'LINK',
-    // 추가 디버깅 정보
-    questRawData: quest,
-    verifyMethodExists: 'verify_method' in quest,
-    verifyMethodValue: quest.verify_method,
-    verifyMethodStrictEqual: quest.verify_method === 'LINK',
-    verifyMethodLooseEqual: quest.verify_method == 'LINK'
-  });
+  // 링크 퀘스트 디버깅 로그 (링크 관련만)
+  if (quest.verify_method === 'LINK' || quest.link_url) {
+    console.log('🔗 링크 퀘스트 디버깅:', {
+      questId: quest.id,
+      questTitle: quest.title,
+      verifyMethod: quest.verify_method,
+      linkUrl: quest.link_url,
+      hasSavings,
+      userStatus: quest.user_status,
+      attemptStatus: quest.attempt?.status,
+      // 링크 버튼 표시 조건
+      shouldShowLinkButton: quest.verify_method === 'LINK',
+      // 링크 관련 필드 존재 여부
+      hasVerifyMethod: 'verify_method' in quest,
+      hasLinkUrl: 'link_url' in quest,
+      // 데이터 타입 확인
+      verifyMethodType: typeof quest.verify_method,
+      linkUrlType: typeof quest.link_url
+    });
+  }
 
   const canStart = false; // 시작 버튼 제거 (적금 가입 시 자동 시작)
   const canSubmit = quest.attempt?.status === 'CLEAR';
@@ -228,22 +227,21 @@ export const QuestDetailScreen: React.FC = () => {
   const isCompleted = quest.attempt?.status === 'APPROVED';
   const canClaimReward = quest.attempt?.status === 'CLEAR'; // 경험치 받기 가능 여부
 
-  console.log('🎯 QuestDetailScreen 버튼 조건:', {
-    canClaimReward,
-    canVerify,
-    isCompleted,
-    verifyMethod: quest.verify_method,
-    hasLink: !!quest.link_url,
-    linkButtonShouldShow: quest.verify_method === 'LINK',
-    questData: {
-      id: quest.id,
-      title: quest.title,
-      verify_method: quest.verify_method,
-      link_url: quest.link_url,
-      user_status: quest.user_status,
-      attempt: quest.attempt
-    }
-  });
+  // 링크 퀘스트 버튼 조건 디버깅 (링크 관련만)
+  if (quest.verify_method === 'LINK' || quest.link_url) {
+    console.log('🔗 링크 버튼 조건:', {
+      questId: quest.id,
+      questTitle: quest.title,
+      canClaimReward,
+      canVerify,
+      isCompleted,
+      verifyMethod: quest.verify_method,
+      hasLink: !!quest.link_url,
+      linkButtonShouldShow: quest.verify_method === 'LINK',
+      userStatus: quest.user_status,
+      attemptStatus: quest.attempt?.status
+    });
+  }
 
   return (
     <View style={styles.container}>
@@ -398,13 +396,17 @@ export const QuestDetailScreen: React.FC = () => {
 
           {/* 링크 퀘스트의 경우 링크 열기 버튼 (가장 우선순위) */}
           {(() => {
-            console.log('🎯 링크 버튼 조건 체크:', {
-              verify_method: quest.verify_method,
-              isLink: quest.verify_method === 'LINK',
-              questId: quest.id,
-              questTitle: quest.title
-            });
-            return quest.verify_method === 'LINK';
+            const isLinkQuest = quest.verify_method === 'LINK';
+            if (isLinkQuest) {
+              console.log('🔗 링크 버튼 렌더링:', {
+                questId: quest.id,
+                questTitle: quest.title,
+                verifyMethod: quest.verify_method,
+                linkUrl: quest.link_url,
+                userStatus: quest.user_status
+              });
+            }
+            return isLinkQuest;
           })() ? (
             <TouchableOpacity
               style={[
@@ -425,7 +427,7 @@ export const QuestDetailScreen: React.FC = () => {
                         onPress: async () => {
                           try {
                             setIsSubmitting(true);
-                            console.log('🎯 링크 퀘스트 완료 요청:', quest.id);
+                            console.log('🔗 링크 퀘스트 완료 요청:', quest.id);
                             
                             // 퀘스트 완료 API 호출
                             await completeQuest({ quest_id: quest.id });
@@ -440,8 +442,8 @@ export const QuestDetailScreen: React.FC = () => {
                                 }
                               ]
                             );
-                          } catch (error) {
-                            console.error('🎯 링크 퀘스트 완료 실패:', error);
+                                                     } catch (error) {
+                             console.error('🔗 링크 퀘스트 완료 실패:', error);
                             Alert.alert('오류', '퀘스트 완료에 실패했습니다.');
                           } finally {
                             setIsSubmitting(false);
@@ -459,8 +461,8 @@ export const QuestDetailScreen: React.FC = () => {
                       { text: '취소', style: 'cancel' },
                       { 
                         text: '열기', 
-                        onPress: () => {
-                          console.log('🎯 링크 열기:', quest.link_url);
+                                                 onPress: () => {
+                           console.log('🔗 링크 열기:', quest.link_url);
                           // 실제 링크 열기 구현 (Linking.openURL 등)
                           Alert.alert('링크 열기', `링크: ${quest.link_url || '링크 URL 없음'}`);
                         }
