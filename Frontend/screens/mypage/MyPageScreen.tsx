@@ -407,10 +407,24 @@ export const MyPageScreen: React.FC = () => {
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('GPS')}
+        >
           <View style={styles.menuItemLeft}>
-            <Ionicons name="notifications" size={24} color={COLORS.gray[600]} />
-            <Text style={styles.menuItemText}>알림 설정</Text>
+            <Ionicons name="location" size={24} color={COLORS.gray[600]} />
+            <Text style={styles.menuItemText}>GPS</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('StepCounter')}
+        >
+          <View style={styles.menuItemLeft}>
+            <Ionicons name="footsteps" size={24} color={COLORS.gray[600]} />
+            <Text style={styles.menuItemText}>만보기</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
         </TouchableOpacity>

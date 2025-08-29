@@ -30,6 +30,6 @@ export interface DepositMoneyRequest {
 
 // 입금 API 호출
 export const depositMoney = async (data: DepositMoneyRequest): Promise<ApiResponse> => {
-  const response = await apiClient.post<ApiResponse>('/api/v1/accounts/deposit', data);
+  const response = await apiClient.post<ApiResponse>('/api/v1/accounts/demand-deposit/deposit', data);
   return response.data;
 };
