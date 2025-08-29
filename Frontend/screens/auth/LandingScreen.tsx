@@ -52,10 +52,11 @@ export const LandingScreen: React.FC = () => {
             resizeMode="contain"
             accessibilityLabel="Heyoung logo"
           />
-          <Text style={styles.subTitle}>쏠쏠한 퀘스트</Text>
-          <Text style={styles.slogan}>
+          <Text style={styles.systemText}>헤이영 스마트 캠퍼스 시스템</Text>
+        
+          {/* <Text style={styles.slogan}>
             성장이 이자가 되고{'\n'}경쟁이 나눔이 되다
-          </Text>
+          </Text> */}
         </View>
 
         {/* 캐릭터 이미지 영역 */}
@@ -68,7 +69,9 @@ export const LandingScreen: React.FC = () => {
             />
           </View>
         </View>
-
+        <View style={styles.subTitleWrapper}>
+          <Text style={styles.subTitle}>쏠쏠한 퀘스트</Text>
+        </View>
         {/* 버튼 영역 */}
         <View style={styles.buttonSection}>
           <TouchableOpacity
@@ -120,15 +123,29 @@ const styles = StyleSheet.create({
     height: 80,
     marginBottom: SPACING.sm,
   },
-  subTitle: {
-    fontSize: FONT_SIZES.lg,
-    color: '#495057',
+  systemText: {
+    fontSize: FONT_SIZES.xs,
+    color: '#1428A0',
     fontWeight: '500',
-    marginBottom: SPACING.lg,
+  marginBottom: SPACING.md,
     textAlign: 'center',
   },
+  subTitle: {
+    fontFamily: 'gothic-bold',
+    fontSize: FONT_SIZES.xxxl,
+    color: '#1428A0',
+    fontWeight: '700',
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.xxl,
+    textAlign: 'center',
+  },
+  subTitleWrapper: {
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
   slogan: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: 'bold',
     color: '#343A40',
     textAlign: 'center',
@@ -152,14 +169,19 @@ const styles = StyleSheet.create({
     height: 400,
   },
   buttonSection: {
-    marginBottom: SPACING.xl,
+  marginBottom: SPACING.xl,
+  gap: SPACING.sm,
   },
   loginButton: {
     backgroundColor: '#1428A0', // 신한 블루
-    borderRadius: BORDER_RADIUS.lg,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.md,
+  borderRadius: BORDER_RADIUS.lg,
+  paddingVertical: SPACING.md,
+  paddingHorizontal: SPACING.lg,
+  marginBottom: SPACING.sm,
+  minHeight: 44,
+  justifyContent: 'center',
+  width: '88%',
+  alignSelf: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
@@ -172,17 +194,20 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.lg,
+  fontSize: FONT_SIZES.md,
     fontWeight: '600',
   },
   signupButton: {
     backgroundColor: '#FFFFFF',
     borderRadius: BORDER_RADIUS.lg,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xl,
+  paddingVertical: SPACING.md,
+  paddingHorizontal: SPACING.lg,
     borderWidth: 2,
     borderColor: '#1428A0', // 신한 블루
-    alignItems: 'center',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '88%',
+  alignSelf: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -194,7 +219,7 @@ const styles = StyleSheet.create({
   },
   signupButtonText: {
     color: '#1428A0', // 신한 블루
-    fontSize: FONT_SIZES.lg,
+  fontSize: FONT_SIZES.md,
     fontWeight: '600',
   },
 });
