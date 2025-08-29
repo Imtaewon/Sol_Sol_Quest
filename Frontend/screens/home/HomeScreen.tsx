@@ -85,9 +85,8 @@ export const HomeScreen: React.FC = () => {
   const { data: savingsAccount, isLoading: savingsLoading, error: savingsError, refetch: refetchSavings } = useSavingsAccount();
   const { data: depositAccount, isLoading: depositLoading, error: depositError, refetch: refetchDeposit } = useDepositAccount();
   
-  // 계좌 존재 여부로 hasSavings 판단
-  const hasSavings = (savingsAccount?.data?.data && savingsAccount.data.data.length > 0) || 
-                     (depositAccount?.data?.data && depositAccount.data.data.length > 0);
+  // 계좌 존재 여부로 hasSavings 판단 (적금만 있을 때 true)
+  const hasSavings = savingsAccount?.data?.data && savingsAccount.data.data.length > 0;
   
   // 학교 랭킹 API 호출 (적금 가입 여부와 관계없이 동일한 API 사용)
   const { 
