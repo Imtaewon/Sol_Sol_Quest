@@ -99,6 +99,18 @@ export const MyPageScreen: React.FC = () => {
   const hasSavings = savingsAccount?.data?.data && savingsAccount.data.data.length > 0;
   const hasDeposit = depositAccount?.data?.data && depositAccount.data.data.length > 0;
 
+  // 티어별 이율 계산 함수
+  const getInterestRateByTier = (tier: string | undefined): number => {
+    switch (tier) {
+      case 'BASIC': return 2.5;
+      case 'BRONZE': return 3.0;
+      case 'SILVER': return 3.8;
+      case 'GOLD': return 5.0;
+      case 'SOL': return 7.0;
+      default: return 2.5; // 기본값
+    }
+  };
+
   // API 요청 로그
   console.log('👤 MyPageScreen API 상태:', {
     userInfo: { loading: userInfoLoading, error: userInfoError, data: userInfo?.data ? '있음' : '없음' },
@@ -336,12 +348,12 @@ export const MyPageScreen: React.FC = () => {
                <View style={styles.detailRow}>
                  <Text style={styles.detailLabel}>이율</Text>
                  <Text style={styles.detailValue}>
-                   {savingsAccount?.data?.data?.[0]?.interest_rate}%
+                   {getInterestRateByTier(userInfo?.data?.current_tier)}%
                  </Text>
                </View>
                <View style={styles.detailRow}>
                  <Text style={styles.detailLabel}>계좌번호</Text>
-                 <Text style={styles.detailValue}>{savingsAccount?.data?.data?.[0]?.id}</Text>
+                 <Text style={styles.detailValue}>{savingsAccount?.data?.data?.[0]?.product_code}</Text>
                </View>
              </View>
            </View>

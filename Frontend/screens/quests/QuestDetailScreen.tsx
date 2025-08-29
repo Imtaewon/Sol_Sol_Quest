@@ -112,7 +112,8 @@ export const QuestDetailScreen: React.FC = () => {
    * @returns 진행률 퍼센트 (0-100)
    */
   const getQuestProgress = () => {
-    if (!quest.attempt) return 0;
+    // QuestWithAttempt 구조에 맞게 수정
+    if (!quest.attempt?.progress_count || !quest.attempt?.target_count) return 0;
     return Math.min((quest.attempt.progress_count / quest.attempt.target_count) * 100, 100);
   };
 
@@ -199,11 +200,32 @@ export const QuestDetailScreen: React.FC = () => {
     }
   };
 
+  // 퀘스트 상태 디버깅 로그
+  console.log('🎯 QuestDetailScreen 퀘스트 상태:', {
+    questId: quest.id,
+    questTitle: quest.title,
+    hasSavings,
+    attempt: quest.attempt,
+    attemptStatus: quest.attempt?.status,
+    progressCount: quest.attempt?.progress_count,
+    targetCount: quest.attempt?.target_count,
+    verifyMethod: quest.verify_method,
+    linkUrl: quest.link_url
+  });
+
   const canStart = false; // 시작 버튼 제거 (적금 가입 시 자동 시작)
   const canSubmit = quest.attempt?.status === 'CLEAR';
   const canVerify = quest.attempt?.status === 'IN_PROGRESS' || !quest.attempt; // 미시작도 인증 가능으로 표시
   const isCompleted = quest.attempt?.status === 'APPROVED';
   const canClaimReward = quest.attempt?.status === 'CLEAR'; // 경험치 받기 가능 여부
+
+  console.log('🎯 QuestDetailScreen 버튼 조건:', {
+    canClaimReward,
+    canVerify,
+    isCompleted,
+    verifyMethod: quest.verify_method,
+    hasLink: !!quest.link_url
+  });
 
   return (
     <View style={styles.container}>
@@ -402,7 +424,7 @@ export const QuestDetailScreen: React.FC = () => {
           )}
 
           {/* 미시작 퀘스트의 경우 시작하기 버튼 */}
-          {!quest.attempt && (
+          {(!quest.attempt || quest.attempt.status === 'DEACTIVE') && (
             <PrimaryButton
               title="시작하기"
               onPress={handleVerifyQuest}

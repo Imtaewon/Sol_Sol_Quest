@@ -92,6 +92,18 @@ export const HomeScreen: React.FC = () => {
   // 개별 계좌 유무 판단
   const hasSavings = savingsAccount?.data?.data && savingsAccount.data.data.length > 0;
   const hasDeposit = depositAccount?.data?.data && depositAccount.data.data.length > 0;
+
+  // 티어별 이율 계산 함수
+  const getInterestRateByTier = (tier: string | undefined): number => {
+    switch (tier) {
+      case 'BASIC': return 2.5;
+      case 'BRONZE': return 3.0;
+      case 'SILVER': return 3.8;
+      case 'GOLD': return 5.0;
+      case 'SOL': return 7.0;
+      default: return 2.5; // 기본값
+    }
+  };
   
   // 학교 랭킹 API 호출 (적금 가입 여부와 관계없이 동일한 API 사용)
   const { 
@@ -230,7 +242,7 @@ export const HomeScreen: React.FC = () => {
               계좌번호: {savingsAccount?.data?.data?.[0]?.product_code || ''}
             </Text>
             <Text style={styles.monthlyAmount}>
-              이율: {savingsAccount?.data?.data?.[0]?.interest_rate || 0}%
+              이율: {getInterestRateByTier(userInfo?.data?.current_tier)}%
             </Text>
           </TouchableOpacity>
         ) : (
