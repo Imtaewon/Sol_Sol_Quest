@@ -423,6 +423,7 @@ export const HomeScreen: React.FC = () => {
         {/* 계좌 캐러셀 */}
         {renderAccountCarousel()}
 
+
         {/* 학교 랭킹 */}
         <View style={styles.rankingSection}>
           {renderSchoolRanking()}
