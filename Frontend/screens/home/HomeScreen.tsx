@@ -234,23 +234,29 @@ export const HomeScreen: React.FC = () => {
         )}
 
         {/* 예금 카드 - hasDeposit이 true면 정보, false면 가입하기 버튼 */}
-        {hasDeposit ? (
-          <TouchableOpacity 
-            style={styles.accountCard}
-            accessibilityRole="button"
-            accessibilityLabel="예금 계좌 카드"
-          >
-                         <View style={styles.accountHeader}>
+                 {hasDeposit ? (
+           <View style={[styles.accountCard, styles.depositAccountCard]}>
+             <View style={styles.accountHeader}>
                <Text style={styles.accountType}>상시입출금</Text>
                <Ionicons name="wallet" size={20} color={COLORS.primary} />
              </View>
-                         <Text style={styles.accountBalance}>
-               {formatCurrency(depositAccount?.data?.data?.[0]?.balance || 0)}
-             </Text>
-            <Text style={styles.accountNumber}>
-              계좌번호: {depositAccount?.data?.data?.[0]?.account_no || ''}
-            </Text>
-          </TouchableOpacity>
+             <View style={styles.depositAccountContent}>
+               <Text style={styles.accountBalance}>
+                 {formatCurrency(depositAccount?.data?.data?.[0]?.balance || 0)}
+               </Text>
+               <Text style={styles.accountNumber}>
+                 계좌번호: {depositAccount?.data?.data?.[0]?.account_no || ''}
+               </Text>
+             </View>
+             <View style={styles.depositButtonContainer}>
+               <TouchableOpacity 
+                 style={styles.depositButton}
+                 onPress={() => navigation.navigate('DepositMoney')}
+               >
+                 <Text style={styles.depositButtonText}>입금하기</Text>
+               </TouchableOpacity>
+             </View>
+           </View>
         ) : (
           <TouchableOpacity 
             style={[
@@ -756,11 +762,42 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: COLORS.gray[300],
   },
-  indicatorDotActive: {
-    backgroundColor: COLORS.primary,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-});
+     indicatorDotActive: {
+     backgroundColor: COLORS.primary,
+     width: 12,
+     height: 12,
+     borderRadius: 6,
+   },
+   // 입금하기 버튼 스타일
+   depositButton: {
+     backgroundColor: COLORS.primary,
+     paddingHorizontal: SPACING.md,
+     paddingVertical: SPACING.sm,
+     borderRadius: BORDER_RADIUS.sm,
+     marginTop: SPACING.md,
+     alignItems: 'center',
+   },
+       depositButtonText: {
+      color: COLORS.white,
+      fontSize: FONT_SIZES.sm,
+      fontWeight: '600',
+    },
+         // 입금하기 버튼 컨테이너 스타일
+     depositButtonContainer: {
+       marginTop: SPACING.md,
+       flex: 1,
+       justifyContent: 'flex-end',
+     },
+     // 상시입출금 계좌 카드 전용 스타일
+     depositAccountCard: {
+       flexDirection: 'column',
+       justifyContent: 'space-between',
+     },
+     // 상시입출금 계좌 내용 컨테이너
+     depositAccountContent: {
+       flex: 1,
+       justifyContent: 'center',
+       marginVertical: SPACING.sm,
+     },
+   });
 

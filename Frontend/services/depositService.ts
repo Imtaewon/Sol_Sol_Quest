@@ -20,3 +20,16 @@ export const depositService = {
     return response.data;
   },
 };
+
+// 입금 요청 타입
+export interface DepositMoneyRequest {
+  account_no: string;
+  user_id: string;
+  amount: number;
+}
+
+// 입금 API 호출
+export const depositMoney = async (data: DepositMoneyRequest): Promise<ApiResponse> => {
+  const response = await apiClient.post<ApiResponse>('/api/v1/accounts/deposit', data);
+  return response.data;
+};

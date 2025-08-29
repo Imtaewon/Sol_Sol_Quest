@@ -323,9 +323,6 @@ export const MyPageScreen: React.FC = () => {
                  <Text style={styles.accountTypeLabel}>적금</Text>
                  <Text style={styles.accountName}>솔 적금</Text>
                </View>
-               <View style={[styles.statusBadge, { backgroundColor: COLORS.success + '20' }]}>
-                 <Text style={[styles.statusText, { color: COLORS.success }]}>진행중</Text>
-               </View>
              </View>
              
              <View style={styles.accountBalance}>
@@ -365,9 +362,6 @@ export const MyPageScreen: React.FC = () => {
                    <Text style={styles.accountTypeLabel}>상시입출금</Text>
                    <Text style={styles.accountName}>솔 입출금</Text>
                  </View>
-               <View style={styles.statusBadge}>
-                 <Text style={styles.statusText}>활성</Text>
-               </View>
              </View>
              
                             <View style={styles.accountBalance}>
@@ -563,11 +557,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
     color: COLORS.dark,
-  },
-  statusBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
   },
   statusText: {
     fontSize: FONT_SIZES.xs,

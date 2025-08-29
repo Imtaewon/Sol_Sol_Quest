@@ -27,7 +27,9 @@ import { AppHeader } from '../../components/common/AppHeader';
 import { FormTextInput } from '../../components/common/FormTextInput';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
+import { formatCurrency } from '../../utils/formatters';
 import { useGetUserInfoQuery, useCreateDemandAccountMutation, useCreateSavingsAccountMutation } from '../../store/api/baseApi';
+import { useDepositAccount } from '../../hooks/useUser';
 import { 
   useGetSurveyQuestionQuery,
   useSubmitSurveyResponsesMutation 
@@ -83,6 +85,13 @@ export const SavingOpenScreen: React.FC = () => {
     error: userInfoError 
   } = useGetUserInfoQuery();
 
+  // 상시입출금 계좌 정보 조회
+  const { 
+    data: depositAccount, 
+    isLoading: isDepositLoading, 
+    error: depositError 
+  } = useDepositAccount();
+
   const { 
     data: surveyQuestion, 
     isLoading: isSurveyLoading 
@@ -97,6 +106,7 @@ export const SavingOpenScreen: React.FC = () => {
   // API 요청 로그
   console.log('💰 SavingOpenScreen API 상태:', {
     userInfo: { loading: isUserInfoLoading, error: userInfoError, data: userInfo ? '있음' : '없음' },
+    depositAccount: { loading: isDepositLoading, error: depositError, data: depositAccount?.data ? '있음' : '없음' },
     surveyQuestion: { loading: isSurveyLoading, data: surveyQuestion?.data ? '있음' : '없음' },
     currentStep,
     currentQuestion: surveyState.currentQuestion
@@ -115,6 +125,17 @@ export const SavingOpenScreen: React.FC = () => {
   // 입력된 값들 감시
   const monthlyAmount = watch('monthlyAmount');
   const accountNumber = watch('accountNumber');
+
+  // 상시입출금 계좌 정보
+  const hasDepositAccount = depositAccount?.data?.data && depositAccount.data.data.length > 0;
+  const depositAccountInfo = depositAccount?.data?.data?.[0];
+
+  // 상시입출금 계좌가 있으면 자동으로 계좌번호 설정
+  useEffect(() => {
+    if (hasDepositAccount && depositAccountInfo?.account_no) {
+      setValue('accountNumber', depositAccountInfo.account_no);
+    }
+  }, [hasDepositAccount, depositAccountInfo?.account_no, setValue]);
 
   /**
    * 상시입출금 계좌 생성 페이지로 이동
@@ -234,7 +255,7 @@ export const SavingOpenScreen: React.FC = () => {
   };
 
   // 로딩 상태 처리
-  if (isUserInfoLoading) {
+  if (isUserInfoLoading || isDepositLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <AppHeader title="적금 가입" showBack />
@@ -246,7 +267,7 @@ export const SavingOpenScreen: React.FC = () => {
   }
 
   // 에러 상태 처리
-  if (userInfoError) {
+  if (userInfoError || depositError) {
     return (
       <SafeAreaView style={styles.container}>
         <AppHeader title="적금 가입" showBack />
@@ -352,26 +373,51 @@ export const SavingOpenScreen: React.FC = () => {
 
                 <View style={styles.accountSection}>
                   <Text style={styles.accountLabel}>자동이체 계좌</Text>
-                  <FormTextInput
-                    placeholder="계좌번호를 입력해주세요"
-                    value={accountNumber}
-                    onChangeText={(text) => {
-                      // 폼 값 업데이트
-                      const form = control._formValues;
-                      form.accountNumber = text;
-                    }}
-                    error={errors.accountNumber?.message}
-                    keyboardType="numeric"
-                  />
-                  <TouchableOpacity 
-                    style={styles.openAccountButton}
-                    onPress={handleCreateDemandAccount}
-                  >
-                    <Text style={styles.openAccountButtonText}>
-                      상시입출금 계좌 만들기
-                    </Text>
-                  </TouchableOpacity>
-
+                  
+                  {hasDepositAccount ? (
+                    // 상시입출금 계좌가 있는 경우
+                    <View style={styles.existingAccountContainer}>
+                      <FormTextInput
+                        label="계좌번호"
+                        placeholder="계좌번호를 입력해주세요"
+                        value={depositAccountInfo?.account_no || ''}
+                        onChangeText={(text) => {
+                          setValue('accountNumber', text);
+                        }}
+                        error={errors.accountNumber?.message}
+                        keyboardType="numeric"
+                        editable={false}
+                        style={styles.disabledInput}
+                      />
+                      <View style={styles.balanceInfo}>
+                        <Text style={styles.balanceLabel}>현재 계좌 잔액</Text>
+                        <Text style={styles.balanceAmount}>
+                          {formatCurrency(depositAccountInfo?.balance || 0)}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : (
+                    // 상시입출금 계좌가 없는 경우
+                    <>
+                      <FormTextInput
+                        placeholder="계좌번호를 입력해주세요"
+                        value={accountNumber}
+                        onChangeText={(text) => {
+                          setValue('accountNumber', text);
+                        }}
+                        error={errors.accountNumber?.message}
+                        keyboardType="numeric"
+                      />
+                      <TouchableOpacity 
+                        style={styles.openAccountButton}
+                        onPress={handleCreateDemandAccount}
+                      >
+                        <Text style={styles.openAccountButtonText}>
+                          상시입출금 계좌 만들기
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               </View>
             </View>
@@ -734,5 +780,31 @@ const styles = StyleSheet.create({
     color: COLORS.success,
     marginTop: SPACING.sm,
     textAlign: 'center',
+  },
+  // 상시입출금 계좌 관련 스타일
+  existingAccountContainer: {
+    marginBottom: SPACING.md,
+  },
+  disabledInput: {
+    backgroundColor: COLORS.gray[100],
+    opacity: 0.8,
+  },
+  balanceInfo: {
+    marginTop: SPACING.sm,
+    padding: SPACING.md,
+    backgroundColor: COLORS.gray[50],
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+  },
+  balanceLabel: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray[600],
+    marginBottom: SPACING.xs,
+  },
+  balanceAmount: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '700',
+    color: COLORS.dark,
   },
 });

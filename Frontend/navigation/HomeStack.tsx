@@ -28,6 +28,7 @@ import { DepositSignupScreen } from '../screens/signup/DepositSignupScreen';
 import { DepositNewSignupScreen } from '../screens/signup/DepositNewSignupScreen';
 import { DepositRegisterScreen } from '../screens/signup/DepositRegisterScreen';
 import { TestScreen } from '../screens/signup/TestScreen';
+import { DepositMoneyScreen } from '../screens/deposit/DepositMoneyScreen';
 import { QuestWithAttempt } from '../types/database';
 
 /**
@@ -45,6 +46,7 @@ export type HomeStackParamList = {
   DepositNewSignup: undefined;        // 예금 신규 회원가입 화면
   DepositRegister: undefined;         // 예금 등록 화면
   Test: undefined;                    // 테스트 화면
+  DepositMoney: undefined;            // 상시입출금 입금 화면
 };
 
 /**
@@ -73,6 +75,7 @@ export const HomeStack: React.FC = () => {
       <Stack.Screen name="DepositNewSignup" component={DepositNewSignupScreen} />
       <Stack.Screen name="DepositRegister" component={DepositRegisterScreen} />
       <Stack.Screen name="Test" component={TestScreen} />
+      <Stack.Screen name="DepositMoney" component={DepositMoneyScreen} />
     </Stack.Navigator>
   );
 };
