@@ -370,9 +370,9 @@ export const HomeScreen: React.FC = () => {
       </View>
       
       {hasSavings ? (
-        recommendedQuests?.data?.quest_ids && Array.isArray(recommendedQuests.data.quest_ids) && recommendedQuests.data.quest_ids.length > 0 ? (
+        recommendedQuests?.quest_ids && Array.isArray(recommendedQuests.quest_ids) && recommendedQuests.quest_ids.length > 0 ? (
           <View style={styles.questsList}>
-            {recommendedQuests.data.quest_ids.slice(0, 3).map((questId: string, index: number) => (
+            {recommendedQuests.quest_ids.slice(0, 3).map((questId: string, index: number) => (
               <View key={questId} style={styles.questItem}>
                 <View style={styles.questInfo}>
                   <Text style={styles.questTitle}>추천 퀘스트 {index + 1}</Text>
@@ -394,9 +394,9 @@ export const HomeScreen: React.FC = () => {
                 </View>
               </View>
             ))}
-            {recommendedQuests.data.message && (
+            {recommendedQuests.message && (
               <Text style={styles.recommendationMessage}>
-                {recommendedQuests.data.message}
+                {recommendedQuests.message}
               </Text>
             )}
           </View>
