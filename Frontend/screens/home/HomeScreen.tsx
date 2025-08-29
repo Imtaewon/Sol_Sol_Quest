@@ -227,7 +227,7 @@ export const HomeScreen: React.FC = () => {
               월 {formatCurrency(savingsAccount?.data?.data?.[0]?.monthly_amount || 0)} 납입
             </Text>
             <Text style={styles.accountNumber}>
-              계좌번호: {savingsAccount?.data?.data?.[0]?.id || ''}
+              계좌번호: {savingsAccount?.data?.data?.[0]?.product_code || ''}
             </Text>
             <Text style={styles.monthlyAmount}>
               이율: {savingsAccount?.data?.data?.[0]?.interest_rate || 0}%
