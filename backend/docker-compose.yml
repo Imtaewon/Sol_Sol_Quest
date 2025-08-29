@@ -60,13 +60,17 @@ services:
     container_name: quest-phpmyadmin
     ports:
       - "8080:80"
+    volumes:
+      - /var/run/mysqld:/var/run/mysqld:ro   # ★ MySQL 소켓 공유
     environment:
-      - PMA_HOST=mysql
+      - PMA_HOST=localhost
+      - PMA_SOCKET=/var/run/mysqld/mysqld.sock
       - PMA_USER=quest_user
       - PMA_PASSWORD=questpass123
       - MYSQL_ROOT_PASSWORD=rootpassword123
-    depends_on:
-      - mysql
+      - TZ=Asia/Seoul
+    # depends_on:
+    #   - mysql
     restart: unless-stopped
 
 volumes:
