@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Dict, Optional
 import random
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import secrets
 import string
+import numpy as np
+from collections import defaultdict
 
 # 추천 시스템 클래스
 class QuestRecommendationSystem:
@@ -372,7 +374,27 @@ class QuestRecommendationSystem:
     def recommend_quests(self, db: Session, user_id: str) -> List[str]:
         """메인 추천 함수 - 3개의 퀘스트 ID 반환 및 DB 저장"""
         try:
-            # 1. 사용자 정보 조회
+            # ========== 하이브리드 추천 시스템 (현재는 주석 처리) ==========
+            # 나중에 quest_recommendations 테이블에 데이터가 충분히 쌓이면 아래 주석을 해제하여 사용
+            """
+            # 충분한 데이터가 있는지 종합적으로 체크
+            is_data_sufficient, data_stats = self._check_data_sufficiency(db)
+            
+            # 디버깅을 위한 로그 (원하면 주석 처리 가능)
+            print(f"하이브리드 추천 데이터 현황: {data_stats}")
+            
+            if is_data_sufficient:  # 모든 조건 충족 시
+                # 하이브리드 추천 사용 (CF + CBF)
+                quest_ids = self._hybrid_recommendation(db, user_id)
+                
+                if quest_ids and len(quest_ids) >= 3:
+                    # DB에 추천 기록 저장
+                    self._save_recommendations_to_db(db, user_id, quest_ids[:3])
+                    return quest_ids[:3]
+            """
+            # ========== 하이브리드 추천 시스템 끝 ==========
+            
+            # 1. 사용자 정보 조회 (Cold Start 추천)
             user_info = self.get_user_info(db, user_id)
             
             # 2. 설문조사 답변 조회
@@ -436,6 +458,379 @@ class QuestRecommendationSystem:
         
         return selected[:count]
 
+    # ==================== 하이브리드 추천 시스템 메소드들 (주석 처리) ====================
+   
+    def _get_total_interactions(self, db: Session) -> int:
+        """전체 상호작용 데이터 개수 조회"""
+        query = text("""
+            SELECT COUNT(*) as count
+            FROM quest_recommendations
+            WHERE (is_click = 1 OR is_cleared = 1)
+        """)
+        result = db.execute(query).fetchone()
+        return result.count if result else 0
+    
+    def _check_data_sufficiency(self, db: Session) -> tuple[bool, dict]:
+        """하이브리드 추천을 위한 데이터 충분성 체크"""
+        # 1. 전체 상호작용 수
+        total_interactions = self._get_total_interactions(db)
+        
+        # 2. 활성 사용자 수 (상호작용 1개 이상)
+        active_users_query = text("""
+            SELECT COUNT(DISTINCT user_id) as count
+            FROM quest_recommendations
+            WHERE (is_click = 1 OR is_cleared = 1)
+        """)
+        active_users_result = db.execute(active_users_query).fetchone()
+        active_users = active_users_result.count if active_users_result else 0
+        
+        # 3. 활성 퀘스트 수 (상호작용 1개 이상)
+        active_quests_query = text("""
+            SELECT COUNT(DISTINCT quest_id) as count
+            FROM quest_recommendations
+            WHERE (is_click = 1 OR is_cleared = 1)
+        """)
+        active_quests_result = db.execute(active_quests_query).fetchone()
+        active_quests = active_quests_result.count if active_quests_result else 0
+        
+        # 4. 사용자당 평균 상호작용 수
+        avg_interactions = total_interactions / active_users if active_users > 0 else 0
+        
+        # 5. 충분성 판단 (대규모 서비스 기준 - 40만명 규모)
+        # 예상 활성 사용자: 전체의 1-5% (4,000-20,000명)
+        # 초기 목표: 1,000명이 각각 평균 10개 상호작용 = 10,000개
+        is_sufficient = (
+            total_interactions >= 10000 and   # 최소 10,000개 상호작용
+            active_users >= 1000 and          # 최소 1,000명 활성 사용자 
+            active_quests >= 30 and           # 최소 30개 활성 퀘스트
+            avg_interactions >= 5              # 사용자당 평균 5개 이상 상호작용
+        )
+        
+        stats = {
+            'total_interactions': total_interactions,
+            'active_users': active_users,
+            'active_quests': active_quests,
+            'avg_interactions_per_user': avg_interactions,
+            'is_sufficient': is_sufficient,
+            'requirements_met': f"{sum([total_interactions >= 10000, active_users >= 1000, active_quests >= 30, avg_interactions >= 5])}/4",
+            'details': {
+                'interactions': f"{total_interactions:,}/10,000 ({(total_interactions/10000)*100:.1f}%)",
+                'users': f"{active_users:,}/1,000 ({(active_users/1000)*100:.1f}%)",
+                'quests': f"{active_quests}/30 ({(active_quests/30)*100:.1f}%)",
+                'avg_interactions': f"{avg_interactions:.1f}/5.0 ({(avg_interactions/5)*100:.1f}%)"
+            }
+        }
+        
+        return is_sufficient, stats
+    
+    def _hybrid_recommendation(self, db: Session, user_id: str) -> List[str]:
+        """하이브리드 추천 (협업 필터링 + 콘텐츠 기반 필터링)"""
+        try:
+            # 1. 협업 필터링 점수 계산
+            cf_scores = self._collaborative_filtering(db, user_id)
+            
+            # 2. 콘텐츠 기반 필터링 점수 계산
+            cbf_scores = self._content_based_filtering(db, user_id)
+            
+            # 3. 점수 결합 (가중치: CF 60%, CBF 40%)
+            hybrid_scores = {}
+            all_quest_ids = set(cf_scores.keys()) | set(cbf_scores.keys())
+            
+            for quest_id in all_quest_ids:
+                cf_score = cf_scores.get(quest_id, 0)
+                cbf_score = cbf_scores.get(quest_id, 0)
+                
+                # 정규화된 점수 결합
+                hybrid_scores[quest_id] = 0.6 * cf_score + 0.4 * cbf_score
+            
+            # 4. 이미 완료했거나 최근 추천된 퀘스트 제외
+            excluded_quests = self._get_excluded_quests(db, user_id)
+            
+            # 5. 최종 추천 퀘스트 선택
+            sorted_quests = sorted(
+                [(qid, score) for qid, score in hybrid_scores.items() 
+                 if qid not in excluded_quests],
+                key=lambda x: x[1],
+                reverse=True
+            )
+            
+            # 상위 5개 중에서 다양성을 고려하여 3개 선택
+            return self._apply_diversity(db, [qid for qid, _ in sorted_quests[:5]])[:3]
+            
+        except Exception as e:
+            print(f"하이브리드 추천 오류: {e}")
+            # 오류 발생시 콜드 스타트 추천으로 폴백
+            return []
+    
+    def _collaborative_filtering(self, db: Session, user_id: str) -> Dict[str, float]:
+        """협업 필터링 - 유사한 사용자들의 선호도 기반 추천"""
+        # 1. 사용자-퀘스트 상호작용 매트릭스 생성
+        interaction_matrix = self._build_interaction_matrix(db)
+        
+        # 2. 현재 사용자와 유사한 사용자 찾기
+        similar_users = self._find_similar_users(db, user_id, interaction_matrix)
+        
+        # 3. 유사한 사용자들이 완료한/클릭한 퀘스트 점수 계산
+        cf_scores = defaultdict(float)
+        
+        for similar_user_id, similarity in similar_users:
+            # 유사한 사용자의 퀘스트 상호작용 조회
+            query = text("""
+                SELECT quest_id, 
+                       is_click * 0.3 + is_cleared * 0.7 as interaction_score
+                FROM quest_recommendations
+                WHERE user_id = :user_id
+                AND (is_click = 1 OR is_cleared = 1)
+            """)
+            
+            results = db.execute(query, {"user_id": similar_user_id}).fetchall()
+            
+            for result in results:
+                # 유사도 * 상호작용 점수로 가중치 적용
+                cf_scores[result.quest_id] += similarity * result.interaction_score
+        
+        # 점수 정규화 (0-1 범위)
+        if cf_scores:
+            max_score = max(cf_scores.values())
+            if max_score > 0:
+                cf_scores = {qid: score/max_score for qid, score in cf_scores.items()}
+        
+        return dict(cf_scores)
+    
+    def _content_based_filtering(self, db: Session, user_id: str) -> Dict[str, float]:
+        """콘텐츠 기반 필터링 - 사용자의 과거 선호도와 퀘스트 특성 기반 추천"""
+        # 1. 사용자가 과거에 상호작용한 퀘스트들의 특성 분석
+        user_preferences = self._analyze_user_quest_history(db, user_id)
+        
+        # 2. 모든 퀘스트의 특성 벡터 생성
+        all_quests = self.get_available_quests(db)
+        
+        # 3. 각 퀘스트에 대한 점수 계산
+        cbf_scores = {}
+        
+        for quest in all_quests:
+            # 퀘스트 특성 벡터 생성
+            quest_vector = self._create_quest_vector(quest)
+            
+            # 사용자 선호도와의 유사도 계산
+            similarity = self._calculate_similarity(user_preferences, quest_vector)
+            
+            cbf_scores[quest['id']] = similarity
+        
+        return cbf_scores
+    
+    def _build_interaction_matrix(self, db: Session) -> Dict[str, Dict[str, float]]:
+        """사용자-퀘스트 상호작용 매트릭스 구축"""
+        query = text("""
+            SELECT user_id, quest_id,
+                   is_click * 0.3 + is_cleared * 0.7 as interaction_score
+            FROM quest_recommendations
+            WHERE recommendation_date >= :cutoff_date
+        """)
+        
+        # 최근 3개월 데이터만 사용
+        cutoff_date = date.today() - timedelta(days=90)
+        results = db.execute(query, {"cutoff_date": cutoff_date}).fetchall()
+        
+        matrix = defaultdict(dict)
+        for result in results:
+            matrix[result.user_id][result.quest_id] = result.interaction_score
+        
+        return dict(matrix)
+    
+    def _find_similar_users(self, db: Session, user_id: str, 
+                           interaction_matrix: Dict) -> List[tuple]:
+        """코사인 유사도 기반 유사 사용자 찾기"""
+        if user_id not in interaction_matrix:
+            return []
+        
+        user_vector = interaction_matrix[user_id]
+        similarities = []
+        
+        for other_user_id, other_vector in interaction_matrix.items():
+            if other_user_id == user_id:
+                continue
+            
+            # 코사인 유사도 계산
+            similarity = self._cosine_similarity(user_vector, other_vector)
+            if similarity > 0.1:  # 최소 유사도 임계값
+                similarities.append((other_user_id, similarity))
+        
+        # 상위 10명의 유사한 사용자 반환
+        return sorted(similarities, key=lambda x: x[1], reverse=True)[:10]
+    
+    def _cosine_similarity(self, vector1: Dict, vector2: Dict) -> float:
+        """두 벡터 간의 코사인 유사도 계산"""
+        common_items = set(vector1.keys()) & set(vector2.keys())
+        
+        if not common_items:
+            return 0.0
+        
+        numerator = sum(vector1[item] * vector2[item] for item in common_items)
+        
+        sum1 = sum(vector1[item] ** 2 for item in common_items)
+        sum2 = sum(vector2[item] ** 2 for item in common_items)
+        
+        denominator = (sum1 ** 0.5) * (sum2 ** 0.5)
+        
+        if denominator == 0:
+            return 0.0
+        
+        return numerator / denominator
+    
+    def _analyze_user_quest_history(self, db: Session, user_id: str) -> Dict[str, float]:
+        """사용자의 퀘스트 상호작용 이력 분석"""
+        query = text("""
+            SELECT q.category, q.type, q.verify_method,
+                   COUNT(*) as count,
+                   AVG(qr.is_cleared) as completion_rate
+            FROM quest_recommendations qr
+            JOIN quests q ON qr.quest_id = q.id
+            WHERE qr.user_id = :user_id
+            AND (qr.is_click = 1 OR qr.is_cleared = 1)
+            GROUP BY q.category, q.type, q.verify_method
+        """)
+        
+        results = db.execute(query, {"user_id": user_id}).fetchall()
+        
+        preferences = {
+            'category_scores': {},
+            'type_scores': {},
+            'verify_method_scores': {}
+        }
+        
+        for result in results:
+            # 카테고리별 선호도 (완료율 반영)
+            preferences['category_scores'][result.category] = \
+                result.count * (0.5 + 0.5 * result.completion_rate)
+            
+            # 타입별 선호도
+            preferences['type_scores'][result.type] = \
+                result.count * (0.5 + 0.5 * result.completion_rate)
+            
+            # 검증 방법별 선호도
+            preferences['verify_method_scores'][result.verify_method] = \
+                result.count * (0.5 + 0.5 * result.completion_rate)
+        
+        return preferences
+    
+    def _create_quest_vector(self, quest: Dict) -> Dict[str, float]:
+        """퀘스트 특성 벡터 생성"""
+        vector = {
+            f'category_{quest["category"]}': 1.0,
+            f'type_{quest["type"]}': 1.0,
+            f'verify_{quest["verify_method"]}': 1.0,
+            f'period_{quest["period_scope"]}': 1.0,
+            'reward_exp': min(quest['reward_exp'] / 100.0, 1.0)  # 정규화
+        }
+        
+        # target_count가 있는 경우 난이도 지표로 활용
+        if quest.get('target_count'):
+            vector['difficulty'] = min(quest['target_count'] / 30.0, 1.0)
+        
+        return vector
+    
+    def _calculate_similarity(self, user_prefs: Dict, quest_vector: Dict) -> float:
+        """사용자 선호도와 퀘스트 벡터 간 유사도 계산"""
+        score = 0.0
+        
+        # 카테고리 매칭
+        for category, pref_score in user_prefs.get('category_scores', {}).items():
+            if f'category_{category}' in quest_vector:
+                score += pref_score * quest_vector[f'category_{category}']
+        
+        # 타입 매칭
+        for type_, pref_score in user_prefs.get('type_scores', {}).items():
+            if f'type_{type_}' in quest_vector:
+                score += pref_score * quest_vector[f'type_{type_}']
+        
+        # 검증 방법 매칭
+        for method, pref_score in user_prefs.get('verify_method_scores', {}).items():
+            if f'verify_{method}' in quest_vector:
+                score += pref_score * quest_vector[f'verify_{method}']
+        
+        # 점수 정규화
+        max_possible = sum(user_prefs.get('category_scores', {}).values()) + \
+                      sum(user_prefs.get('type_scores', {}).values()) + \
+                      sum(user_prefs.get('verify_method_scores', {}).values())
+        
+        if max_possible > 0:
+            score = score / max_possible
+        
+        return min(score, 1.0)
+    
+    def _get_excluded_quests(self, db: Session, user_id: str) -> set:
+        """제외할 퀘스트 목록 (이미 완료 or 최근 추천)"""
+        query = text("""
+            SELECT DISTINCT quest_id
+            FROM quest_recommendations
+            WHERE user_id = :user_id
+            AND (
+                is_cleared = 1  -- 이미 완료한 퀘스트
+                OR recommendation_date >= :recent_date  -- 최근 7일 내 추천된 퀘스트
+            )
+        """)
+        
+        recent_date = date.today() - timedelta(days=7)
+        results = db.execute(query, {
+            "user_id": user_id,
+            "recent_date": recent_date
+        }).fetchall()
+        
+        return {result.quest_id for result in results}
+    
+    def _apply_diversity(self, db: Session, quest_ids: List[str]) -> List[str]:
+        """추천 다양성 적용 - 같은 카테고리 중복 최소화"""
+        if len(quest_ids) <= 3:
+            return quest_ids
+        
+        # 퀘스트 정보 조회
+        query = text("""
+            SELECT id, category, type
+            FROM quests
+            WHERE id IN :quest_ids
+        """)
+        
+        results = db.execute(query, {"quest_ids": tuple(quest_ids)}).fetchall()
+        
+        # 카테고리별로 그룹화
+        category_groups = defaultdict(list)
+        quest_info = {}
+        
+        for result in results:
+            category_groups[result.category].append(result.id)
+            quest_info[result.id] = {
+                'category': result.category,
+                'type': result.type
+            }
+        
+        # 다양한 카테고리에서 선택
+        diverse_quests = []
+        used_categories = set()
+        
+        # 원래 순서대로 순회하면서 다른 카테고리 우선 선택
+        for quest_id in quest_ids:
+            if quest_id in quest_info:
+                category = quest_info[quest_id]['category']
+                if category not in used_categories or len(diverse_quests) < 3:
+                    diverse_quests.append(quest_id)
+                    used_categories.add(category)
+                    
+                    if len(diverse_quests) >= 3:
+                        break
+        
+        # 부족한 경우 나머지에서 채우기
+        if len(diverse_quests) < 3:
+            for quest_id in quest_ids:
+                if quest_id not in diverse_quests:
+                    diverse_quests.append(quest_id)
+                    if len(diverse_quests) >= 3:
+                        break
+        
+        return diverse_quests[:3]
+    
+    # ==================== 하이브리드 추천 시스템 메소드들 끝 ====================
+    
     def _get_default_recommendations(self, db: Session) -> List[str]:
         """기본 추천 (설문조사 답변이 없거나 오류 발생 시)"""
         default_quest_ids = [
@@ -455,15 +850,5 @@ class QuestRecommendationSystem:
         return [result.id for result in results] if results else default_quest_ids
 
 
-# FastAPI 엔드포인트 함수 예시
-# 실제 사용시에는 database.py에서 의존성을 import하여 사용
-def recommend_quests_for_user(
-    db: Session,  # Depends(get_db)로 주입
-    current_user: Dict  # Depends(get_current_user)로 주입 - Dict형태로 받음
-) -> List[str]:
-    """사용자를 위한 퀘스트 추천 엔드포인트 예시"""
-    # current_user 객체에서 user_id 추출
-    user_id = current_user.get("id") if isinstance(current_user, dict) else str(current_user)
-    
-    recommendation_system = QuestRecommendationSystem()
-    return recommendation_system.recommend_quests(db, user_id)
+# 이 클래스는 router.py에서 import하여 사용됩니다.
+# 실제 API 엔드포인트는 router.py에 구현되어 있습니다.
