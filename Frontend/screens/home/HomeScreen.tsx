@@ -189,12 +189,13 @@ export const HomeScreen: React.FC = () => {
     carouselRef.current?.scrollTo({ x: index * slideSize, animated: true });
   };
 
-  // 퀘스트 수령 처리
-  const handleClaimQuest = async (questId: string, expReward: number) => {
+  // 퀘스트 완료 처리
+  const handleClaimQuest = async (questId: string) => {
     try {
-      await claimQuestMutation.mutateAsync({ questId, expReward });
+      console.log('🎯 홈 화면 퀘스트 완료 요청:', questId);
+      await claimQuestMutation.mutateAsync({ questId });
     } catch (error) {
-      console.error('퀘스트 수령 실패:', error);
+      console.error('퀘스트 완료 실패:', error);
     }
   };
 

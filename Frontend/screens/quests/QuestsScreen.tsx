@@ -214,17 +214,17 @@ export const QuestsScreen: React.FC = () => {
 
 
   /**
-   * 퀘스트 수령 처리 함수
+   * 퀘스트 완료 처리 함수
    * 완료된 퀘스트의 보상을 수령
    */
   const handleClaimQuest = async (quest: any) => {
     try {
+      console.log('🎯 퀘스트 완료 요청:', quest.id);
       await claimQuestMutation.mutateAsync({ 
-        questId: quest.id, 
-        expReward: quest.expReward 
+        questId: quest.id
       });
     } catch (error) {
-      console.error('퀘스트 수령 실패:', error);
+      console.error('퀘스트 완료 실패:', error);
     }
   };
 

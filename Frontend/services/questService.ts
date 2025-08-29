@@ -117,10 +117,9 @@ export interface QuestHistory {
   isClaimed: boolean;
 }
 
-// 퀘스트 수령 요청 타입
+// 퀘스트 완료 요청 타입 (백엔드 API에 맞춰 수정)
 export interface ClaimQuestRequest {
   questId: string; // 백엔드와 일치하도록 string으로 변경
-  expReward: number;
 }
 
 // 퀘스트 서비스
@@ -170,10 +169,21 @@ export const questService = {
     }
   },
 
-  // 퀘스트 수령
+  // 퀘스트 완료 (백엔드 API에 맞춰 수정)
   claimQuest: async (data: ClaimQuestRequest): Promise<ApiResponse> => {
-    const response = await apiClient.post<ApiResponse>('/api/v1/quests/claim', data);
-    return response.data;
+    console.log('🌐 questService.claimQuest HTTP 요청 시작:', data);
+    try {
+      const response = await apiClient.post<ApiResponse>(`/api/v1/quests/${data.questId}/complete`);
+      console.log('🌐 questService.claimQuest HTTP 요청 완료:', response.status);
+      console.log('🌐 questService.claimQuest 응답 데이터:', JSON.stringify(response.data, null, 2));
+      return response.data;
+    } catch (error: unknown) {
+      console.error('🌐 questService.claimQuest 에러:', error);
+      if (error instanceof Error) {
+        throw new Error(`퀘스트 완료 실패: ${error.message}`);
+      }
+      throw new Error('퀘스트 완료 중 알 수 없는 오류가 발생했습니다.');
+    }
   },
 };
 
