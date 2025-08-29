@@ -130,7 +130,7 @@ class QuestRecommendationSystem:
     def get_survey_answers(self, db: Session, user_id: str) -> List[Dict]:
         """사용자 설문조사 답변 조회"""
         query = text("""
-            SELECT question_id, question_type, option_id
+            SELECT question_id, question_type, option_order_no
             FROM survey_answers 
             WHERE user_id = :user_id
             ORDER BY question_type
@@ -141,7 +141,7 @@ class QuestRecommendationSystem:
             {
                 "question_id": result.question_id,
                 "question_type": result.question_type,
-                "option_id": result.option_id
+                "option_order_no": result.option_order_no
             }
             for result in results
         ]
@@ -205,10 +205,10 @@ class QuestRecommendationSystem:
         # 설문조사 답변 기반 분석
         for answer in survey_answers:
             question_type = answer["question_type"]
-            option_id = answer["option_id"]
+            option_order_no = answer["option_order_no"]
             
             # 질문별 매핑 적용
-            mapping_key = f"q{question_type}_{self._get_option_key(question_type, option_id)}"
+            mapping_key = f"q{question_type}_{self._get_option_key(question_type, option_order_no)}"
             
             if mapping_key in self.category_mapping:
                 for category in self.category_mapping[mapping_key]:
@@ -216,7 +216,7 @@ class QuestRecommendationSystem:
 
         return category_scores
 
-    def _get_option_key(self, question_type: int, option_id: str) -> str:
+    def _get_option_key(self, question_type: int, option_order_no: int) -> str:
         """설문 옵션을 키로 변환"""
         option_mapping = {
             1: {  # Q1: 평일 주 활동 패턴
@@ -293,7 +293,7 @@ class QuestRecommendationSystem:
             }
         }
         
-        return option_mapping.get(question_type, {}).get(str(option_id), "default")
+        return option_mapping.get(question_type, {}).get(str(option_order_no), "default")
 
     def score_quests(self, quests: List[Dict], category_scores: Dict[str, int]) -> List[Dict]:
         """퀘스트 점수 계산"""
