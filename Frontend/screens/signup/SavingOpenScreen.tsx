@@ -66,8 +66,7 @@ export const SavingOpenScreen: React.FC = () => {
     currentQuestion: 1,
   });
 
-  // 상시입출금 계좌번호 저장
-  const [demandAccountNumber, setDemandAccountNumber] = useState<string>('');
+
 
   // 폼 컨트롤
   const { control, handleSubmit, formState: { errors }, watch, setValue } = useForm<SavingFormData>({
@@ -91,7 +90,7 @@ export const SavingOpenScreen: React.FC = () => {
     skip: currentStep !== 2,
   });
 
-  const [createDemandAccount, { isLoading: isCreatingDemand }] = useCreateDemandAccountMutation();
+
   const [createSavingsAccount, { isLoading: isCreatingSavings }] = useCreateSavingsAccountMutation();
   const [submitSurveyResponses, { isLoading: isSubmittingSurvey }] = useSubmitSurveyResponsesMutation();
 
@@ -103,30 +102,25 @@ export const SavingOpenScreen: React.FC = () => {
     currentQuestion: surveyState.currentQuestion
   });
 
+  // 사용자 정보 상세 로그
+  console.log('👤 SavingOpenScreen 사용자 정보:', {
+    userInfo,
+    birth_year: userInfo?.birth_year,
+    department: userInfo?.department,
+    name: userInfo?.name,
+    university_name: userInfo?.university_name,
+    grade: userInfo?.grade
+  });
+
   // 입력된 값들 감시
   const monthlyAmount = watch('monthlyAmount');
   const accountNumber = watch('accountNumber');
 
   /**
-   * 상시입출금 계좌 생성
+   * 상시입출금 계좌 생성 페이지로 이동
    */
-  const handleCreateDemandAccount = async () => {
-    try {
-      if (!userInfo?.user_id) {
-        Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
-        return;
-      }
-
-      const result = await createDemandAccount({ user_id: userInfo.user_id }).unwrap();
-      
-      if (result.success && result.data?.account_no) {
-        setDemandAccountNumber(result.data.account_no);
-        setValue('accountNumber', result.data.account_no);
-        Alert.alert('계좌 생성 완료', '상시입출금 계좌가 생성되었습니다.');
-      }
-    } catch (error) {
-      Alert.alert('오류', '상시입출금 계좌 생성에 실패했습니다.');
-    }
+  const handleCreateDemandAccount = () => {
+    navigation.navigate('DepositOpen');
   };
 
   /**
@@ -315,7 +309,7 @@ export const SavingOpenScreen: React.FC = () => {
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>출생연도</Text>
-                  <Text style={styles.infoValue}>{userInfo?.birthYear}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.birth_year}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학교</Text>
@@ -372,17 +366,12 @@ export const SavingOpenScreen: React.FC = () => {
                   <TouchableOpacity 
                     style={styles.openAccountButton}
                     onPress={handleCreateDemandAccount}
-                    disabled={isCreatingDemand}
                   >
                     <Text style={styles.openAccountButtonText}>
-                      {isCreatingDemand ? '생성 중...' : '상시입출금 계좌 만들기'}
+                      상시입출금 계좌 만들기
                     </Text>
                   </TouchableOpacity>
-                  {demandAccountNumber && (
-                    <Text style={styles.accountCreatedText}>
-                      ✓ 상시입출금 계좌가 생성되었습니다: {demandAccountNumber}
-                    </Text>
-                  )}
+
                 </View>
               </View>
             </View>
@@ -391,7 +380,7 @@ export const SavingOpenScreen: React.FC = () => {
             <PrimaryButton
               title="다음"
               onPress={handleSubmit(handleStartSurvey)}
-              loading={isCreatingDemand || isCreatingSavings}
+              loading={isCreatingSavings}
               style={styles.nextButton}
             />
           </View>

@@ -69,7 +69,7 @@ interface UserInfoResponse {
   gender?: string;
   major?: string;
   grade?: number;
-  birthYear?: number;
+  birth_year?: number; // 백엔드 응답 구조에 맞게 수정
   school?: string;
   department?: string;
 }
