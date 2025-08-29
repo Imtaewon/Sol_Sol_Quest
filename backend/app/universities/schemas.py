@@ -16,6 +16,8 @@ class UniversityLeaderboardItem(BaseModel):
     rank_overall: int | None = None
     rank_avg: int | None = None
     is_mine: bool = False
+    savings_students: int
+    user_total_exp: int | None = None
 
 class UniversityLeaderboardResponse(BaseModel):
     my_university: Optional[UniversityLeaderboardItem] = None

@@ -53,6 +53,7 @@ def _to_item(r: Dict[str, Any]) -> UniversityLeaderboardItem:
 def build_leaderboards(
     db: Session,
     user_school_code: Optional[str],
+    user_id: Optional[str] = None,
     limit: int = 10
 ) -> Tuple[Optional[UniversityLeaderboardItem], List[UniversityLeaderboardItem], List[UniversityLeaderboardItem]]:
     """
@@ -86,6 +87,17 @@ def build_leaderboards(
     # 내 학교
     my_item: Optional[UniversityLeaderboardItem] = None
     if user_school_code and user_school_code in by_code:
-        my_item = _to_item(by_code[user_school_code])
+        my_school_data = dict(by_code[user_school_code])
+        
+        # 사용자 개인 경험치 조회
+        user_total_exp = 0
+        if user_id:
+            from app.models import UserStats
+            user_stats = db.query(UserStats.total_exp).filter(UserStats.user_id == user_id).first()
+            if user_stats:
+                user_total_exp = user_stats[0]
+        
+        my_school_data['user_total_exp'] = user_total_exp
+        my_item = _to_item(my_school_data)
 
     return my_item, top10_overall, top10_avg
