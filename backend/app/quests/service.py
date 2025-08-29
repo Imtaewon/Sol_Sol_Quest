@@ -135,8 +135,8 @@ def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
         if not quest:
             raise ValueError("존재하지 않거나 비활성화된 퀘스트입니다.")
 
-        # 만약 quest state == 'APPROVED'라면
-        if quest.state == 'APPROVED':
+        # 만약 quest status == 'APPROVED'라면
+        if quest.status == 'APPROVED':
             raise ValueError("이미 완료된 퀘스트입니다.")
 
 

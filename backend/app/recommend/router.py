@@ -148,3 +148,7 @@ async def get_user_preferences(
         raise HTTPException(status_code=404, detail="선호도 분석 결과를 찾을 수 없습니다.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"선호도 분석 오류: {str(e)}")
+
+
+
+
