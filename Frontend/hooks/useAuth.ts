@@ -133,66 +133,65 @@ export const useLogin = () => {
         dataKeys: response.data ? Object.keys(response.data) : []
       });
       
-      // response.data.success 또는 response.success 체크
-      if (response.data?.success || response.success) {
-                  try {
-            // 토큰 추출 - 여러 가능한 경로 시도
-            let token = null;
-            let user = null;
-            
-            if (response.data?.data?.access_token) {
-              token = response.data.data.access_token;
-              user = response.data.data.user;
-            } else if (response.data?.access_token) {
-              token = response.data.access_token;
-              user = response.data.user;
-            } else if (response.access_token) {
-              token = response.access_token;
-              user = response.user;
-            }
-            
-            console.log('🔐 추출된 토큰:', token ? `${token.substring(0, 20)}...` : 'null');
-            
-            if (!token) {
-              console.error('❌ 토큰을 찾을 수 없습니다. 응답 구조:', JSON.stringify(response, null, 2));
-              return;
-            }
-            
-            await setStorageItem('access_token', token);
-            console.log('🔐 토큰 저장 완료');
-            
-            // 즉시 토큰 검증
-            const storedToken = await getStorageItem('access_token');
-            console.log('DEBUG: 로그인 후 토큰 검증:', {
-              hasToken: !!storedToken,
-              tokenLength: storedToken?.length || 0,
-              tokenPreview: storedToken ? `${storedToken.substring(0, 20)}...` : 'null'
-            });
-            
-            // 더미 키도 확인
-            const dummyValue = await getStorageItem('dummy_key');
-            console.log('DEBUG: 로그인 후 dummy_key 확인:', dummyValue);
-            
-            // 사용자 정보 캐시에 저장
-            if (user) {
-              queryClient.setQueryData(['user'], user);
-              queryClient.setQueryData(['token'], token);
-              queryClient.setQueryData(['savingStatus'], user.has_savings);
-            }
-            
-            // Redux store 업데이트 (AsyncStorage와 동기화)
-            dispatch(loginSuccess({ token }));
-            console.log('🔐 Redux loginSuccess 액션 호출됨');
-            console.log('토큰:', token);
-            
-            Toast.show({
-              type: 'success',
-              text1: '로그인 성공',
-              text2: '환영합니다!',
-            });
-          } catch (error) {
-            console.error('❌ 토큰 저장 중 에러:', error);
-          }
+      try {
+        // 토큰 추출 - 백엔드 응답 구조에 맞게 수정
+        let token = null;
+        let user = null;
+        
+        // 백엔드에서 {access_token, user} 형태로 직접 응답하는 경우
+        if (response.access_token && response.user) {
+          token = response.access_token;
+          user = response.user;
+        } else if (response.data?.access_token && response.data?.user) {
+          token = response.data.access_token;
+          user = response.data.user;
+        } else if (response.data?.data?.access_token && response.data?.data?.user) {
+          token = response.data.data.access_token;
+          user = response.data.data.user;
+        }
+        
+        console.log('🔐 추출된 토큰:', token ? `${token.substring(0, 20)}...` : 'null');
+        console.log('🔐 추출된 사용자 정보:', user);
+        
+        if (!token) {
+          console.error('❌ 토큰을 찾을 수 없습니다. 응답 구조:', JSON.stringify(response, null, 2));
+          return;
+        }
+        
+        await setStorageItem('access_token', token);
+        console.log('🔐 토큰 저장 완료');
+        
+        // 즉시 토큰 검증
+        const storedToken = await getStorageItem('access_token');
+        console.log('DEBUG: 로그인 후 토큰 검증:', {
+          hasToken: !!storedToken,
+          tokenLength: storedToken?.length || 0,
+          tokenPreview: storedToken ? `${storedToken.substring(0, 20)}...` : 'null'
+        });
+        
+        // 더미 키도 확인
+        const dummyValue = await getStorageItem('dummy_key');
+        console.log('DEBUG: 로그인 후 dummy_key 확인:', dummyValue);
+        
+        // 사용자 정보 캐시에 저장
+        if (user) {
+          queryClient.setQueryData(['user'], user);
+          queryClient.setQueryData(['token'], token);
+          queryClient.setQueryData(['savingStatus'], user.has_savings);
+        }
+        
+        // Redux store 업데이트 (AsyncStorage와 동기화)
+        dispatch(loginSuccess({ token }));
+        console.log('🔐 Redux loginSuccess 액션 호출됨');
+        console.log('토큰:', token);
+        
+        Toast.show({
+          type: 'success',
+          text1: '로그인 성공',
+          text2: '환영합니다!',
+        });
+      } catch (error) {
+        console.error('❌ 토큰 저장 중 에러:', error);
       }
     },
     onError: (error) => {
