@@ -38,7 +38,7 @@ import { Skeleton } from '../../components/common/Skeleton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
 import { QuestWithAttempt, QuestAttempt } from '../../types/database';
 import { 
-  useGrowthQuestsInProgress,
+  useAllGrowthQuests,
   useDailyQuests,
   useSurpriseQuests,
   useClaimQuest
@@ -110,7 +110,7 @@ export const QuestsScreen: React.FC = () => {
     isLoading: growthLoading, 
     error: growthError, 
     refetch: refetchGrowth 
-  } = useGrowthQuestsInProgress();
+  } = useAllGrowthQuests();
 
   const { 
     data: dailyQuests, 
@@ -248,11 +248,7 @@ export const QuestsScreen: React.FC = () => {
               />
               <Text style={styles.questTitle}>{quest.title}</Text>
             </View>
-            
-            <View style={styles.questRewardSimple}>
-              <Ionicons name="star" size={16} color={COLORS.secondary} />
-              <Text style={styles.questRewardText}>{quest.expReward} EXP</Text>
-            </View>
+            {/* 적금 비가입자는 경험치 표시 안함 */}
           </View>
         </TouchableOpacity>
       );

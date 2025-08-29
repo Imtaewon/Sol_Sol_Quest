@@ -43,6 +43,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '../../components/common/AppHeader';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
+import { formatCurrency } from '../../utils/formatters';
 import { logout } from '../../store/slices/authSlice';
 import { clearUser } from '../../store/slices/userSlice';
 import { RootState } from '../../store';
@@ -64,7 +65,7 @@ const TIER_COLORS: Record<string, string> = {
   BRONZE: '#CD7F32',
   SILVER: '#C0C0C0',
   GOLD: '#FFD700',
-  SOL: '#FF6B35',
+  SOL: '#0046ff',
 };
 
 // 티어별 이름
@@ -90,14 +91,20 @@ export const MyPageScreen: React.FC = () => {
   const { data: savingsAccount, isLoading: savingsLoading, error: savingsError } = useSavingsAccount();
   const { data: depositAccount, isLoading: depositLoading, error: depositError } = useDepositAccount();
   
-  // 계좌 존재 여부로 hasSavings 판단
-  const hasSavings = (savingsAccount?.data?.data && savingsAccount.data.data.length > 0) || 
-                     (depositAccount?.data?.data && depositAccount.data.data.length > 0);
+  // 계좌 존재 여부로 hasAccounts 판단 (적금 또는 예금 중 하나라도 있으면 true)
+  const hasAccounts = (savingsAccount?.data?.data && savingsAccount.data.data.length > 0) || 
+                      (depositAccount?.data?.data && depositAccount.data.data.length > 0);
+  
+  // 개별 계좌 유무 판단
+  const hasSavings = savingsAccount?.data?.data && savingsAccount.data.data.length > 0;
+  const hasDeposit = depositAccount?.data?.data && depositAccount.data.data.length > 0;
 
   // API 요청 로그
   console.log('👤 MyPageScreen API 상태:', {
     userInfo: { loading: userInfoLoading, error: userInfoError, data: userInfo?.data ? '있음' : '없음' },
+    hasAccounts,
     hasSavings,
+    hasDeposit,
     savingsAccount: { loading: savingsLoading, error: savingsError, data: savingsAccount?.data ? '있음' : '없음' },
     depositAccount: { loading: depositLoading, error: depositError, data: depositAccount?.data ? '있음' : '없음' }
   });
@@ -300,103 +307,92 @@ export const MyPageScreen: React.FC = () => {
 
   const renderAccountCarousel = () => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>내 적금/예금</Text>
+             <Text style={styles.sectionTitle}>내 적금/상시입출금</Text>
       
-      {/* has_savings가 true일 때만 실제 계좌 정보 표시 */}
-      {hasSavings ? (
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.accountCarousel}
-        >
-          {/* 적금 카드 */}
-          {savingsAccount?.data?.data && savingsAccount.data.data.length > 0 && (
-            <View style={styles.accountCard}>
-              <View style={styles.accountHeader}>
-                <View style={styles.accountTypeContainer}>
-                  <Text style={styles.accountTypeLabel}>적금</Text>
-                  <Text style={styles.accountName}>솔 적금</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: COLORS.success + '20' }]}>
-                  <Text style={[styles.statusText, { color: COLORS.success }]}>진행중</Text>
-                </View>
-              </View>
-              
-              <View style={styles.accountBalance}>
-                <Text style={styles.balanceLabel}>월 납입금</Text>
-                <Text style={styles.balanceAmount}>
-                  {savingsAccount.data.data[0].monthly_amount.toLocaleString()}원
-                </Text>
-              </View>
-              
-              <View style={styles.accountDetails}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>이율</Text>
-                  <Text style={styles.detailValue}>
-                    {savingsAccount.data.data[0].interest_rate}%
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>계좌번호</Text>
-                  <Text style={styles.detailValue}>{savingsAccount.data.data[0].id}</Text>
-                </View>
-              </View>
-            </View>
-          )}
+             {/* 항상 ScrollView로 감싸고, 개별 계좌 유무에 따라 조건부 렌더링 */}
+       <ScrollView 
+         horizontal 
+         showsHorizontalScrollIndicator={false}
+         contentContainerStyle={styles.accountCarousel}
+       >
+         {/* 적금 카드 - hasSavings가 true면 정보, false면 가입하기 버튼 */}
+         {hasSavings ? (
+           <View style={styles.accountCard}>
+             <View style={styles.accountHeader}>
+               <View style={styles.accountTypeContainer}>
+                 <Text style={styles.accountTypeLabel}>적금</Text>
+                 <Text style={styles.accountName}>솔 적금</Text>
+               </View>
+               <View style={[styles.statusBadge, { backgroundColor: COLORS.success + '20' }]}>
+                 <Text style={[styles.statusText, { color: COLORS.success }]}>진행중</Text>
+               </View>
+             </View>
+             
+             <View style={styles.accountBalance}>
+               <Text style={styles.balanceLabel}>월 납입금</Text>
+               <Text style={styles.balanceAmount}>
+                 {savingsAccount?.data?.data?.[0]?.monthly_amount?.toLocaleString()}원
+               </Text>
+             </View>
+             
+             <View style={styles.accountDetails}>
+               <View style={styles.detailRow}>
+                 <Text style={styles.detailLabel}>이율</Text>
+                 <Text style={styles.detailValue}>
+                   {savingsAccount?.data?.data?.[0]?.interest_rate}%
+                 </Text>
+               </View>
+               <View style={styles.detailRow}>
+                 <Text style={styles.detailLabel}>계좌번호</Text>
+                 <Text style={styles.detailValue}>{savingsAccount?.data?.data?.[0]?.id}</Text>
+               </View>
+             </View>
+           </View>
+         ) : (
+           <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
+             <View style={styles.newAccountIconContainer}>
+               <Ionicons name="add-circle" size={32} color={COLORS.primary} />
+             </View>
+             <Text style={styles.newAccountText}>새 적금 개설</Text>
+           </TouchableOpacity>
+         )}
 
-          {/* 예금 카드 */}
-          {depositAccount?.data?.data && depositAccount.data.data.length > 0 && (
-            <View style={styles.accountCard}>
-              <View style={styles.accountHeader}>
-                <View style={styles.accountTypeContainer}>
-                  <Text style={styles.accountTypeLabel}>예금</Text>
-                  <Text style={styles.accountName}>솔 입출금</Text>
-                </View>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>활성</Text>
-                </View>
-              </View>
-              
-              <View style={styles.accountBalance}>
-                <Text style={styles.balanceLabel}>입출금 계좌</Text>
-                <Text style={styles.balanceAmount}>
-                  활성 상태
-                </Text>
-              </View>
-              
-              <View style={styles.accountDetails}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>계좌번호</Text>
-                  <Text style={styles.detailValue}>{depositAccount.data.data[0].account_no}</Text>
-                </View>
-              </View>
-            </View>
-          )}
-        </ScrollView>
-      ) : (
-        /* has_savings가 false일 때 가입하기 캐러셀 표시 */
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.accountCarousel}
-        >
-          {/* 적금 가입하기 카드 */}
-          <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
-            <View style={styles.newAccountIconContainer}>
-              <Ionicons name="add-circle" size={32} color={COLORS.primary} />
-            </View>
-            <Text style={styles.newAccountText}>새 적금 개설</Text>
-          </TouchableOpacity>
-
-          {/* 예금 가입하기 카드 */}
-          <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
-            <View style={styles.newAccountIconContainer}>
-              <Ionicons name="add-circle" size={32} color={COLORS.primary} />
-            </View>
-            <Text style={styles.newAccountText}>새 예금 개설</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      )}
+         {/* 예금 카드 - hasDeposit이 true면 정보, false면 가입하기 버튼 */}
+         {hasDeposit ? (
+           <View style={styles.accountCard}>
+             <View style={styles.accountHeader}>
+                                <View style={styles.accountTypeContainer}>
+                   <Text style={styles.accountTypeLabel}>상시입출금</Text>
+                   <Text style={styles.accountName}>솔 입출금</Text>
+                 </View>
+               <View style={styles.statusBadge}>
+                 <Text style={styles.statusText}>활성</Text>
+               </View>
+             </View>
+             
+                            <View style={styles.accountBalance}>
+                 <Text style={styles.balanceLabel}>계좌 잔액</Text>
+                 <Text style={styles.balanceAmount}>
+                   {formatCurrency(depositAccount?.data?.data?.[0]?.balance || 0)}
+                 </Text>
+               </View>
+             
+             <View style={styles.accountDetails}>
+               <View style={styles.detailRow}>
+                 <Text style={styles.detailLabel}>계좌번호</Text>
+                 <Text style={styles.detailValue}>{depositAccount?.data?.data?.[0]?.account_no}</Text>
+               </View>
+             </View>
+           </View>
+         ) : (
+           <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
+             <View style={styles.newAccountIconContainer}>
+               <Ionicons name="add-circle" size={32} color={COLORS.primary} />
+             </View>
+             <Text style={styles.newAccountText}>새 상시입출금 개설</Text>
+           </TouchableOpacity>
+         )}
+       </ScrollView>
     </View>
   );
 
