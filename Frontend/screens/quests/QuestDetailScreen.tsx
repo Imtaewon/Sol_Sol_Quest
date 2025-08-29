@@ -376,39 +376,66 @@ export const QuestDetailScreen: React.FC = () => {
 
                 {/* 액션 버튼 */}
         <View style={styles.actionContainer}>
-          {/* 링크 퀘스트인 경우 링크 열기 버튼 */}
-          {(() => {
-            console.log('🎯 링크 버튼 조건 확인:', {
-              verifyMethod: quest.verify_method,
-              isLink: quest.verify_method === 'LINK',
-              linkUrl: quest.link_url
-            });
-            return quest.verify_method === 'LINK';
-          })() && (
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={() => {
-                // 링크 열기 로직 (실제로는 Linking.openURL 사용)
-                Alert.alert(
-                  '링크 열기',
-                  '외부 링크로 이동하시겠습니까?',
-                  [
-                    { text: '취소', style: 'cancel' },
-                    { 
-                      text: '열기', 
-                      onPress: () => {
-                        // 실제 링크 열기 구현 필요
-                        Alert.alert('링크 열기', `링크: ${quest.link_url || '링크 URL 없음'}`);
-                      }
-                    }
-                  ]
-                );
-              }}
-            >
-              <Ionicons name="open-outline" size={20} color={COLORS.white} />
-              <Text style={styles.linkButtonText}>링크 열기</Text>
-            </TouchableOpacity>
-          )}
+                     {/* 링크 퀘스트인 경우 링크 열기 버튼 */}
+           {(() => {
+             console.log('🎯 링크 버튼 조건 확인:', {
+               verifyMethod: quest.verify_method,
+               isLink: quest.verify_method === 'LINK',
+               linkUrl: quest.link_url
+             });
+             return quest.verify_method === 'LINK';
+           })() && (
+                            <TouchableOpacity
+                 style={[
+                   styles.linkButton,
+                   isSubmitting && styles.linkButtonDisabled
+                 ]}
+                 onPress={() => {
+                 // 링크 열기 및 퀘스트 완료 처리
+                 Alert.alert(
+                   '링크 열기',
+                   '외부 링크로 이동하고 퀘스트를 완료하시겠습니까?',
+                   [
+                     { text: '취소', style: 'cancel' },
+                     { 
+                       text: '열기 및 완료', 
+                       onPress: async () => {
+                         try {
+                           setIsSubmitting(true);
+                           console.log('🎯 링크 퀘스트 완료 요청:', quest.id);
+                           
+                           // 퀘스트 완료 API 호출
+                           await completeQuest({ quest_id: quest.id });
+                           
+                           Alert.alert(
+                             '퀘스트 완료!', 
+                             `링크를 열고 ${quest.reward_exp} EXP를 획득했습니다!`,
+                             [
+                               {
+                                 text: '확인',
+                                 onPress: () => navigation.goBack()
+                               }
+                             ]
+                           );
+                         } catch (error) {
+                           console.error('🎯 링크 퀘스트 완료 실패:', error);
+                           Alert.alert('오류', '퀘스트 완료에 실패했습니다.');
+                         } finally {
+                           setIsSubmitting(false);
+                         }
+                       }
+                     }
+                   ]
+                 );
+               }}
+               disabled={isSubmitting}
+             >
+               <Ionicons name="open-outline" size={20} color={COLORS.white} />
+               <Text style={styles.linkButtonText}>
+                 {isSubmitting ? '처리중...' : '링크 열기'}
+               </Text>
+             </TouchableOpacity>
+           )}
 
           {/* 진행중인 퀘스트의 경우 계속하기 버튼 */}
           {quest.attempt?.status === 'IN_PROGRESS' && (
@@ -732,9 +759,13 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     gap: SPACING.sm,
   },
-  linkButtonText: {
-    color: COLORS.white,
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-  },
+     linkButtonText: {
+     color: COLORS.white,
+     fontSize: FONT_SIZES.md,
+     fontWeight: '600',
+   },
+   linkButtonDisabled: {
+     backgroundColor: COLORS.gray[400],
+     opacity: 0.6,
+   },
 });

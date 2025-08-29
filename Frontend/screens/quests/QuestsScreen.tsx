@@ -227,20 +227,23 @@ export const QuestsScreen: React.FC = () => {
 
 
 
-  /**
-   * 퀘스트 완료 처리 함수
-   * 완료된 퀘스트의 보상을 수령
-   */
-  const handleClaimQuest = async (quest: any) => {
-    try {
-      console.log('🎯 퀘스트 완료 요청:', quest.id);
-      await claimQuestMutation.mutateAsync({ 
-        questId: quest.id
-      });
-    } catch (error) {
-      console.error('퀘스트 완료 실패:', error);
-    }
-  };
+     /**
+    * 퀘스트 완료 처리 함수
+    * 완료된 퀘스트의 보상을 수령
+    */
+   const handleClaimQuest = async (quest: any) => {
+     try {
+       console.log('🎯 퀘스트 완료 요청:', quest.id);
+       await claimQuestMutation.mutateAsync({ 
+         questId: quest.id
+       });
+       
+       // 성공적으로 완료되면 퀘스트 목록을 새로고침
+       await refetch();
+     } catch (error) {
+       console.error('퀘스트 완료 실패:', error);
+     }
+   };
 
   /**
    * 퀘스트 진행률 계산 함수
@@ -330,34 +333,45 @@ export const QuestsScreen: React.FC = () => {
         style={styles.questCard}
         onPress={() => handleQuestPress(quest)}
       >
-        <View style={styles.questContent}>
-          <View style={styles.questTitleRow}>
-            <Ionicons 
-              name="trophy" 
-              size={20} 
-              color={COLORS.gray[600]} 
-            />
-            <Text style={styles.questTitle}>{quest.title}</Text>
-          </View>
+                 <View style={styles.questContent}>
+           {/* 제목 (왼쪽) */}
+           <View style={styles.questTitleRow}>
+             <Ionicons 
+               name="trophy" 
+               size={20} 
+               color={COLORS.gray[600]} 
+             />
+             <Text style={styles.questTitle}>{quest.title}</Text>
+           </View>
 
-          <View style={styles.questProgressContainer}>
-            <View style={styles.progressBar}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { 
-                    width: `${progress}%`,
-                    backgroundColor: isCompleted ? COLORS.success : QUEST_TYPE_COLORS[quest.type]
-                  }
-                ]} 
-              />
-            </View>
-            <Text style={styles.progressText}>
-              {quest.progress || 0} / {quest.maxProgress || 1}
-            </Text>
-          </View>
+           {/* 경험치 (오른쪽) */}
+           <View style={styles.questRewardRow}>
+             <View style={styles.questReward}>
+               <Ionicons name="star" size={16} color={COLORS.secondary} />
+               <Text style={styles.questRewardText}>{quest.expReward} EXP</Text>
+             </View>
+           </View>
 
-                     <View style={styles.questFooter}>
+           {/* 진행도 */}
+           <View style={styles.questProgressContainer}>
+             <View style={styles.progressBar}>
+               <View 
+                 style={[
+                   styles.progressFill, 
+                   { 
+                     width: `${progress}%`,
+                     backgroundColor: isCompleted ? COLORS.success : QUEST_TYPE_COLORS[quest.type]
+                   }
+                 ]} 
+               />
+             </View>
+             <Text style={styles.progressText}>
+               {quest.progress || 0} / {quest.maxProgress || 1}
+             </Text>
+           </View>
+
+           {/* 시작여부 (왼쪽) + 수령하기/완료 (오른쪽) */}
+           <View style={styles.questFooter}>
              <View style={styles.questStatus}>
                <View 
                  style={[
@@ -366,11 +380,6 @@ export const QuestsScreen: React.FC = () => {
                  ]} 
                />
                <Text style={styles.statusText}>{statusText}</Text>
-             </View>
-
-             <View style={styles.questReward}>
-               <Ionicons name="star" size={16} color={COLORS.secondary} />
-               <Text style={styles.questRewardText}>{quest.expReward} EXP</Text>
              </View>
 
              {canClaim && (
@@ -389,7 +398,7 @@ export const QuestsScreen: React.FC = () => {
                </View>
              )}
            </View>
-        </View>
+         </View>
       </TouchableOpacity>
     );
   };
@@ -561,13 +570,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.md,
   },
-  questTitle: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.dark,
-    fontWeight: '600',
-    marginLeft: SPACING.sm,
-    flex: 1,
-  },
+     questTitle: {
+     fontSize: FONT_SIZES.md,
+     color: COLORS.dark,
+     fontWeight: '600',
+     marginLeft: SPACING.sm,
+     flex: 1,
+   },
+   questRewardRow: {
+     flexDirection: 'row',
+     justifyContent: 'flex-end',
+     marginBottom: SPACING.md,
+   },
   questProgressContainer: {
     marginBottom: SPACING.md,
   },
