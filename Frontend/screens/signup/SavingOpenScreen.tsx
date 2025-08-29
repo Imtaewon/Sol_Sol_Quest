@@ -37,7 +37,8 @@ import {
 
 import { 
   SurveyQuestion, 
-  SurveyResponse, 
+  SurveyResponse,
+  SurveyAnswerIn,
   QUESTION_TYPE_MAPPING 
 } from '../../types/saving';
 import { HomeStackParamList } from '../../navigation/HomeStack';
@@ -52,7 +53,7 @@ interface SavingFormData {
 
 // 설문 응답 저장용 상태
 interface SurveyState {
-  responses: { [key: number]: number };
+  responses: { [key: number]: { answer: number; questionId: string; optionId: string } };
   currentQuestion: number;
 }
 
@@ -112,6 +113,16 @@ export const SavingOpenScreen: React.FC = () => {
     currentQuestion: surveyState.currentQuestion
   });
 
+  // 설문 데이터 상세 로그
+  console.log('📝 설문 데이터 상세:', {
+    surveyQuestion: surveyQuestion?.data,
+    options: surveyQuestion?.data?.options,
+    optionsLength: surveyQuestion?.data?.options?.length,
+    question: surveyQuestion?.data?.question,
+    currentStep,
+    isSurveyLoading
+  });
+
   // 사용자 정보 상세 로그
   console.log('👤 SavingOpenScreen 사용자 정보:', {
     userInfo,
@@ -144,8 +155,11 @@ export const SavingOpenScreen: React.FC = () => {
     navigation.navigate('DepositOpen');
   };
 
+  // 적금 정보 임시 저장용 상태
+  const [savingFormData, setSavingFormData] = useState<SavingFormData | null>(null);
+
   /**
-   * 설문 버튼 클릭 처리 (적금 가입 + 설문 시작)
+   * 설문 버튼 클릭 처리 (설문 시작)
    */
   const handleStartSurvey = async (data: SavingFormData) => {
     try {
@@ -164,19 +178,13 @@ export const SavingOpenScreen: React.FC = () => {
         return;
       }
 
-      // 적금 가입 API 호출
-      const savingsResult = await createSavingsAccount({
-        user_id: userInfo.user_id,
-        deposit_balance: data.monthlyAmount,
-        account_no: data.accountNumber,
-      }).unwrap();
-
-      if (savingsResult.success) {
-        // 설문 단계로 이동
-        setCurrentStep(2);
-      }
+      // 적금 정보를 임시 저장
+      setSavingFormData(data);
+      
+      // 설문 단계로 이동
+      setCurrentStep(2);
     } catch (error) {
-      Alert.alert('오류', '적금 가입에 실패했습니다.');
+      Alert.alert('오류', '설문을 시작할 수 없습니다.');
     }
   };
 
@@ -184,13 +192,37 @@ export const SavingOpenScreen: React.FC = () => {
    * 설문 응답 처리
    */
   const handleSurveyAnswer = (answer: number) => {
-    setSurveyState(prev => ({
-      ...prev,
-      responses: {
-        ...prev.responses,
-        [prev.currentQuestion]: answer,
-      },
-    }));
+    console.log('📝 설문 응답 처리:', {
+      currentQuestion: surveyState.currentQuestion,
+      answer: answer,
+      beforeResponses: surveyState.responses,
+      currentQuestionData: surveyQuestion?.data
+    });
+
+    // 현재 문제의 정보 가져오기
+    const currentQuestionData = surveyQuestion?.data;
+    const selectedOption = currentQuestionData?.options?.[answer - 1]; // answer는 1부터 시작하므로 -1
+
+    setSurveyState(prev => {
+      const newState = {
+        ...prev,
+        responses: {
+          ...prev.responses,
+          [prev.currentQuestion]: {
+            answer: answer,
+            questionId: currentQuestionData?.id || '',
+            optionId: selectedOption?.id || '',
+          },
+        },
+      };
+      
+      console.log('📝 설문 응답 업데이트 후:', {
+        newResponses: newState.responses,
+        responsesCount: Object.keys(newState.responses).length
+      });
+      
+      return newState;
+    });
   };
 
   /**
@@ -222,15 +254,52 @@ export const SavingOpenScreen: React.FC = () => {
    */
   const handleSurveySubmit = async () => {
     try {
-      // 설문 응답 데이터 변환
-      const surveyResponses: SurveyResponse[] = Object.entries(surveyState.responses).map(([questionNum, answer]) => ({
-        questionNumber: parseInt(questionNum),
-        questionType: QUESTION_TYPE_MAPPING[parseInt(questionNum)],
-        answer,
+      if (!savingFormData || !userInfo?.user_id) {
+        Alert.alert('오류', '적금 정보가 없습니다.');
+        return;
+      }
+
+      // 설문 응답 데이터 검증
+      console.log('📝 설문 제출 전 응답 데이터:', {
+        surveyState: surveyState,
+        responses: surveyState.responses,
+        responsesCount: Object.keys(surveyState.responses).length,
+        currentQuestion: surveyState.currentQuestion,
+        allQuestionsAnswered: Object.keys(surveyState.responses).length === 12
+      });
+
+      // 모든 문제에 답변이 있는지 확인
+      if (Object.keys(surveyState.responses).length !== 12) {
+        Alert.alert('오류', '모든 설문 문제에 답변해주세요.');
+        return;
+      }
+
+      // 1. 적금 가입 API 호출
+      const savingsResult = await createSavingsAccount({
+        user_id: userInfo.user_id,
+        deposit_balance: savingFormData.monthlyAmount,
+        account_no: savingFormData.accountNumber,
+      }).unwrap();
+
+      if (!savingsResult.success) {
+        Alert.alert('오류', '적금 가입에 실패했습니다.');
+        return;
+      }
+
+      // 2. 설문 응답 데이터 변환 (백엔드 요구사항에 맞춤)
+      const surveyAnswers: SurveyAnswerIn[] = Object.entries(surveyState.responses).map(([questionNum, responseData]) => ({
+        question_id: responseData.questionId,
+        option_id: responseData.optionId,
       }));
 
-      // 설문 응답 제출
-      await submitSurveyResponses(surveyResponses).unwrap();
+      console.log('📝 변환된 설문 응답 데이터:', {
+        surveyAnswers: surveyAnswers,
+        responsesLength: surveyAnswers.length,
+        currentQuestion: surveyQuestion?.data
+      });
+
+      // 3. 설문 응답 제출 (백엔드 요구사항에 맞춤)
+      await submitSurveyResponses({ items: surveyAnswers }).unwrap();
 
       Alert.alert(
         '적금 가입 완료',
@@ -243,7 +312,8 @@ export const SavingOpenScreen: React.FC = () => {
         ]
       );
     } catch (error) {
-      Alert.alert('오류', '설문 제출에 실패했습니다.');
+      console.error('설문 제출 오류:', error);
+      Alert.alert('오류', '적금 가입 또는 설문 제출에 실패했습니다.');
     }
   };
 
@@ -428,13 +498,12 @@ export const SavingOpenScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* 다음 버튼 */}
-            <PrimaryButton
-              title="다음"
-              onPress={handleSubmit(handleStartSurvey)}
-              loading={isCreatingSavings}
-              style={styles.nextButton}
-            />
+                         {/* 다음 버튼 */}
+             <PrimaryButton
+               title="다음"
+               onPress={handleSubmit(handleStartSurvey)}
+               style={styles.nextButton}
+             />
           </View>
         ) : (
           // 2단계: 설문 조사
@@ -457,24 +526,24 @@ export const SavingOpenScreen: React.FC = () => {
                 </View>
 
                 {/* 답변 옵션 */}
-                {surveyQuestion?.data?.options && (
+                {surveyQuestion?.data?.options && surveyQuestion.data.options.length > 0 && (
                   <View style={styles.optionsContainer}>
                     {surveyQuestion.data.options.map((option, index) => (
                       <TouchableOpacity
-                        key={index}
-                        style={[
-                          styles.optionButton,
-                          surveyState.responses[surveyState.currentQuestion] === index + 1 && 
-                          styles.optionButtonSelected
-                        ]}
-                        onPress={() => handleSurveyAnswer(index + 1)}
-                      >
-                        <Text style={[
-                          styles.optionText,
-                          surveyState.responses[surveyState.currentQuestion] === index + 1 && 
-                          styles.optionTextSelected
-                        ]}>
-                          {option}
+                        key={option.id}
+                                                 style={[
+                           styles.optionButton,
+                           surveyState.responses[surveyState.currentQuestion]?.answer === index + 1 && 
+                           styles.optionButtonSelected
+                         ]}
+                         onPress={() => handleSurveyAnswer(index + 1)}
+                       >
+                         <Text style={[
+                           styles.optionText,
+                           surveyState.responses[surveyState.currentQuestion]?.answer === index + 1 && 
+                           styles.optionTextSelected
+                         ]}>
+                          {option.option_text}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -494,28 +563,28 @@ export const SavingOpenScreen: React.FC = () => {
 
                   {surveyState.currentQuestion < 12 ? (
                     <TouchableOpacity 
-                      style={[
-                        styles.nextSurveyButton,
-                        !surveyState.responses[surveyState.currentQuestion] && styles.nextSurveyButtonDisabled
-                      ]}
-                      onPress={handleNextQuestion}
-                      disabled={!surveyState.responses[surveyState.currentQuestion]}
+                                             style={[
+                         styles.nextSurveyButton,
+                         !surveyState.responses[surveyState.currentQuestion]?.answer && styles.nextSurveyButtonDisabled
+                       ]}
+                       onPress={handleNextQuestion}
+                       disabled={!surveyState.responses[surveyState.currentQuestion]?.answer}
                     >
                       <Text style={styles.nextSurveyButtonText}>다음</Text>
                     </TouchableOpacity>
                   ) : (
-                    <TouchableOpacity 
-                      style={[
-                        styles.submitButton,
-                        !surveyState.responses[surveyState.currentQuestion] && styles.submitButtonDisabled
-                      ]}
-                      onPress={handleSurveySubmit}
-                      disabled={!surveyState.responses[surveyState.currentQuestion] || isSubmittingSurvey}
-                    >
-                      <Text style={styles.submitButtonText}>
-                        {isSubmittingSurvey ? '제출 중...' : '제출하기'}
-                      </Text>
-                    </TouchableOpacity>
+                                         <TouchableOpacity 
+                                               style={[
+                          styles.submitButton,
+                          !surveyState.responses[surveyState.currentQuestion]?.answer && styles.submitButtonDisabled
+                        ]}
+                        onPress={handleSurveySubmit}
+                        disabled={!surveyState.responses[surveyState.currentQuestion]?.answer || isCreatingSavings || isSubmittingSurvey}
+                     >
+                       <Text style={styles.submitButtonText}>
+                         {isCreatingSavings || isSubmittingSurvey ? '처리 중...' : '제출하기'}
+                       </Text>
+                     </TouchableOpacity>
                   )}
                 </View>
               </View>

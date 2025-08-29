@@ -25,19 +25,33 @@ export interface SavingSignupData {
   surveyResponses: SurveyResponse[];
 }
 
-// 설문 응답 타입
+// 설문 응답 타입 (백엔드 요구사항에 맞춤)
+export interface SurveyAnswerIn {
+  question_id: string;     // 문제 ID (문자열)
+  option_id: string | null; // 선택된 옵션 ID (문자열 또는 null)
+}
+
+// 설문 응답 타입 (기존 호환성용)
 export interface SurveyResponse {
   questionNumber: number;  // 문제 번호 (1-12)
   questionType: number;    // 문제 유형 (1-6)
   answer: number;          // 사용자 응답
 }
 
+// 설문 문제 옵션 타입
+export interface SurveyQuestionOption {
+  id: string;
+  order_no: number;
+  option_text: string;
+}
+
 // 설문 문제 타입
 export interface SurveyQuestion {
-  id: number;
+  id: string;
+  order_no: number;
   question: string;
-  type: 'multiple_choice' | 'text' | 'number';
-  options?: string[];
+  question_type: number;
+  options: SurveyQuestionOption[];
 }
 
 // 설문 문제 유형 매핑
