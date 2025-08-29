@@ -370,6 +370,13 @@ export const SavingOpenScreen: React.FC = () => {
                     />
                   )}
                 />
+                
+                {/* 계좌 잔액 초과 경고 메시지 */}
+                {monthlyAmount > (depositAccountInfo?.balance || 0) && hasDepositAccount && (
+                  <Text style={styles.balanceWarningText}>
+                    계좌 잔액보다 큽니다
+                  </Text>
+                )}
 
                 <View style={styles.accountSection}>
                   <Text style={styles.accountLabel}>자동이체 계좌</Text>
@@ -377,18 +384,17 @@ export const SavingOpenScreen: React.FC = () => {
                   {hasDepositAccount ? (
                     // 상시입출금 계좌가 있는 경우
                     <View style={styles.existingAccountContainer}>
-                      <FormTextInput
-                        label="계좌번호"
-                        placeholder="계좌번호를 입력해주세요"
-                        value={depositAccountInfo?.account_no || ''}
-                        onChangeText={(text) => {
-                          setValue('accountNumber', text);
-                        }}
-                        error={errors.accountNumber?.message}
-                        keyboardType="numeric"
-                        editable={false}
-                        style={styles.disabledInput}
-                      />
+                                             <FormTextInput
+                         label="계좌번호"
+                         placeholder="계좌번호를 입력해주세요"
+                         value={depositAccountInfo?.account_no || ''}
+                         onChangeText={(text) => {
+                           setValue('accountNumber', text);
+                         }}
+                         error={errors.accountNumber?.message}
+                         keyboardType="numeric"
+                         disabled={true}
+                       />
                       <View style={styles.balanceInfo}>
                         <Text style={styles.balanceLabel}>현재 계좌 잔액</Text>
                         <Text style={styles.balanceAmount}>
@@ -782,13 +788,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   // 상시입출금 계좌 관련 스타일
-  existingAccountContainer: {
-    marginBottom: SPACING.md,
-  },
-  disabledInput: {
-    backgroundColor: COLORS.gray[100],
-    opacity: 0.8,
-  },
+     existingAccountContainer: {
+     marginBottom: SPACING.md,
+   },
   balanceInfo: {
     marginTop: SPACING.sm,
     padding: SPACING.md,
@@ -802,9 +804,16 @@ const styles = StyleSheet.create({
     color: COLORS.gray[600],
     marginBottom: SPACING.xs,
   },
-  balanceAmount: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '700',
-    color: COLORS.dark,
-  },
-});
+     balanceAmount: {
+     fontSize: FONT_SIZES.lg,
+     fontWeight: '700',
+     color: COLORS.dark,
+   },
+   // 계좌 잔액 초과 경고 메시지 스타일
+   balanceWarningText: {
+     fontSize: FONT_SIZES.sm,
+     color: COLORS.error,
+     marginTop: SPACING.xs,
+     marginBottom: SPACING.sm,
+   },
+ });
