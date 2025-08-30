@@ -19,7 +19,6 @@ const getStorageItem = async (key: string): Promise<string | null> => {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      console.error('localStorage 읽기 실패:', error);
       return null;
     }
   } else {
@@ -27,7 +26,6 @@ const getStorageItem = async (key: string): Promise<string | null> => {
     try {
       return await AsyncStorage.getItem(key);
     } catch (error) {
-      console.error('AsyncStorage 읽기 실패:', error);
       return null;
     }
   }
@@ -42,7 +40,6 @@ export const getAuthToken = async (): Promise<string | null> => {
     const token = await getStorageItem('access_token');
     return token;
   } catch (error) {
-    console.error('토큰 조회 실패:', error);
     return null;
   }
 };
@@ -65,17 +62,17 @@ export const setAuthToken = async (token: string): Promise<void> => {
     // 웹 환경에서는 직접 localStorage 사용
     try {
       localStorage.setItem('access_token', token);
-    } catch (error) {
-      console.error('localStorage 토큰 저장 실패:', error);
+          } catch (error) {
+        // 에러 무시
+      }
+    } else {
+      // 네이티브 환경에서는 AsyncStorage 사용
+      try {
+        await AsyncStorage.setItem('access_token', token);
+      } catch (error) {
+        // 에러 무시
+      }
     }
-  } else {
-    // 네이티브 환경에서는 AsyncStorage 사용
-    try {
-      await AsyncStorage.setItem('access_token', token);
-    } catch (error) {
-      console.error('AsyncStorage 토큰 저장 실패:', error);
-    }
-  }
 };
 
 /**
@@ -86,15 +83,15 @@ export const removeAuthToken = async (): Promise<void> => {
     // 웹 환경에서는 직접 localStorage 사용
     try {
       localStorage.removeItem('access_token');
-    } catch (error) {
-      console.error('localStorage 토큰 삭제 실패:', error);
+          } catch (error) {
+        // 에러 무시
+      }
+    } else {
+      // 네이티브 환경에서는 AsyncStorage 사용
+      try {
+        await AsyncStorage.removeItem('access_token');
+      } catch (error) {
+        // 에러 무시
+      }
     }
-  } else {
-    // 네이티브 환경에서는 AsyncStorage 사용
-    try {
-      await AsyncStorage.removeItem('access_token');
-    } catch (error) {
-      console.error('AsyncStorage 토큰 삭제 실패:', error);
-    }
-  }
 };

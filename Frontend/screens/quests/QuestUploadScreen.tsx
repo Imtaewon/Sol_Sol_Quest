@@ -106,7 +106,6 @@ export const QuestUploadScreen: React.FC = () => {
                     });
                   }
                                  } catch (error) {
-                   console.error('이미지 선택 에러:', error);
                    Alert.alert('오류', '이미지를 선택하는 중 오류가 발생했습니다.');
                  }
               },
@@ -134,7 +133,6 @@ export const QuestUploadScreen: React.FC = () => {
                     });
                   }
                                  } catch (error) {
-                   console.error('문서 선택 에러:', error);
                    Alert.alert('오류', '문서를 선택하는 중 오류가 발생했습니다.');
                  }
               },
@@ -147,7 +145,6 @@ export const QuestUploadScreen: React.FC = () => {
         );
       }
          } catch (error) {
-       console.error('파일 선택 중 오류:', error);
        Alert.alert('오류', '파일을 선택하는 중 오류가 발생했습니다.');
      }
   };
@@ -171,15 +168,13 @@ export const QuestUploadScreen: React.FC = () => {
       
       return fakeUrl;
       
-    } catch (error) {
-      console.error('URL 생성 에러:', error);
-      
-      // 에러 발생 시 기본 URL 생성
-      const timestamp = Date.now();
-      const randomId = Math.random().toString(36).substring(2, 15);
-      const fileExtension = file.name.split('.').pop() || 'jpg';
-      return `https://temp-uploads.example.com/quest-proofs/${timestamp}_${randomId}.${fileExtension}`;
-    }
+         } catch (error) {
+       // 에러 발생 시 기본 URL 생성
+       const timestamp = Date.now();
+       const randomId = Math.random().toString(36).substring(2, 15);
+       const fileExtension = file.name.split('.').pop() || 'jpg';
+       return `https://temp-uploads.example.com/quest-proofs/${timestamp}_${randomId}.${fileExtension}`;
+     }
   };
 
   /**
@@ -222,10 +217,9 @@ export const QuestUploadScreen: React.FC = () => {
            },
          ]
        );
-    } catch (error) {
-      console.error('파일 제출 실패:', error);
-      Alert.alert('오류', '파일 제출에 실패했습니다. 다시 시도해주세요.');
-    } finally {
+         } catch (error) {
+       Alert.alert('오류', '파일 제출에 실패했습니다. 다시 시도해주세요.');
+     } finally {
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -247,26 +241,25 @@ export const QuestUploadScreen: React.FC = () => {
       <AppHeader 
         title="파일 제출" 
         showBackButton 
-        onBackPress={() => {
-          try {
-            if (navigation.canGoBack()) {
-              navigation.goBack();
-            } else {
-              // 스택에 이전 화면이 없으면 퀘스트 목록으로 이동
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Quests' }],
-              });
-            }
-          } catch (error) {
-            console.error('뒤로가기 에러:', error);
-            // 에러 발생 시 퀘스트 목록으로 강제 이동
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Quests' }],
-            });
-          }
-        }}
+                 onBackPress={() => {
+           try {
+             if (navigation.canGoBack()) {
+               navigation.goBack();
+             } else {
+               // 스택에 이전 화면이 없으면 퀘스트 목록으로 이동
+               navigation.reset({
+                 index: 0,
+                 routes: [{ name: 'Quests' }],
+               });
+             }
+           } catch (error) {
+             // 에러 발생 시 퀘스트 목록으로 강제 이동
+             navigation.reset({
+               index: 0,
+               routes: [{ name: 'Quests' }],
+             });
+           }
+         }}
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
