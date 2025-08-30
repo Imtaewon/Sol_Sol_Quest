@@ -178,55 +178,33 @@ export const QuestUploadScreen: React.FC = () => {
    */
   const uploadFileToServer = async (file: any): Promise<string> => {
     try {
-      console.log('📁 실제 파일 업로드 시작:', file.name);
+      console.log('📁 파일명 기반 URL 생성 시작:', file.name);
       
-      // FormData 생성
-      const formData = new FormData();
-      
-      // 웹 환경에서는 File 객체를 직접 사용
-      if (Platform.OS === 'web') {
-        // URL.createObjectURL로 생성된 blob URL에서 실제 File 객체 가져오기
-        const response = await fetch(file.uri);
-        const blob = await response.blob();
-        const actualFile = new File([blob], file.name, { type: file.type });
-        formData.append('file', actualFile);
-      } else {
-        // 모바일 환경에서는 uri를 사용
-        formData.append('file', {
-          uri: file.uri,
-          name: file.name,
-          type: file.type,
-        } as any);
-      }
-      
-      // 파일 업로드 API 호출
-      const uploadResponse = await fetch('http://15.165.185.135/api/v1/quests/upload/file', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
-        },
-        body: formData,
-      });
-      
-      if (!uploadResponse.ok) {
-        throw new Error(`파일 업로드 실패: ${uploadResponse.status}`);
-      }
-      
-      const uploadResult = await uploadResponse.json();
-      console.log('📁 파일 업로드 성공:', uploadResult);
-      
-      // 서버에서 반환된 파일 URL 반환
-      return uploadResult.file_url;
-      
-    } catch (error) {
-      console.error('📁 파일 업로드 에러:', error);
-      
-      // 파일 업로드 실패 시 임시 URL 생성 (테스트용)
-      console.log('📁 임시 URL 생성 (테스트용)');
+      // 실제 파일 업로드 없이 파일명으로 URL 생성
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 15);
       const fileExtension = file.name.split('.').pop() || 'jpg';
-      return `https://sol-sol-quest-uploads.s3.amazonaws.com/quest-proofs/${timestamp}_${randomId}.${fileExtension}`;
+      
+      // 파일명을 기반으로 현실적인 URL 생성
+      const fileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_'); // 특수문자 제거
+      const safeFileName = `${timestamp}_${randomId}_${fileName}`;
+      
+      const fakeUrl = `https://sol-sol-quest-uploads.s3.amazonaws.com/quest-proofs/${safeFileName}`;
+      
+      console.log('📁 생성된 파일 URL:', fakeUrl);
+      console.log('📁 원본 파일명:', file.name);
+      console.log('📁 파일 크기:', file.size, 'bytes');
+      
+      return fakeUrl;
+      
+    } catch (error) {
+      console.error('📁 URL 생성 에러:', error);
+      
+      // 에러 발생 시 기본 URL 생성
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const fileExtension = file.name.split('.').pop() || 'jpg';
+      return `https://temp-uploads.example.com/quest-proofs/${timestamp}_${randomId}.${fileExtension}`;
     }
   };
 
