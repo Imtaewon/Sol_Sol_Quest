@@ -32,6 +32,7 @@ import React from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   StatusBar,
@@ -67,7 +68,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </TouchableOpacity>
         ) : (
           <View style={styles.logoContainer}>
-            <Text style={styles.logoText}>{APP_CONSTANTS.BRANDING.LOGO_TEXT}</Text>
+            <Image source={APP_CONSTANTS.BRANDING.LOGO_IMAGE} style={styles.logoImage} resizeMode="contain" />
             <Text style={styles.appName}>{APP_CONSTANTS.BRANDING.APP_NAME}</Text>
           </View>
         )}
@@ -103,15 +104,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logoText: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
-    color: COLORS.primary,
+  logoImage: {
+    width: 36,
+    height: 36,
     marginRight: SPACING.xs,
   },
   appName: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.gray[600],
+    color: '#1428A0',
   },
   rightContainer: {
     flexDirection: 'row',

@@ -24,7 +24,9 @@
 
 export const APP_CONSTANTS = {
   BRANDING: {
-    LOGO_TEXT: '헤이영',
+  // Use an image asset for the logo instead of plain text
+  // path is relative to this file
+  LOGO_IMAGE: require('../assets/heyoung_logo.png'),
     APP_NAME: '쏠쏠한 퀘스트',
   },
   TABS: ['Home', 'Assets', 'Quests', 'Leaderboard', 'MyPage'] as const,
