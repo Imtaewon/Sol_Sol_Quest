@@ -108,11 +108,22 @@ export const HomeScreen: React.FC = () => {
   // 기부금 계산 함수
   const calculateDonationAmount = (): number => {
     if (!hasSavings || !savingsAccount?.data?.data?.[0] || !userInfo?.data?.current_tier) {
+      console.log('💝 기부금 계산 조건 미충족:', {
+        hasSavings,
+        hasSavingsData: !!savingsAccount?.data?.data?.[0],
+        currentTier: userInfo?.data?.current_tier
+      });
       return 0;
     }
 
     const monthlyAmount = savingsAccount.data.data[0].monthly_amount || 0;
     const currentTier = userInfo.data.current_tier;
+    
+    console.log('💝 기부금 계산 데이터:', {
+      monthlyAmount,
+      currentTier,
+      userInfoData: userInfo?.data
+    });
     
     // 티어별 기부율 (월 납입액 대비)
     const donationRates: Record<string, number> = {
@@ -124,7 +135,16 @@ export const HomeScreen: React.FC = () => {
     };
 
     const donationRate = donationRates[currentTier] || donationRates['BASIC'];
-    return Math.round(monthlyAmount * donationRate);
+    const calculatedAmount = Math.round(monthlyAmount * donationRate);
+    
+    console.log('💝 기부금 계산 결과:', {
+      currentTier,
+      donationRate,
+      monthlyAmount,
+      calculatedAmount
+    });
+    
+    return calculatedAmount;
   };
   
   // 학교 랭킹 API 호출 (적금 가입 여부와 관계없이 동일한 API 사용)
@@ -224,8 +244,16 @@ export const HomeScreen: React.FC = () => {
   const renderDonationCard = () => {
     const donationAmount = calculateDonationAmount();
     
+    console.log('💝 renderDonationCard 호출:', {
+      hasSavings,
+      donationAmount,
+      userInfo: userInfo?.data,
+      savingsAccount: savingsAccount?.data?.data?.[0]
+    });
+    
     // 적금이 없으면 기부금 카드 표시 안함
     if (!hasSavings || donationAmount === 0) {
+      console.log('💝 기부금 카드 표시 안함:', { hasSavings, donationAmount });
       return null;
     }
 
@@ -234,17 +262,19 @@ export const HomeScreen: React.FC = () => {
         <View style={styles.donationCard}>
           <View style={styles.donationHeader}>
             <Ionicons name="heart" size={24} color={COLORS.error} />
-            <Text style={styles.donationTitle}>기부</Text>
+            <Text style={styles.donationTitle}>사회적 기여</Text>
           </View>
           <Text style={styles.donationMessage}>
             고객님의 성장만큼, 헤이영이 기부합니다
           </Text>
-          <Text style={styles.donationAmount}>
-            예상기부금 {formatNumber(donationAmount)}원
-          </Text>
-          <Text style={styles.donationSubtext}>
-            (월납입액 기준)
-          </Text>
+                     <View style={styles.donationAmountRow}>
+             <Text style={styles.donationAmount}>
+               예상기부금 {formatNumber(donationAmount)}원
+             </Text>
+             <Text style={styles.donationSubtext}>
+               (월납입액 기준)
+             </Text>
+           </View>
         </View>
       </View>
     );
@@ -827,17 +857,21 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     lineHeight: 22,
   },
-  donationAmount: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: '700',
-    color: COLORS.error,
-    marginBottom: SPACING.xs,
-  },
-  donationSubtext: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.gray[600],
-    fontStyle: 'italic',
-  },
+     donationAmountRow: {
+     flexDirection: 'row',
+     alignItems: 'center',
+     gap: SPACING.sm,
+   },
+   donationAmount: {
+     fontSize: FONT_SIZES.xl,
+     fontWeight: '700',
+     color: COLORS.error,
+   },
+   donationSubtext: {
+     fontSize: FONT_SIZES.xs,
+     color: COLORS.gray[600],
+     fontStyle: 'italic',
+   },
   indicatorDot: {
     width: 8,
     height: 8,
