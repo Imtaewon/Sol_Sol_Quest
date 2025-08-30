@@ -41,6 +41,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import { SPACING, FONT_SIZES, BORDER_RADIUS, COLORS } from '../../utils/constants';
 import { AppHeader } from '../../components/common/AppHeader';
 import { LoadingView } from '../../components/common/LoadingView';
@@ -54,6 +55,7 @@ const { width } = Dimensions.get('window');
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 
 export const AttendanceScreen: React.FC = () => {
+  const navigation = useNavigation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [checkAnimation] = useState(new Animated.Value(1));
   

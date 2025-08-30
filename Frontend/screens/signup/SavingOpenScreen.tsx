@@ -29,6 +29,7 @@ import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
 import { formatCurrency } from '../../utils/formatters';
 import { useGetUserInfoQuery, useCreateDemandAccountMutation, useCreateSavingsAccountMutation } from '../../store/api/baseApi';
+import { useQueryClient } from '@tanstack/react-query';
 import { useDepositAccount } from '../../hooks/useUser';
 import { 
   useGetSurveyQuestionQuery,
@@ -59,6 +60,7 @@ interface SurveyState {
 
 export const SavingOpenScreen: React.FC = () => {
   const navigation = useNavigation<SavingOpenScreenNavigationProp>();
+  const queryClient = useQueryClient();
   
   // 현재 단계 (1: 적금 정보 입력, 2: 설문 조사)
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -368,12 +370,35 @@ export const SavingOpenScreen: React.FC = () => {
         [
           {
             text: '확인',
-            onPress: () => {
-              // 메인페이지로 이동 (네비게이션 스택 초기화)
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Home' }],
-              });
+            onPress: async () => {
+              try {
+                // 캐시 무효화 후 메인페이지로 이동
+                await Promise.all([
+                  queryClient.invalidateQueries({ queryKey: ['user'] }),
+                  queryClient.invalidateQueries({ queryKey: ['account'] }),
+                  queryClient.invalidateQueries({ queryKey: ['savingsAccount'] }),
+                  queryClient.invalidateQueries({ queryKey: ['depositAccount'] }),
+                  queryClient.invalidateQueries({ queryKey: ['ranks'] }),
+                  queryClient.invalidateQueries({ queryKey: ['quests'] }),
+                  queryClient.invalidateQueries({ queryKey: ['dailyQuests'] }),
+                  queryClient.invalidateQueries({ queryKey: ['growthQuests'] }),
+                  queryClient.invalidateQueries({ queryKey: ['surpriseQuests'] }),
+                  queryClient.invalidateQueries({ queryKey: ['recommendedQuests'] }),
+                ]);
+                
+                // 강제로 메인페이지로 이동
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Home' }],
+                });
+              } catch (error) {
+                console.error('캐시 무효화 중 오류:', error);
+                // 오류가 발생해도 메인페이지로 이동
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Home' }],
+                });
+              }
             },
           },
         ]

@@ -295,12 +295,36 @@ export const QuestsScreen: React.FC = () => {
          
          // 성공적으로 완료되면 모든 관련 데이터 새로고침
          console.log('🎯 퀘스트 완료 후 데이터 새로고침 시작');
+         
+         // 1. 캐시 무효화
+         await Promise.all([
+           queryClient.invalidateQueries({ queryKey: ['user'] }),
+           queryClient.invalidateQueries({ queryKey: ['account'] }),
+           queryClient.invalidateQueries({ queryKey: ['savingsAccount'] }),
+           queryClient.invalidateQueries({ queryKey: ['depositAccount'] }),
+           queryClient.invalidateQueries({ queryKey: ['ranks'] }),
+           queryClient.invalidateQueries({ queryKey: ['leaderboard'] }),
+         ]);
+         
+         // 2. 실제 데이터 새로고침
          await Promise.all([
            refetch(), // 퀘스트 목록 새로고침
            refetchGrowth(), // 성장 퀘스트 새로고침
            refetchDaily(), // 일상 퀘스트 새로고침
            refetchSurprise(), // 돌발 퀘스트 새로고침
          ]);
+         
+         // 3. 강제로 화면 새로고침 (상태 업데이트)
+         setRefreshing(true);
+         setTimeout(() => setRefreshing(false), 100);
+         
+         // 4. 성공 메시지 표시
+         Alert.alert(
+           '퀘스트 완료',
+           '경험치를 성공적으로 받았습니다!',
+           [{ text: '확인' }]
+         );
+         
          console.log('🎯 퀘스트 완료 후 데이터 새로고침 완료');
        } catch (error) {
          console.error('퀘스트 완료 실패:', error);
@@ -517,18 +541,44 @@ export const QuestsScreen: React.FC = () => {
                       console.log('📁 navigation 객체:', navigation);
                       console.log('📁 QuestUpload로 이동 시도...');
                       
-                      try {
-                        navigation.navigate('QuestUpload', {
-                          quest: {
-                            id: quest.id,
-                            title: quest.title,
-                            description: quest.description || quest.title,
-                          },
-                        });
-                        console.log('📁 QuestUpload로 이동 성공');
-                      } catch (error) {
-                        console.error('📁 QuestUpload로 이동 실패:', error);
-                      }
+                                             try {
+                         console.log('📁 QuestUpload로 이동 시도:', {
+                           questId: quest.id,
+                           questTitle: quest.title,
+                           questDescription: quest.description || quest.title,
+                         });
+                         
+                         // 네비게이션 객체 확인
+                         console.log('📁 navigation 객체 타입:', typeof navigation);
+                         console.log('📁 navigation.navigate 존재:', !!navigation.navigate);
+                         
+                         // 강제로 QuestUpload 화면으로 이동
+                         navigation.navigate('QuestUpload', {
+                           quest: {
+                             id: quest.id,
+                             title: quest.title,
+                             description: quest.description || quest.title,
+                           },
+                         });
+                         console.log('📁 QuestUpload로 이동 성공');
+                       } catch (error) {
+                         console.error('📁 QuestUpload로 이동 실패:', error);
+                         
+                         // 대체 방법: 직접 네비게이션 시도
+                         try {
+                           console.log('📁 대체 네비게이션 방법 시도');
+                           (navigation as any).navigate('QuestUpload', {
+                             quest: {
+                               id: quest.id,
+                               title: quest.title,
+                               description: quest.description || quest.title,
+                             },
+                           });
+                         } catch (secondError) {
+                           console.error('📁 대체 네비게이션도 실패:', secondError);
+                           Alert.alert('오류', '파일 제출 페이지로 이동할 수 없습니다.');
+                         }
+                       }
                     }}
                   >
                     <Ionicons name="cloud-upload-outline" size={16} color={COLORS.white} />

@@ -94,7 +94,11 @@ export const DepositMoneyScreen: React.FC = () => {
   if (!depositAccountInfo) {
     return (
       <SafeAreaView style={styles.container}>
-        <AppHeader title="입금하기" showBack />
+        <AppHeader 
+          title="입금하기" 
+          showBackButton 
+          onBackPress={() => navigation.goBack()}
+        />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={48} color={COLORS.error} />
           <Text style={styles.errorText}>상시입출금 계좌가 없습니다.</Text>
@@ -152,7 +156,7 @@ export const DepositMoneyScreen: React.FC = () => {
           [
             {
               text: '확인',
-              onPress: () => navigation.navigate('Home'),
+              onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
             },
           ]
         );
@@ -179,7 +183,11 @@ export const DepositMoneyScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <AppHeader title="입금하기" showBack />
+      <AppHeader 
+        title="입금하기" 
+        showBackButton 
+        onBackPress={() => navigation.goBack()}
+      />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>상시입출금 입금</Text>
