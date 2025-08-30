@@ -34,11 +34,9 @@ def _now_kst():
         return datetime.now(ZoneInfo("Asia/Seoul"))
     except Exception:
         return datetime.now(timezone(timedelta(hours=9)))
-
 def _unique_no(dt: datetime) -> str:
     # YYYYMMDDHHMMSS + 6자리
     return dt.strftime("%Y%m%d%H%M%S") + str(uuid.uuid4().int)[-6:]
-
 # ssafy 공통 헤더
 def _build_header(user_key: str, api_name: str) -> dict:
     now = _now_kst()
@@ -53,7 +51,6 @@ def _build_header(user_key: str, api_name: str) -> dict:
         "apiKey": apiKey,
         "userKey": user_key,
     }
-
 # 성공 여부 확인
 def _ensure_success(body: dict, *, default_fail_msg: str) -> dict:
     # Header.responseCode 가 H0000 이면 성공
@@ -70,8 +67,6 @@ def _ensure_success(body: dict, *, default_fail_msg: str) -> dict:
         raise ValueError(f"[외부API] {msg}")
     # 데이터 컨테이너(REC 우선) 반환
     return body.get("REC") or body
-
-
 def _resolve_account_model():
     # 모델은 수정하지 않으므로, 존재하는 것으로만 시도
     for name in ("DemandDepositAccount", "Account", "BankAccount"):
@@ -79,11 +74,9 @@ def _resolve_account_model():
         if m is not None:
             return m
     return None
-
 def _gen_id_26():
     # 26자 문자열 PK가 일반적이라면 이렇게 생성 (ULID/KSUID 유틸 있으면 교체)
     return uuid.uuid4().hex[:26]
-
 # ORM 모델에 계좌 정보 삽입
 def _insert_account_orm(db: Session, user_id: str, account_no: str):
     AccountModel = _resolve_account_model()
@@ -106,7 +99,6 @@ def _insert_account_orm(db: Session, user_id: str, account_no: str):
     db.add(entity)
     db.commit()
     return True
-
 # SQL로 계좌 정보 삽입
 def _insert_account_sql(db, user_id, account_no):
     ins = text("""
@@ -122,7 +114,6 @@ def _insert_account_sql(db, user_id, account_no):
     db.commit()
 
     return True
-
 # 수시입출금 계좌 생성
 async def create_demand_deposit_account(*, db: Session, user_id: str, timeout: float = 10.0) -> dict:
     # 1) user 조회 및 userKey 확보
@@ -178,8 +169,6 @@ async def create_demand_deposit_account(*, db: Session, user_id: str, timeout: f
     return {
         "account_no": account_no
     }
-
-
 # 기존: 수시입출금 계좌번호만 반환 → id와 번호를 같이 반환하도록 헬퍼 추가
 def _get_latest_dd_account(db, user_id):
     row = db.execute(text("""
@@ -193,8 +182,6 @@ def _get_latest_dd_account(db, user_id):
     rid = getattr(row, "id", None)  or (row[0] if len(row) > 0 else None)
     rno = getattr(row, "account_no", None) or (row[1] if len(row) > 1 else None)
     return {"id": rid, "account_no": rno}
-
-
 # YYYYMMDD 형식 문자열을 date 객체로 변환 (실패 시 None)
 def _parse_date_yyyymmdd(s: str | None) -> date | None:
     if not s:
@@ -204,7 +191,6 @@ def _parse_date_yyyymmdd(s: str | None) -> date | None:
         return datetime.strptime(s, "%Y%m%d").date()
     except Exception:
         return None
-
 # 구독 기간(개월 수)로 변환
 def _to_term_months(subscription_period: str | int | None) -> int:
     """
@@ -218,7 +204,6 @@ def _to_term_months(subscription_period: str | int | None) -> int:
         return max(1, ceil(days / 30))
     except Exception:
         return 1
-
 # --- 적금 계좌 생성 (영속화 포함, 퀘스트 클리어) ---
 async def create_savings_account(*, db: Session, user_id: str, deposit_balance: int, timeout: float = 10.0) -> dict:
     # 1) 사용자 및 userKey 확보
@@ -351,8 +336,6 @@ async def create_savings_account(*, db: Session, user_id: str, deposit_balance: 
 
     # 호출자에게는 기존과 동일하게 계좌번호 반환 (라우터/DTO 변경 없음)
     return {"account_no": savings_no, "raw": body}
-
-
 # 학교 리더보드 보장
 def _ensure_school_lb(db: Session, school_id: str) -> SchoolLeaderboard:
     """
@@ -373,13 +356,11 @@ def _ensure_school_lb(db: Session, school_id: str) -> SchoolLeaderboard:
         db.add(lb)
         db.flush()
     return lb
-
 # 평균 경험치 재계산
 def _recalc_avg(lb: SchoolLeaderboard) -> None:
     s = int(lb.savings_students or 0)
     t = int(lb.total_exp or 0)
     lb.avg_exp = (Decimal(t) / Decimal(s)) if s > 0 else Decimal("0")
-
 # 수시입출금 계좌 입금
 async def deposit_to_demand_deposit_with_ssafy(
     db: Session,

@@ -366,11 +366,9 @@ class QuestRecommendationSystem:
                     })
             
             db.commit()
-            print(f"사용자 {user_id}에 대해 {len(quest_ids)}개의 퀘스트 추천을 DB에 저장했습니다.")
             
         except Exception as e:
             db.rollback()
-            print(f"추천 저장 중 오류 발생: {e}")
             raise
 
     def recommend_quests_with_full_details(self, db: Session, user_id: str) -> List[Dict]:
@@ -383,7 +381,6 @@ class QuestRecommendationSystem:
             return self._get_quests_full_details(db, quest_ids)
             
         except Exception as e:
-            print(f"추천 시스템 오류: {e}")
             # 오류 발생 시 기본 추천
             default_ids = self._get_default_recommendations(db)
             return self._get_quests_full_details(db, default_ids)
@@ -435,8 +432,7 @@ class QuestRecommendationSystem:
             # 충분한 데이터가 있는지 종합적으로 체크
             is_data_sufficient, data_stats = self._check_data_sufficiency(db)
             
-            # 디버깅을 위한 로그 (원하면 주석 처리 가능)
-            print(f"하이브리드 추천 데이터 현황: {data_stats}")
+
             
             if is_data_sufficient:  # 모든 조건 충족 시
                 # 하이브리드 추천 사용 (CF + CBF)
@@ -447,7 +443,6 @@ class QuestRecommendationSystem:
                     self._save_recommendations_to_db(db, user_id, quest_ids[:3])
                     return quest_ids[:3]
            
-            
             # 1. 사용자 정보 조회 (Cold Start 추천)
             user_info = self.get_user_info(db, user_id)
             
@@ -481,7 +476,6 @@ class QuestRecommendationSystem:
             return quest_ids
             
         except Exception as e:
-            print(f"추천 시스템 오류: {e}")
             # 오류 발생 시 기본 추천
             default_ids = self._get_default_recommendations(db)
             # 오류가 발생해도 기본 추천은 DB에 저장 시도
@@ -615,7 +609,6 @@ class QuestRecommendationSystem:
             return self._apply_diversity(db, [qid for qid, _ in sorted_quests[:5]])[:3]
             
         except Exception as e:
-            print(f"하이브리드 추천 오류: {e}")
             # 오류 발생시 콜드 스타트 추천으로 폴백
             return []
     
