@@ -115,6 +115,7 @@ async def get_recommended_quests_with_details(
     
     - 추천된 퀘스트의 상세 정보와 추천 점수를 함께 반환합니다.
     - quest_recommendations 테이블에 추천 기록을 저장합니다.
+    - 프로덕션 환경에서 사용 예정인 API입니다.
     """
     try:
         # current_user 객체에서 user_id 추출
@@ -161,38 +162,39 @@ async def get_recommended_quests_with_details(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"추천 시스템 오류: {str(e)}")
 
-@recommendation_router.get("/user/preferences")
-async def get_user_preferences(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    사용자의 선호도 분석 결과 조회
-    
-    - 디버깅 및 분석 목적으로 사용자의 카테고리별 선호도 점수를 반환합니다.
-    """
-    try:
-        # current_user 객체에서 user_id 추출
-        user_id = current_user.id
-        
-        recommendation_system = QuestRecommendationSystem()
-        user_info = recommendation_system.get_user_info(db, user_id)
-        survey_answers = recommendation_system.get_survey_answers(db, user_id)
-        
-        if not survey_answers:
-            raise HTTPException(status_code=404, detail="설문조사 답변을 찾을 수 없습니다.")
-        
-        category_scores = recommendation_system.analyze_user_preferences(user_info, survey_answers)
-        
-        return {
-            "user_id": user_id,
-            "user_info": user_info,
-            "survey_answers_count": len(survey_answers),
-            "category_scores": category_scores,
-            "top_categories": sorted(category_scores.items(), key=lambda x: x[1], reverse=True)[:3]
-        }
-    
-    except Exception as e:
-        if "not found" in str(e).lower() or "설문조사" in str(e):
-            raise HTTPException(status_code=404, detail="선호도 분석 결과를 찾을 수 없습니다.")
-        raise HTTPException(status_code=500, detail=f"선호도 분석 오류: {str(e)}")
+# 프로덕션 환경에서는 디버깅용 API 비활성화
+# @recommendation_router.get("/user/preferences")
+# async def get_user_preferences(
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(get_current_user)
+# ):
+#     """
+#     사용자의 선호도 분석 결과 조회
+#     
+#     - 디버깅 및 분석 목적으로 사용자의 카테고리별 선호도 점수를 반환합니다.
+#     """
+#     try:
+#         # current_user 객체에서 user_id 추출
+#         user_id = current_user.id
+#         
+#         recommendation_system = QuestRecommendationSystem()
+#         user_info = recommendation_system.get_user_info(db, user_id)
+#         survey_answers = recommendation_system.get_survey_answers(db, user_id)
+#         
+#         if not survey_answers:
+#             raise HTTPException(status_code=404, detail="설문조사 답변을 찾을 수 없습니다.")
+#         
+#         category_scores = recommendation_system.analyze_user_preferences(user_info, survey_answers)
+#         
+#         return {
+#             "user_id": user_id,
+#             "user_info": user_info,
+#             "survey_answers_count": len(survey_answers),
+#             "category_scores": category_scores,
+#             "top_categories": sorted(category_scores.items(), key=lambda x: x[1], reverse=True)[:3]
+#         }
+#     
+#     except Exception as e:
+#         if "not found" in str(e).lower() or "설문조사" in str(e):
+#             raise HTTPException(status_code=404, detail="선호도 분석 결과를 찾을 수 없습니다.")
+#         raise HTTPException(status_code=500, detail=f"선호도 분석 오류: {str(e)}")
