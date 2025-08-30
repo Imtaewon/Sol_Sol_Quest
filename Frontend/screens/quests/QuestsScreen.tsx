@@ -447,7 +447,7 @@ export const QuestsScreen: React.FC = () => {
               {quest.verify_method === 'LINK' && quest.link_url && (
                 <TouchableOpacity
                   style={[styles.startButton, styles.linkButton]}
-                  onPress={() => {
+                  onPress={async () => {
                     console.log('🔗 링크 열기 버튼 클릭됨');
                     console.log('🔗 퀘스트 정보:', {
                       id: quest.id,
@@ -457,11 +457,17 @@ export const QuestsScreen: React.FC = () => {
                       hasSavings: hasSavings
                     });
                     
-                    // ✅ 사용자 제스처 내에서 즉시 링크 열기
-                    console.log('🔗 사용자 제스처 내에서 즉시 링크 열기 시작');
                     try {
+                      // 1) 퀘스트 완료 API 호출 (경험치 수령)
+                      console.log('🎯 링크 퀘스트 완료 API 호출 시작');
+                      await handleClaimQuest(quest);
+                      console.log('🎯 링크 퀘스트 완료 API 호출 완료');
+                      
+                      // 2) 링크 열기
+                      console.log('🔗 링크 열기 시작');
                       openExternalLink(quest.link_url);
                       console.log('🔗 링크 열기 완료');
+                      
                     } catch (error) {
                       console.error('🔗 링크 열기 중 에러:', error);
                       Alert.alert('오류', '링크를 여는 중 오류가 발생했습니다.');
