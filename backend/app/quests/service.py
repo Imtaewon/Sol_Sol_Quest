@@ -173,3 +173,49 @@ def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
         db.rollback()
         return {"success": False, "message": str(e)}
 
+
+# 업로드 인증 퀘스트 완료처리
+def quest_submitted(db: Session, user_id: str, quest_id: str, proof_url: str) -> dict:
+    """
+    업로드 인증 퀘스트: 인증 제출 → 상태 'SUBMITTED'로 변경
+    - period_scope/key 고정(ANY, '-')
+    - 중복 제출 고려 X (데모용)
+    """
+    try:
+        quest_attempts = db.query(QuestAttempt).filter(QuestAttempt.quest_id == quest_id, QuestAttempt.user_id == user_id).first()
+        if not quest_attempts:
+            raise ValueError("존재하지 않거나 비활성화된 퀘스트입니다.")
+
+        # 만약 quest user_status == 'APPROVED'라면
+        if quest_attempts.status == 'APPROVED':
+            raise ValueError("이미 완료된 퀘스트입니다.")
+
+        now = _now_kst()
+        attempt = QuestAttempt(
+            id=_gen_id(),
+            quest_id=quest_id,
+            user_id=user_id,
+            status=QuestAttemptStatusEnum.SUBMITTED,   # 업로드 인증 제출 처리
+            progress_count=quest_attempts.progress_count or 1,
+            target_count=quest_attempts.target_count or 1,
+            proof_url=proof_url,
+            period_scope=PeriodScopeEnum.ANY,         # 시현 간소화
+            period_key="-",
+            started_at=now,
+            submitted_at=now,
+            approved_at=None,
+        )
+        db.add(attempt)
+        db.flush()  # attempt.id 확보
+
+        return {
+            "success": True,
+            "data": {
+                "attempt_id": attempt.id,
+                "attempt_status": attempt.status,
+            },
+        }
+    except (SQLAlchemyError, ValueError) as e:
+        db.rollback()
+        return {"success": False, "message": str(e)}
+

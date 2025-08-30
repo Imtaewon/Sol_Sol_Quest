@@ -7,7 +7,7 @@ from app.database import get_db
 from app.auth.deps import get_current_user
 from app.models import Quest, QuestAttempt, QuestAttemptStatusEnum
 from .schemas import QuestListItem
-from .service import simple_finish_quest
+from .service import simple_finish_quest, quest_submitted
 
 router = APIRouter(prefix="/quests", tags=["Quests"])
 
@@ -121,6 +121,20 @@ def complete_simple_quest(
     current_user=Depends(get_current_user),
 ):
     result = simple_finish_quest(db=db, user_id=current_user.id, quest_id=quest_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.get("message", "처리 실패"))
+    return result
+
+
+# 업로드 인증 퀘스트 완료처리
+@router.post("/{quest_id}/upload", summary="업로드 인증 퀘스트 완료처리")
+def complete_upload_quest(
+    quest_id: str,
+    proof_url: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = quest_submitted(db=db, user_id=current_user.id, quest_id=quest_id, proof_url=proof_url)
     if not result.get("success"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.get("message", "처리 실패"))
     return result
