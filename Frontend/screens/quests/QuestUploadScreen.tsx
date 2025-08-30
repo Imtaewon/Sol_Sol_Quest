@@ -52,6 +52,13 @@ export const QuestUploadScreen: React.FC = () => {
   console.log('📁 QuestUploadScreen route params:', route.params);
   console.log('📁 QuestUploadScreen quest:', quest);
   console.log('📁 QuestUploadScreen navigation 객체:', navigation);
+  
+  // React Navigation v7 호환성을 위한 추가 로깅
+  console.log('📁 QuestUploadScreen 네비게이션 상태:', {
+    canGoBack: navigation.canGoBack(),
+    getState: navigation.getState(),
+    isFocused: navigation.isFocused(),
+  });
 
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);

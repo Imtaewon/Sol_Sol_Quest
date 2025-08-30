@@ -552,40 +552,72 @@ export const QuestsScreen: React.FC = () => {
                        console.log('📁 navigation 객체 타입:', typeof navigation);
                        console.log('📁 navigation.navigate 존재:', !!navigation.navigate);
                        
-                                               // React Navigation v7 호환성을 위한 네비게이션 처리
+                                                                       // React Native Web 호환성을 위한 네비게이션 처리
+                        console.log('📁 React Native Web 환경에서 네비게이션 시도');
+                        
+                        // 1. 웹 환경에서의 네비게이션 상태 확인
+                        console.log('📁 웹 네비게이션 상태:', {
+                          canGoBack: navigation.canGoBack(),
+                          getState: navigation.getState(),
+                          isFocused: navigation.isFocused(),
+                        });
+                        
+                        // 2. 웹 환경에서 안정적인 네비게이션 방법 사용
                         try {
-                          // 1. 먼저 네비게이션 객체 상태 확인
-                          console.log('📁 네비게이션 상태 확인:', {
-                            canGoBack: navigation.canGoBack(),
-                            getState: navigation.getState(),
+                          // 웹에서는 reset 방식이 더 안정적
+                          console.log('📁 웹 환경에서 reset 방식으로 이동 시도');
+                          navigation.reset({
+                            index: 1,
+                            routes: [
+                              { name: 'Home' },
+                              { 
+                                name: 'QuestUpload',
+                                params: {
+                                  quest: {
+                                    id: quest.id,
+                                    title: quest.title,
+                                    description: quest.description || quest.title,
+                                  },
+                                }
+                              }
+                            ],
                           });
+                          console.log('📁 웹 환경에서 QuestUpload로 reset 이동 성공');
                           
-                          // 2. 강제로 QuestUpload 화면으로 이동 (v7 호환)
-                          navigation.navigate('QuestUpload', {
-                            quest: {
-                              id: quest.id,
-                              title: quest.title,
-                              description: quest.description || quest.title,
-                            },
-                          });
+                        } catch (resetError) {
+                          console.error('📁 reset 네비게이션 실패:', resetError);
                           
-                          // 3. 네비게이션 완료 확인
-                          console.log('📁 QuestUpload로 이동 성공');
-                        } catch (navError) {
-                          console.error('📁 네비게이션 에러:', navError);
-                          // 대안: push 방식으로 시도
+                          // 대안 1: navigate 방식 시도
                           try {
-                            navigation.push('QuestUpload', {
+                            console.log('📁 navigate 방식으로 재시도');
+                            navigation.navigate('QuestUpload', {
                               quest: {
                                 id: quest.id,
                                 title: quest.title,
                                 description: quest.description || quest.title,
                               },
                             });
-                            console.log('📁 QuestUpload로 push 이동 성공');
-                          } catch (pushError) {
-                            console.error('📁 push 네비게이션도 실패:', pushError);
-                            Alert.alert('오류', '화면 이동에 실패했습니다.');
+                            console.log('📁 QuestUpload로 navigate 이동 성공');
+                            
+                          } catch (navigateError) {
+                            console.error('📁 navigate 네비게이션도 실패:', navigateError);
+                            
+                            // 대안 2: push 방식 시도
+                            try {
+                              console.log('📁 push 방식으로 재시도');
+                              navigation.push('QuestUpload', {
+                                quest: {
+                                  id: quest.id,
+                                  title: quest.title,
+                                  description: quest.description || quest.title,
+                                },
+                              });
+                              console.log('📁 QuestUpload로 push 이동 성공');
+                              
+                            } catch (pushError) {
+                              console.error('📁 모든 네비게이션 방법 실패:', pushError);
+                              Alert.alert('오류', '화면 이동에 실패했습니다. 페이지를 새로고침해주세요.');
+                            }
                           }
                         }
                      }}
