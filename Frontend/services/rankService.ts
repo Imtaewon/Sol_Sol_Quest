@@ -71,25 +71,22 @@ export const rankService = {
       
       // 응답 구조 분석
       console.log('🌐 rankService.getMySchoolRank 응답 구조 분석:', {
-        hasData: !!response.data.data,
-        hasMyUniversity: !!response.data.data?.my_university,
-        hasTop10Overall: !!response.data.data?.top10_overall,
-        hasTop10Avg: !!response.data.data?.top10_avg,
-        responseKeys: Object.keys(response.data),
-        dataKeys: response.data.data ? Object.keys(response.data.data) : []
+        hasMyUniversity: !!response.data.my_university,
+        hasTop10Overall: !!response.data.top10_overall,
+        hasTop10Avg: !!response.data.top10_avg,
+        responseKeys: Object.keys(response.data)
       });
       
       // 백엔드 응답 데이터 상세 로그
       console.log('🌐 rankService.getMySchoolRank 백엔드 응답 상세:', {
-        success: response.data.success,
-        data: response.data.data,
-        my_university: response.data.data?.my_university,
-        top10_overall: response.data.data?.top10_overall?.length || 0,
-        top10_avg: response.data.data?.top10_avg?.length || 0
+        my_university: response.data.my_university,
+        top10_overall: response.data.top10_overall?.length || 0,
+        top10_avg: response.data.top10_avg?.length || 0
       });
       
       // my_university 데이터를 MySchoolRank 형식으로 변환
-      const myUniversity = response.data.data?.my_university;
+      // 백엔드에서 UniversityLeaderboardResponse를 직접 반환하므로 response.data에서 직접 접근
+      const myUniversity = response.data.my_university;
       console.log('🌐 rankService.getMySchoolRank my_university 원본 데이터:', myUniversity);
       
       if (!myUniversity) {
@@ -134,7 +131,8 @@ export const rankService = {
       console.log('🌐 rankService.getMySchoolRankWithUser HTTP 요청 완료:', response.status);
       
       // my_university 데이터를 MySchoolRankWithUser 형식으로 변환
-      const myUniversity = response.data.data?.my_university;
+      // 백엔드에서 UniversityLeaderboardResponse를 직접 반환하므로 response.data에서 직접 접근
+      const myUniversity = response.data.my_university;
       if (!myUniversity) {
         return {
           success: true,
@@ -174,7 +172,7 @@ export const rankService = {
       console.log('🌐 rankService.getTopSchoolsByTotal HTTP 요청 완료:', response.status);
       
       // top10_overall 데이터를 SchoolRank[] 형식으로 변환
-      const topSchools = response.data.data?.top10_overall || [];
+      const topSchools = response.data.top10_overall || [];
       const result: SchoolRank[] = topSchools.map(school => ({
         rank: school.rank_overall || 0,
         school: school.university_name,
@@ -199,7 +197,7 @@ export const rankService = {
       console.log('🌐 rankService.getTopSchoolsByAverage HTTP 요청 완료:', response.status);
       
       // top10_avg 데이터를 SchoolRank[] 형식으로 변환
-      const topSchools = response.data.data?.top10_avg || [];
+      const topSchools = response.data.top10_avg || [];
       const result: SchoolRank[] = topSchools.map(school => ({
         rank: school.rank_avg || 0,
         school: school.university_name,
