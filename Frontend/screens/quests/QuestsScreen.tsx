@@ -111,7 +111,7 @@ export const QuestsScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   /**
-   * 외부 링크 열기 함수 (즉시-오픈, 나중-이동 패턴)
+   * 외부 링크 열기 함수
    * React Native Web 환경에서 새 창/탭으로 링크를 엽니다
    */
   const openExternalLink = async (url: string) => {
@@ -121,21 +121,16 @@ export const QuestsScreen: React.FC = () => {
     
     try {
       if (Platform.OS === 'web') {
-        console.log('🔗 웹 환경에서 즉시-오픈, 나중-이동 패턴 적용');
+        console.log('🔗 웹 환경에서 직접 window.open 사용');
         console.log('🔗 window 객체 존재 여부:', typeof window !== 'undefined');
         console.log('🔗 window.open 함수 존재 여부:', typeof window.open === 'function');
         
-        // 1) 즉시 빈 창을 연다 (사용자 제스처 내에서)
-        const newWindow = window.open('', '_blank', 'noopener,noreferrer');
-        console.log('🔗 빈 창 열기 완료, 새 창 객체:', newWindow);
+        // 직접 URL로 새 창 열기
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+        console.log('🔗 window.open 호출 완료, 새 창 객체:', newWindow);
         
         if (newWindow) {
-          console.log('🔗 빈 창이 성공적으로 열렸습니다');
-          
-          // 2) 준비된 URL로 이동
-          console.log('🔗 창으로 URL 이동 시작:', url);
-          newWindow.location.href = url;
-          console.log('🔗 URL 이동 완료');
+          console.log('🔗 새 창이 성공적으로 열렸습니다');
         } else {
           console.log('🔗 새 창 열기 실패 - 팝업 차단 가능성');
           Alert.alert('팝업 차단됨', '브라우저에서 팝업을 차단했습니다. 팝업 차단을 해제해주세요.');
