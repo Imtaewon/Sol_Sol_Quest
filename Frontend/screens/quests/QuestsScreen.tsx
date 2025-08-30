@@ -115,21 +115,37 @@ export const QuestsScreen: React.FC = () => {
    * React Native Web 환경에서 새 창/탭으로 링크를 엽니다
    */
   const openExternalLink = async (url: string) => {
+    console.log('🔗 openExternalLink 함수 호출됨');
+    console.log('🔗 받은 URL:', url);
+    console.log('🔗 Platform.OS:', Platform.OS);
+    
     try {
       if (Platform.OS === 'web') {
+        console.log('🔗 웹 환경에서 window.open 호출');
         // 웹 환경에서는 window.open을 사용하여 새 창/탭으로 열기
         window.open(url, '_blank', 'noopener,noreferrer');
+        console.log('🔗 window.open 호출 완료');
       } else {
+        console.log('🔗 모바일 환경에서 Linking API 사용');
         // 모바일 환경에서는 Linking API 사용
+        console.log('🔗 Linking.canOpenURL 호출 시작');
         const supported = await Linking.canOpenURL(url);
+        console.log('🔗 Linking.canOpenURL 결과:', supported);
+        
         if (supported) {
+          console.log('🔗 Linking.openURL 호출 시작');
           await Linking.openURL(url);
+          console.log('🔗 Linking.openURL 호출 완료');
         } else {
+          console.log('🔗 링크를 열 수 없음 - Alert 표시');
           Alert.alert('오류', '이 링크를 열 수 없습니다.');
         }
       }
+      console.log('🔗 openExternalLink 함수 성공적으로 완료');
     } catch (error) {
-      console.error('링크 열기 실패:', error);
+      console.error('🔗 openExternalLink 함수에서 에러 발생:', error);
+      console.error('🔗 에러 타입:', typeof error);
+      console.error('🔗 에러 메시지:', error instanceof Error ? error.message : 'Unknown error');
       Alert.alert('오류', '링크를 여는 중 오류가 발생했습니다.');
     }
   };
@@ -354,6 +370,15 @@ export const QuestsScreen: React.FC = () => {
       isCompleted
     });
 
+    // 링크 열기 버튼 렌더링 조건 로그
+    console.log('🔗 링크 열기 버튼 렌더링 조건 확인:', {
+      verify_method: quest.verify_method,
+      link_url: quest.link_url,
+      hasLinkUrl: !!quest.link_url,
+      isLinkQuest: quest.verify_method === 'LINK',
+      shouldRenderLinkButton: quest.verify_method === 'LINK' && quest.link_url
+    });
+
     return (
       <TouchableOpacity 
         style={styles.questCard}
@@ -413,6 +438,15 @@ export const QuestsScreen: React.FC = () => {
                <TouchableOpacity
                  style={[styles.startButton, styles.linkButton]}
                  onPress={() => {
+                   console.log('🔗 링크 열기 버튼 클릭됨');
+                   console.log('🔗 퀘스트 정보:', {
+                     id: quest.id,
+                     title: quest.title,
+                     verify_method: quest.verify_method,
+                     link_url: quest.link_url,
+                     hasSavings: hasSavings
+                   });
+                   
                    Alert.alert(
                      '링크 열기',
                      '외부 링크로 이동하시겠습니까?',
@@ -421,7 +455,8 @@ export const QuestsScreen: React.FC = () => {
                        { 
                          text: '열기', 
                          onPress: () => {
-                           console.log('🔗 링크 열기:', quest.link_url);
+                           console.log('🔗 Alert에서 "열기" 버튼 클릭됨');
+                           console.log('🔗 openExternalLink 함수 호출 전:', quest.link_url);
                            openExternalLink(quest.link_url);
                          }
                        }
