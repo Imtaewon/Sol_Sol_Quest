@@ -43,6 +43,7 @@ interface RouteParams {
 
 export const QuestUploadScreen: React.FC = () => {
   console.log('📁 QuestUploadScreen 렌더링 시작');
+  console.log('📁 QuestUploadScreen 컴포넌트가 실제로 마운트됨');
   
   const navigation = useNavigation<QuestUploadScreenNavigationProp>();
   const route = useRoute();
@@ -50,6 +51,7 @@ export const QuestUploadScreen: React.FC = () => {
   
   console.log('📁 QuestUploadScreen route params:', route.params);
   console.log('📁 QuestUploadScreen quest:', quest);
+  console.log('📁 QuestUploadScreen navigation 객체:', navigation);
 
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -211,7 +213,31 @@ export const QuestUploadScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <AppHeader title="파일 제출" showBackButton />
+      <AppHeader 
+        title="파일 제출" 
+        showBackButton 
+        onBackPress={() => {
+          console.log('📁 뒤로가기 버튼 클릭됨');
+          try {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              // 스택에 이전 화면이 없으면 홈으로 이동
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              });
+            }
+          } catch (error) {
+            console.error('📁 뒤로가기 에러:', error);
+            // 에러 발생 시 홈으로 강제 이동
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            });
+          }
+        }}
+      />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* 퀘스트 정보 */}

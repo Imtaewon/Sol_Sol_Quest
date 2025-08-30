@@ -140,29 +140,31 @@ export const DepositMoneyScreen: React.FC = () => {
 
       setIsDepositing(true);
 
-      // 입금 API 호출
-      console.log('🔍 depositMoneyMutation.mutateAsync 호출 시작');
-      const result = await depositMoneyMutation.mutateAsync({
-        account_no: depositAccountInfo.account_no,
-        user_id: userInfo.data.user_id,
-        amount: data.amount,
-      });
-      console.log('✅ mutateAsync 완료:', result);
+             // 입금 API 호출
+       console.log('🔍 depositMoneyMutation.mutateAsync 호출 시작');
+       const result = await depositMoneyMutation.mutateAsync({
+         account_no: depositAccountInfo.account_no,
+         user_id: userInfo.data.user_id,
+         amount: data.amount,
+       });
+       console.log('✅ mutateAsync 완료:', result);
 
-      if (result.success) {
-        Alert.alert(
-          '입금 완료',
-          '입금을 완료하였습니다.',
-          [
-            {
-              text: '확인',
-              onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
-            },
-          ]
-        );
-      } else {
-        throw new Error('입금 실패');
-      }
+       // API 응답 구조 확인 및 처리
+       console.log('🔍 API 응답 구조:', result);
+       
+       // result 자체가 success 필드를 가지고 있는지 확인
+       if (result && result.success === true) {
+         console.log('✅ 입금 성공, 메인페이지로 이동 시작');
+         // 즉시 메인페이지로 이동 (Alert 없이)
+         navigation.reset({ 
+           index: 0, 
+           routes: [{ name: 'Home' }] 
+         });
+         console.log('✅ 메인페이지로 이동 완료');
+       } else {
+         console.log('❌ 입금 실패 - 응답:', result);
+         throw new Error('입금 실패');
+       }
     } catch (error) {
       Alert.alert(
         '입금 실패',
@@ -186,7 +188,27 @@ export const DepositMoneyScreen: React.FC = () => {
       <AppHeader 
         title="입금하기" 
         showBackButton 
-        onBackPress={() => navigation.goBack()}
+        onBackPress={() => {
+          console.log('💰 뒤로가기 버튼 클릭됨');
+          try {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              // 스택에 이전 화면이 없으면 홈으로 이동
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Home' }],
+              });
+            }
+          } catch (error) {
+            console.error('💰 뒤로가기 에러:', error);
+            // 에러 발생 시 홈으로 강제 이동
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Home' }],
+            });
+          }
+        }}
       />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

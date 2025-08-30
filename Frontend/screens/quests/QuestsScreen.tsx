@@ -529,57 +529,66 @@ export const QuestsScreen: React.FC = () => {
                 {quest.verify_method === 'UPLOAD' && !isCompleted && !isSubmitted && (
                   <TouchableOpacity
                     style={[styles.startButton, styles.uploadButton]}
-                    onPress={() => {
-                      console.log('📁 파일 제출 버튼 클릭됨');
-                      console.log('📁 퀘스트 정보:', {
-                        id: quest.id,
-                        title: quest.title,
-                        verify_method: quest.verify_method,
-                        hasSavings: hasSavings
-                      });
-                      
-                      console.log('📁 navigation 객체:', navigation);
-                      console.log('📁 QuestUpload로 이동 시도...');
-                      
-                                             try {
-                         console.log('📁 QuestUpload로 이동 시도:', {
-                           questId: quest.id,
-                           questTitle: quest.title,
-                           questDescription: quest.description || quest.title,
-                         });
-                         
-                         // 네비게이션 객체 확인
-                         console.log('📁 navigation 객체 타입:', typeof navigation);
-                         console.log('📁 navigation.navigate 존재:', !!navigation.navigate);
-                         
-                         // 강제로 QuestUpload 화면으로 이동
-                         navigation.navigate('QuestUpload', {
-                           quest: {
-                             id: quest.id,
-                             title: quest.title,
-                             description: quest.description || quest.title,
-                           },
-                         });
-                         console.log('📁 QuestUpload로 이동 성공');
-                       } catch (error) {
-                         console.error('📁 QuestUpload로 이동 실패:', error);
-                         
-                         // 대체 방법: 직접 네비게이션 시도
-                         try {
-                           console.log('📁 대체 네비게이션 방법 시도');
-                           (navigation as any).navigate('QuestUpload', {
-                             quest: {
-                               id: quest.id,
-                               title: quest.title,
-                               description: quest.description || quest.title,
-                             },
-                           });
-                         } catch (secondError) {
-                           console.error('📁 대체 네비게이션도 실패:', secondError);
-                           Alert.alert('오류', '파일 제출 페이지로 이동할 수 없습니다.');
-                         }
-                       }
-                    }}
+                                         onPress={() => {
+                       console.log('📁 파일 제출 버튼 클릭됨');
+                       console.log('📁 퀘스트 정보:', {
+                         id: quest.id,
+                         title: quest.title,
+                         verify_method: quest.verify_method,
+                         hasSavings: hasSavings
+                       });
+                       
+                       console.log('📁 navigation 객체:', navigation);
+                       console.log('📁 QuestUpload로 이동 시도...');
+                       
+                       // 즉시 네비게이션 시도 (try-catch 없이)
+                       console.log('📁 QuestUpload로 이동 시도:', {
+                         questId: quest.id,
+                         questTitle: quest.title,
+                         questDescription: quest.description || quest.title,
+                       });
+                       
+                       // 네비게이션 객체 확인
+                       console.log('📁 navigation 객체 타입:', typeof navigation);
+                       console.log('📁 navigation.navigate 존재:', !!navigation.navigate);
+                       
+                                               // React Navigation v7 호환성을 위한 네비게이션 처리
+                        try {
+                          // 1. 먼저 네비게이션 객체 상태 확인
+                          console.log('📁 네비게이션 상태 확인:', {
+                            canGoBack: navigation.canGoBack(),
+                            getState: navigation.getState(),
+                          });
+                          
+                          // 2. 강제로 QuestUpload 화면으로 이동 (v7 호환)
+                          navigation.navigate('QuestUpload', {
+                            quest: {
+                              id: quest.id,
+                              title: quest.title,
+                              description: quest.description || quest.title,
+                            },
+                          });
+                          
+                          // 3. 네비게이션 완료 확인
+                          console.log('📁 QuestUpload로 이동 성공');
+                        } catch (navError) {
+                          console.error('📁 네비게이션 에러:', navError);
+                          // 대안: push 방식으로 시도
+                          try {
+                            navigation.push('QuestUpload', {
+                              quest: {
+                                id: quest.id,
+                                title: quest.title,
+                                description: quest.description || quest.title,
+                              },
+                            });
+                            console.log('📁 QuestUpload로 push 이동 성공');
+                          } catch (pushError) {
+                            console.error('📁 push 네비게이션도 실패:', pushError);
+                            Alert.alert('오류', '화면 이동에 실패했습니다.');
+                          }
+                        }
+                     }}
                   >
                     <Ionicons name="cloud-upload-outline" size={16} color={COLORS.white} />
                     <Text style={styles.startButtonText}>파일 제출</Text>
