@@ -137,10 +137,6 @@ async def create_demand_deposit_account(*, db: Session, user_id: str, timeout: f
         try:
             resp.raise_for_status()
         except httpx.HTTPStatusError:
-            # 디버깅 도움
-            print("== DEMAND_DEPOSIT_03 FAILED ==")
-            print("status:", resp.status_code)
-            print(resp.text)
             raise
         body = resp.json()
 
@@ -246,9 +242,6 @@ async def create_savings_account(*, db: Session, user_id: str, deposit_balance: 
         try:
             resp.raise_for_status()
         except httpx.HTTPStatusError:
-            print("== SAVINGS_03 FAILED ==")
-            print("status:", resp.status_code)
-            print(resp.text)
             raise
         body = resp.json()
 
