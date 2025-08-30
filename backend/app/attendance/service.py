@@ -66,6 +66,11 @@ def check_in_and_clear_daily_quest(db: Session, user_id: str) -> int:
             user_id=user_id,
             quest_id=QUEST_ID_DAILY,
             status="CLEAR",
+            progress_count=1,
+            target_count=1,
+            period_scope="DAILY",
+            period_key=today.strftime("%Y-%m-%d"),  # 오늘 날짜를 키로 사용
+            started_at=_now_kst(),  # 현재 시간
         )
         db.add(qa)
 

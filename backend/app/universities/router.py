@@ -45,7 +45,7 @@ def university_leaderboard(
             it.avg_exp = float(it.avg_exp)
         return items
 
-    my_uni, top_overall, top_avg = build_leaderboards(db, user_school_code, limit=limit)
+    my_uni, top_overall, top_avg = build_leaderboards(db, user_school_code, current_user.id if current_user else None, limit=limit)
     if my_uni: my_uni.avg_exp = float(my_uni.avg_exp)
     top_overall = _to_float_avg(top_overall)
     top_avg = _to_float_avg(top_avg)

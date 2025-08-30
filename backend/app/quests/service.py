@@ -8,7 +8,7 @@ import uuid
 
 
 from app.models import (
-    User, UserStat, Tier, 
+    User, UserStats, Tier, 
     Quest, QuestAttempt, QuestAttemptStatusEnum, 
     SchoolLeaderboard, TierNameEnum, PeriodScopeEnum
 )
@@ -74,7 +74,7 @@ def complete_quest(db: Session, user_id: str, quest_id: str):
         reward_exp = int(quest.reward_exp or 0)
 
         # 2) 유저 스탯
-        user_stat = db.query(UserStat).filter(UserStat.user_id == user_id).first()
+        user_stat = db.query(UserStats).filter(UserStats.user_id == user_id).first()
         if not user_stat:
             raise ValueError("유저 스탯이 존재하지 않습니다.")
 
@@ -121,6 +121,55 @@ def complete_quest(db: Session, user_id: str, quest_id: str):
         return {"success": False, "message": str(e)}
 
 
+# 퀘스트 완료 (시도 기록 자동 생성)
+def complete_quest_with_auto_attempt(db: Session, user_id: str, quest_id: str) -> dict:
+    """
+    퀘스트 완료: 시도 기록이 없으면 자동 생성 후 완료 처리
+    - 프론트엔드에서 CLEAR 상태로 표시된 퀘스트 완료용
+    """
+    try:
+        # 1. 기존 시도 기록 확인
+        quest_attempts = db.query(QuestAttempt).filter(
+            QuestAttempt.quest_id == quest_id, 
+            QuestAttempt.user_id == user_id
+        ).first()
+        
+        # 2. 시도 기록이 없으면 자동 생성
+        if not quest_attempts:
+            # 퀘스트 정보 조회
+            quest = db.query(Quest).filter(Quest.id == quest_id).first()
+            if not quest:
+                raise ValueError("존재하지 않는 퀘스트입니다.")
+            
+            # 새로운 시도 기록 생성
+            now = _now_kst()
+            quest_attempts = QuestAttempt(
+                id=_gen_id(),
+                quest_id=quest_id,
+                user_id=user_id,
+                status=QuestAttemptStatusEnum.IN_PROGRESS,
+                progress_count=0,
+                target_count=quest.target_count,
+                proof_url=None,
+                period_scope=PeriodScopeEnum.ANY,
+                period_key="-",
+                started_at=now,
+                submitted_at=None,
+                approved_at=None,
+            )
+            db.add(quest_attempts)
+            db.flush()
+        
+        # 3. 이미 완료된 퀘스트인지 확인
+        if quest_attempts.status == QuestAttemptStatusEnum.APPROVED:
+            raise ValueError("이미 완료된 퀘스트입니다.")
+        
+        # 4. 기존 완료 로직 실행
+        return simple_finish_quest(db, user_id, quest_id)
+        
+    except (SQLAlchemyError, ValueError) as e:
+        db.rollback()
+        return {"success": False, "message": str(e)}
 # (시현용) 단일 퀘스트 즉시 완료
 def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
     """
@@ -131,12 +180,12 @@ def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
 
 
     try:
-        quest = db.query(Quest).filter(Quest.id == quest_id, Quest.active == True).first()
-        if not quest:
+        quest_attempts = db.query(QuestAttempt).filter(QuestAttempt.quest_id == quest_id, QuestAttempt.user_id == user_id).first()
+        if not quest_attempts:
             raise ValueError("존재하지 않거나 비활성화된 퀘스트입니다.")
 
-        # 만약 quest state == 'APPROVED'라면
-        if quest.state == 'APPROVED':
+        # 만약 quest user_status == 'APPROVED'라면
+        if quest_attempts.status == 'APPROVED':
             raise ValueError("이미 완료된 퀘스트입니다.")
 
 
@@ -147,8 +196,8 @@ def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
             quest_id=quest_id,
             user_id=user_id,
             status=QuestAttemptStatusEnum.APPROVED,   # 바로 완료 처리
-            progress_count=quest.target_count or 1,
-            target_count=quest.target_count or 1,
+            progress_count=quest_attempts.progress_count or 1,
+            target_count=quest_attempts.target_count or 1,
             proof_url=None,
             period_scope=PeriodScopeEnum.ANY,         # 시현 간소화
             period_key="-",
@@ -167,6 +216,77 @@ def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
                 "attempt_id": attempt.id,
                 "attempt_status": attempt.status,
                 "reward": reward.get("data"),
+            },
+        }
+    except (SQLAlchemyError, ValueError) as e:
+        db.rollback()
+        return {"success": False, "message": str(e)}
+
+
+# 업로드 인증 퀘스트 완료처리
+def quest_submitted(db: Session, user_id: str, quest_id: str, proof_url: str) -> dict:
+    """
+    업로드 인증 퀘스트: 인증 제출 → 상태 'SUBMITTED'로 변경
+    - period_scope/key 고정(ANY, '-')
+    - 중복 제출 고려 X (데모용)
+    """
+    try:
+        # 퀘스트 정보 조회
+        quest = db.query(Quest).filter(Quest.id == quest_id).first()
+        if not quest:
+            raise ValueError("존재하지 않는 퀘스트입니다.")
+        
+        # 기존 시도 기록 조회
+        quest_attempts = db.query(QuestAttempt).filter(QuestAttempt.quest_id == quest_id, QuestAttempt.user_id == user_id).first()
+        
+        # 기존 시도가 없으면 자동으로 생성
+        if not quest_attempts:
+            # 퀘스트 시작 기록 생성
+            now = _now_kst()
+            quest_attempts = QuestAttempt(
+                id=_gen_id(),
+                quest_id=quest_id,
+                user_id=user_id,
+                status=QuestAttemptStatusEnum.IN_PROGRESS,   # 진행 중 상태로 시작
+                progress_count=0,
+                target_count=quest.target_count or 1,
+                proof_url=None,
+                period_scope=PeriodScopeEnum.ANY,
+                period_key="-",
+                started_at=now,
+                submitted_at=None,
+                approved_at=None,
+            )
+            db.add(quest_attempts)
+            db.flush()
+
+        # 만약 quest user_status == 'APPROVED'라면
+        if quest_attempts.status == 'APPROVED':
+            raise ValueError("이미 완료된 퀘스트입니다.")
+
+        now = _now_kst()
+        attempt = QuestAttempt(
+            id=_gen_id(),
+            quest_id=quest_id,
+            user_id=user_id,
+            status=QuestAttemptStatusEnum.SUBMITTED,   # 업로드 인증 제출 처리
+            progress_count=quest_attempts.progress_count or 1,
+            target_count=quest_attempts.target_count or 1,
+            proof_url=proof_url,
+            period_scope=PeriodScopeEnum.ANY,         # 시현 간소화
+            period_key="-",
+            started_at=now,
+            submitted_at=now,
+            approved_at=None,
+        )
+        db.add(attempt)
+        db.flush()  # attempt.id 확보
+
+        return {
+            "success": True,
+            "data": {
+                "attempt_id": attempt.id,
+                "attempt_status": attempt.status,
             },
         }
     except (SQLAlchemyError, ValueError) as e:

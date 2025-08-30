@@ -8,7 +8,7 @@ from app.database import get_db
 from app.auth.utils import hash_password
 
 from app.models import (
-    User, School, UserStat, TierNameEnum
+    User, School, UserStats, TierNameEnum
 )
 from .schemas import UpdateMeRequest
 
@@ -34,7 +34,7 @@ def get_school_or_400(db: Session, code: str, name: str | None = None) -> School
     return school
 
 def _safe_userstat(db: Session, user_id: str):
-    stat = db.query(UserStat).filter(UserStat.user_id == user_id).first()
+    stat = db.query(UserStats).filter(UserStats.user_id == user_id).first()
     if stat:
         return stat.current_tier, stat.total_exp
     return TierNameEnum.BRONZE, 0
@@ -60,6 +60,7 @@ def read_me(current_user: User = Depends(get_current_user), db: Session = Depend
             "gender": current_user.gender.value if current_user.gender else None,
             "major": current_user.department,
             "grade": current_user.grade,
+            "birth_year": current_user.birth_year,
         },
     }
 
@@ -88,12 +89,12 @@ def update_me(
         current_user.grade = data["grade"]
     if "name" in data:
         current_user.real_name = data["name"]
-    if "gender" in data:
-        # Enum 검증은 Pydantic 스키마에서 처리된다고 가정
-        current_user.gender = data["gender"]
-    # 나이 대신 출생연도 사용(스키마가 age만 준다면 스키마 조정 권장)
-    if "birth_year" in data:
-        current_user.birth_year = data["birth_year"]
+    # if "gender" in data:
+    #     # Enum 검증은 Pydantic 스키마에서 처리된다고 가정
+    #     current_user.gender = data["gender"]
+    # # 나이 대신 출생연도 사용(스키마가 age만 준다면 스키마 조정 권장)
+    # if "birth_year" in data:
+    #     current_user.birth_year = data["birth_year"]
 
     # 비밀번호 변경
     if "password" in data and data["password"]:

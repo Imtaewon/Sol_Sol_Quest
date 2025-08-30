@@ -11,11 +11,13 @@ class UniversityItem(BaseModel):
 class UniversityLeaderboardItem(BaseModel):
     university_code: str
     university_name: str
-    savings_students: int
     total_exp: int
-    avg_exp: Decimal
-    rank_overall: Optional[int] = None
-    rank_avg: None
+    avg_exp: float
+    rank_overall: int | None = None
+    rank_avg: int | None = None
+    is_mine: bool = False
+    savings_students: int
+    user_total_exp: int | None = None
 
 class UniversityLeaderboardResponse(BaseModel):
     my_university: Optional[UniversityLeaderboardItem] = None

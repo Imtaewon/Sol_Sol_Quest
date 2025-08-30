@@ -22,6 +22,8 @@ class QuestListItem(BaseModel):
     # (옵션) GPS 미션이면 쓰세요. 모델에 없으면 제거.
     lat: Optional[float] = None
     lng: Optional[float] = None
+    link_url: Optional[str] = None   # ✅ 추가 (응답 필드명)
+
 
     # --- 유저 진행 상태(조인 결과) ---
     attempt_id: Optional[str] = None
