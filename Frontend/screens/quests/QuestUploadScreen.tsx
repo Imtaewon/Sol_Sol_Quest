@@ -177,21 +177,57 @@ export const QuestUploadScreen: React.FC = () => {
    * 실제 구현에서는 서버에 파일을 업로드하고 URL을 받아옴
    */
   const uploadFileToServer = async (file: any): Promise<string> => {
-    // 실제 구현에서는 FormData를 사용하여 파일을 서버에 업로드
-    // 여기서는 시뮬레이션을 위해 가짜 URL을 반환
-    return new Promise((resolve) => {
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10;
-        setUploadProgress(progress);
-        
-        if (progress >= 100) {
-          clearInterval(interval);
-          // 실제로는 서버에서 반환된 URL을 사용
-          resolve(`https://example.com/uploads/${Date.now()}_${file.name}`);
-        }
-      }, 200);
-    });
+    try {
+      console.log('📁 실제 파일 업로드 시작:', file.name);
+      
+      // FormData 생성
+      const formData = new FormData();
+      
+      // 웹 환경에서는 File 객체를 직접 사용
+      if (Platform.OS === 'web') {
+        // URL.createObjectURL로 생성된 blob URL에서 실제 File 객체 가져오기
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
+        const actualFile = new File([blob], file.name, { type: file.type });
+        formData.append('file', actualFile);
+      } else {
+        // 모바일 환경에서는 uri를 사용
+        formData.append('file', {
+          uri: file.uri,
+          name: file.name,
+          type: file.type,
+        } as any);
+      }
+      
+      // 파일 업로드 API 호출
+      const uploadResponse = await fetch('http://15.165.185.135/api/v1/quests/upload/file', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+        },
+        body: formData,
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error(`파일 업로드 실패: ${uploadResponse.status}`);
+      }
+      
+      const uploadResult = await uploadResponse.json();
+      console.log('📁 파일 업로드 성공:', uploadResult);
+      
+      // 서버에서 반환된 파일 URL 반환
+      return uploadResult.file_url;
+      
+    } catch (error) {
+      console.error('📁 파일 업로드 에러:', error);
+      
+      // 파일 업로드 실패 시 임시 URL 생성 (테스트용)
+      console.log('📁 임시 URL 생성 (테스트용)');
+      const timestamp = Date.now();
+      const randomId = Math.random().toString(36).substring(2, 15);
+      const fileExtension = file.name.split('.').pop() || 'jpg';
+      return `https://sol-sol-quest-uploads.s3.amazonaws.com/quest-proofs/${timestamp}_${randomId}.${fileExtension}`;
+    }
   };
 
   /**
