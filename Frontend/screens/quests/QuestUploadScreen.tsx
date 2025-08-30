@@ -29,9 +29,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { AppHeader } from '../../components/common/AppHeader';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
 import { useUploadQuestProofMutation } from '../../store/api/baseApi';
-import { HomeStackParamList } from '../../navigation/HomeStack';
+import { QuestsStackParamList } from '../../navigation/QuestsStack';
 
-type QuestUploadScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'QuestUpload'>;
+type QuestUploadScreenNavigationProp = StackNavigationProp<QuestsStackParamList, 'QuestUpload'>;
 
 interface RouteParams {
   quest: {

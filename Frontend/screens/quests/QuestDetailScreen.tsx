@@ -37,10 +37,10 @@ import { QuestWithAttempt, QuestAttempt } from '../../types/database';
 
 import { useCompleteQuestMutation } from '../../store/api/baseApi';
 import { useSavingsAccount } from '../../hooks/useUser';
-import { HomeStackParamList } from '../../navigation/HomeStack';
+import { QuestsStackParamList } from '../../navigation/QuestsStack';
 
-type QuestDetailRouteProp = RouteProp<HomeStackParamList, 'QuestDetail'>;
-type QuestDetailNavigationProp = StackNavigationProp<HomeStackParamList, 'QuestDetail'>;
+type QuestDetailRouteProp = RouteProp<QuestsStackParamList, 'QuestDetail'>;
+type QuestDetailNavigationProp = StackNavigationProp<QuestsStackParamList, 'QuestDetail'>;
 
 const { width } = Dimensions.get('window');
 

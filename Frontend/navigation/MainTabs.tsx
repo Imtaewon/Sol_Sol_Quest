@@ -4,7 +4,7 @@ import { View, StyleSheet } from 'react-native';
 import { HomeStack } from './HomeStack';
 import { AssetsStack } from './AssetsStack';
 import { PaymentStack } from './PaymentStack';
-import { QuestsScreen } from '../screens/quests/QuestsScreen';
+import { QuestsStack } from './QuestsStack';
 import { LeaderboardScreen } from '../screens/leaderboard/LeaderboardScreen';
 import { MyPageStack } from './MyPageStack';
 import { Ionicons } from '@expo/vector-icons';
@@ -117,7 +117,7 @@ export const MainTabs: React.FC = () => {
       />
       <Tab.Screen 
         name="Quests" 
-        component={QuestsScreen}
+        component={QuestsStack}
         options={{ tabBarLabel: '퀘스트' }}
       />
       <Tab.Screen 
