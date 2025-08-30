@@ -10,6 +10,8 @@
 ## 🔎 개요
 
 이 레포지토리는 **FastAPI 기반 백엔드 서버**, **Docker 기반 인프라**, 그리고 **React Native + Expo 프론트엔드**를 포함합니다.
+<hr>
+
 핵심 기능:
 
 * 사용자 인증 (JWT)
@@ -20,7 +22,10 @@
 * Redis 캐싱
 * 추천 시스템 (Cold Start → 하이브리드 자동 전환)
 
+> [팀 금리복잡도 O(1) 노션페이지]
+
 > 참고: API 설계 및 문서화 방식은 FastAPI 공식 문서 스타일을 따릅니다.
+
 
 ---
 
@@ -393,3 +398,4 @@ class UploadProofRequest(BaseModel):
     proof_url: HttpUrl
 ```
 
+[팀 금리복잡도 O(1) 노션페이지]: https://meeting.ssafy.com/s13p01b01/pl/1wdu7z1rubyk9ryqut4xq8swaw
