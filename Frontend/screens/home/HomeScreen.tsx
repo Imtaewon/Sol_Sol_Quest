@@ -291,27 +291,36 @@ export const HomeScreen: React.FC = () => {
         onScroll={handleCarouselScroll}
         scrollEventThrottle={16}
       >
-        {/* 적금 카드 - hasSavings가 true면 정보, false면 가입하기 버튼 */}
-        {hasSavings ? (
-          <TouchableOpacity 
-            style={styles.accountCard}
-            accessibilityRole="button"
-            accessibilityLabel="적금 계좌 카드"
-          >
-            <View style={styles.accountHeader}>
-              <Text style={styles.accountType}>적금</Text>
-              <Ionicons name="trending-up" size={20} color={COLORS.secondary} />
-            </View>
-            <Text style={styles.accountBalance}>
-              월 {formatCurrency(savingsAccount?.data?.data?.[0]?.monthly_amount || 0)} 납입
-            </Text>
-            <Text style={styles.accountNumber}>
-              계좌번호: {savingsAccount?.data?.data?.[0]?.product_code || ''}
-            </Text>
-            <Text style={styles.monthlyAmount}>
-              이율: {getInterestRateByTier(userInfo?.data?.current_tier)}%
-            </Text>
-          </TouchableOpacity>
+                 {/* 적금 카드 - hasSavings가 true면 정보, false면 가입하기 버튼 */}
+         {hasSavings ? (
+           <View style={styles.accountCard}>
+             <View style={styles.accountHeader}>
+               <View style={styles.accountTypeContainer}>
+                 <Text style={styles.accountTypeLabel}>적금</Text>
+                 <Text style={styles.accountName}>쏠쏠한 퀘스트 적금</Text>
+               </View>
+             </View>
+             
+             <View style={styles.accountBalance}>
+               <Text style={styles.balanceLabel}>월 납입금</Text>
+               <Text style={styles.balanceAmount}>
+                 {savingsAccount?.data?.data?.[0]?.monthly_amount?.toLocaleString()}원
+               </Text>
+             </View>
+             
+             <View style={styles.accountDetails}>
+               <View style={styles.detailRow}>
+                 <Text style={styles.detailLabel}>이율</Text>
+                 <Text style={styles.detailValue}>
+                   {getInterestRateByTier(userInfo?.data?.current_tier)}%
+                 </Text>
+               </View>
+               <View style={styles.detailRow}>
+                 <Text style={styles.detailLabel}>계좌번호</Text>
+                 <Text style={styles.detailValue}>{savingsAccount?.data?.data?.[0]?.product_code}</Text>
+               </View>
+             </View>
+           </View>
         ) : (
           <TouchableOpacity 
             style={[
@@ -409,11 +418,11 @@ export const HomeScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.rankingContent}>
-          <View style={styles.rankingItem}>
-            <Text style={styles.rankingRank}>#{schoolRank?.data?.rank}</Text>
-            <Text style={styles.rankingSchool}>{schoolRank?.data?.school}</Text>
-            <Text style={styles.rankingScore}>{formatNumber(schoolRank?.data?.totalExp || 0)}점</Text>
-          </View>
+                     <View style={styles.rankingItem}>
+             <Text style={styles.rankingRank}>#{schoolRank?.data?.rank}</Text>
+             <Text style={styles.rankingSchool}>{schoolRank?.data?.school}</Text>
+             <Text style={styles.rankingScore}>{formatNumber(schoolRank?.data?.totalExp || 0)} EXP</Text>
+           </View>
           <Text style={styles.rankingMemberCount}>
             {schoolRank?.data?.memberCount}명 참여
           </Text>
@@ -443,30 +452,16 @@ export const HomeScreen: React.FC = () => {
       {hasSavings ? (
         recommendedQuests && Array.isArray(recommendedQuests) && recommendedQuests.length > 0 ? (
           <View style={styles.questsList}>
-            {recommendedQuests.slice(0, 3).map((quest, index: number) => (
-              <View key={quest.id} style={styles.questItem}>
-                <View style={styles.questInfo}>
-                  <Text style={styles.questTitle}>{quest.title}</Text>
-                  <Text style={styles.questDescription}>
-                    {quest.category} • {quest.verify_method}
-                  </Text>
-                </View>
-                <View style={styles.questReward}>
-                  <Text style={styles.questRewardText}>{quest.reward_exp} EXP</Text>
-                  <PrimaryButton
-                    title="시작하기"
-                    onPress={() => {
-                      // 퀘스트 상세 페이지로 이동하거나 퀘스트 시작 로직
-                      console.log('퀘스트 시작:', quest.id);
-                    }}
-                    size="small"
-                    style={styles.claimButton}
-                    accessibilityRole="button"
-                    accessibilityLabel="퀘스트 시작"
-                  />
-                </View>
-              </View>
-            ))}
+                         {recommendedQuests.slice(0, 3).map((quest, index: number) => (
+               <View key={quest.id} style={styles.questItem}>
+                 <View style={styles.questInfo}>
+                   <Text style={styles.questTitle}>{quest.title}</Text>
+                 </View>
+                 <View style={styles.questReward}>
+                   <Text style={styles.questRewardText}>{quest.reward_exp} EXP</Text>
+                 </View>
+               </View>
+             ))}
             <Text style={styles.recommendationMessage}>
               맞춤형 퀘스트를 추천해드립니다
             </Text>
@@ -555,7 +550,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  accountTypeContainer: {
+    flex: 1,
+  },
+  accountTypeLabel: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
+  },
+  accountName: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
+    color: COLORS.dark,
   },
   accountType: {
     fontSize: FONT_SIZES.sm,
@@ -563,10 +572,34 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   accountBalance: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: 'bold',
-    color: COLORS.dark,
+    marginBottom: SPACING.md,
+  },
+  balanceLabel: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray[600],
     marginBottom: SPACING.xs,
+  },
+  balanceAmount: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: '700',
+    color: COLORS.dark,
+  },
+  accountDetails: {
+    gap: SPACING.xs,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray[600],
+  },
+  detailValue: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: '500',
+    color: COLORS.dark,
   },
   accountNumber: {
     fontSize: FONT_SIZES.xs,
@@ -614,12 +647,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: SPACING.sm,
+    gap: SPACING.md,
   },
   rankingRank: {
     fontSize: FONT_SIZES.xl,
     fontWeight: 'bold',
     color: COLORS.primary,
-    marginRight: SPACING.sm,
   },
   rankingSchool: {
     fontSize: FONT_SIZES.md,

@@ -144,26 +144,48 @@ export const LeaderboardScreen: React.FC = () => {
     <View style={styles.topSchoolsSection}>
       <Text style={styles.sectionTitle}>상위 10개 학교</Text>
       
-      {topSchools?.data?.map((school, index) => (
-        <View key={school.school} style={[
-          styles.schoolCard,
-          index >= 3 && styles.schoolCardSmall
-        ]}>
-          <View style={styles.rankBadge}>
-            <Text style={styles.rankNumber}>{index + 1}</Text>
-          </View>
-          
-          <View style={styles.schoolInfo}>
-            <Text style={styles.schoolName}>{school.school}</Text>
-            <Text style={styles.schoolStats}>
-                              {selectedCategory === 'total' 
+      {topSchools?.data?.map((school, index) => {
+        const rank = index + 1;
+        const isTopThree = rank <= 3;
+        
+        return (
+          <View key={school.school} style={[
+            styles.schoolCard,
+            isTopThree && styles.schoolCardTopThree,
+            !isTopThree && styles.schoolCardSmall
+          ]}>
+            <View style={[
+              styles.rankBadge,
+              isTopThree && styles.rankBadgeTopThree
+            ]}>
+              <Text style={[
+                styles.rankNumber,
+                isTopThree && styles.rankNumberTopThree
+              ]}>
+                {rank}
+              </Text>
+            </View>
+            
+            <View style={styles.schoolInfo}>
+              <Text style={[
+                styles.schoolName,
+                isTopThree && styles.schoolNameTopThree
+              ]}>
+                {school.school}
+              </Text>
+              <Text style={[
+                styles.schoolStats,
+                isTopThree && styles.schoolStatsTopThree
+              ]}>
+                {selectedCategory === 'total' 
                   ? `총 EXP: ${formatNumber(school.totalExp)} • ${school.memberCount}명`     
                   : `평균 EXP: ${school.averageExp} • ${school.memberCount}명`
                 }
-            </Text>
+              </Text>
+            </View>
           </View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 
@@ -175,12 +197,12 @@ export const LeaderboardScreen: React.FC = () => {
         <View style={styles.mySchoolHeader}>
           <Text style={styles.mySchoolRank}>#{mySchoolRank?.data?.rank}</Text>
           <Text style={styles.mySchoolName}>{mySchoolRank?.data?.school}</Text>
+          <Text style={styles.mySchoolMemberCount}>{mySchoolRank?.data?.memberCount || 0}명</Text>
         </View>
         
-        <View style={styles.mySchoolStats}>
-          <Text style={styles.mySchoolStatsText}>
-            총 EXP: {formatNumber(mySchoolRank?.data?.totalExp || 0)} • 평균 EXP: {mySchoolRank?.data?.averageExp || 0} • {mySchoolRank?.data?.memberCount || 0}명
-          </Text>
+        <View style={styles.mySchoolExpStats}>
+          <Text style={styles.mySchoolTotalExp}>총 EXP: {formatNumber(mySchoolRank?.data?.totalExp || 0)}</Text>
+          <Text style={styles.mySchoolAverageExp}>평균 EXP: {mySchoolRank?.data?.averageExp || 0}</Text>
         </View>
 
         {hasSavings && mySchoolRank?.data?.myTotalExp && (
@@ -197,21 +219,6 @@ export const LeaderboardScreen: React.FC = () => {
             </View>
           </View>
         )}
-        
-        <View style={styles.mySchoolStats}>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>총점</Text>
-            <Text style={styles.statValue}>{formatNumber(mySchoolRank?.data?.totalExp || 0)}점</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>평균</Text>
-            <Text style={styles.statValue}>{mySchoolRank?.data?.averageExp || 0}점</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statLabel}>참여자</Text>
-            <Text style={styles.statValue}>{mySchoolRank?.data?.memberCount || 0}명</Text>
-          </View>
-        </View>
       </View>
     </View>
   );
@@ -310,6 +317,14 @@ const styles = StyleSheet.create({
   schoolCardSmall: {
     padding: SPACING.md,
   },
+  schoolCardTopThree: {
+    backgroundColor: COLORS.white,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+  },
   rankBadge: {
     width: 40,
     height: 40,
@@ -319,8 +334,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: SPACING.md,
   },
+  rankBadgeTopThree: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: COLORS.secondary,
+  },
   rankNumber: {
     fontSize: FONT_SIZES.lg,
+    fontWeight: 'bold',
+    color: COLORS.white,
+  },
+  rankNumberTopThree: {
+    fontSize: FONT_SIZES.xl,
     fontWeight: 'bold',
     color: COLORS.white,
   },
@@ -333,9 +359,19 @@ const styles = StyleSheet.create({
     color: COLORS.dark,
     marginBottom: SPACING.xs,
   },
+  schoolNameTopThree: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
   schoolStats: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.gray[600],
+  },
+  schoolStatsTopThree: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '500',
+    color: COLORS.secondary,
   },
   donationInfo: {
     alignItems: 'flex-end',
@@ -373,16 +409,37 @@ const styles = StyleSheet.create({
   mySchoolHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: SPACING.lg,
   },
   mySchoolRank: {
     fontSize: FONT_SIZES.xl,
     fontWeight: 'bold',
     color: COLORS.primary,
-    marginRight: SPACING.md,
   },
   mySchoolName: {
     fontSize: FONT_SIZES.lg,
+    fontWeight: '600',
+    color: COLORS.dark,
+    flex: 1,
+    marginLeft: SPACING.md,
+  },
+  mySchoolMemberCount: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '500',
+    color: COLORS.gray[600],
+  },
+  mySchoolExpStats: {
+    marginBottom: SPACING.lg,
+  },
+  mySchoolTotalExp: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
+    color: COLORS.dark,
+    marginBottom: SPACING.xs,
+  },
+  mySchoolAverageExp: {
+    fontSize: FONT_SIZES.md,
     fontWeight: '600',
     color: COLORS.dark,
   },

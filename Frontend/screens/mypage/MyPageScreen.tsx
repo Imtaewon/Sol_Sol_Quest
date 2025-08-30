@@ -180,16 +180,16 @@ export const MyPageScreen: React.FC = () => {
     return { currentTier, nextTier, expToNextTier };
   };
 
-  // 티어 혜택 계산 함수
+  // 티어 혜택 계산 함수 - 현재 유저의 티어 기준 적금 우대금리
   const getTierBenefit = (tier: string) => {
     const benefits = {
-      BASIC: '0.3%',
-      BRONZE: '0.4%',
-      SILVER: '0.5%',
-      GOLD: '0.6%',
-      SOL: '0.7%'
+      BASIC: '2.5%',
+      BRONZE: '3.0%',
+      SILVER: '4.5%',
+      GOLD: '6.0%',
+      SOL: '10.0%'
     };
-    return benefits[tier as keyof typeof benefits] || '0.3%';
+    return benefits[tier as keyof typeof benefits] || '2.5%';
   };
 
   const totalExp = userInfo?.data?.total_exp || 0;
@@ -312,7 +312,7 @@ export const MyPageScreen: React.FC = () => {
           <View style={styles.tierBenefits}>
             <Text style={styles.benefitsTitle}>티어 혜택</Text>
             <Text style={styles.benefitsText}>
-              적금 우대금리 {tierBenefit} 추가
+              적금 우대금리 {tierBenefit}
             </Text>
           </View>
         </View>
@@ -322,7 +322,7 @@ export const MyPageScreen: React.FC = () => {
 
   const renderAccountCarousel = () => (
     <View style={styles.section}>
-             <Text style={styles.sectionTitle}>내 적금/상시입출금</Text>
+             <Text style={styles.sectionTitle}>내 계좌</Text>
       
              {/* 항상 ScrollView로 감싸고, 개별 계좌 유무에 따라 조건부 렌더링 */}
        <ScrollView 
