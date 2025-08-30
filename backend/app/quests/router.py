@@ -7,7 +7,7 @@ from app.database import get_db
 from app.auth.deps import get_current_user
 from app.models import Quest, QuestAttempt, QuestAttemptStatusEnum
 from .schemas import QuestListItem
-from .service import simple_finish_quest
+from .service import simple_finish_quest, complete_quest_with_auto_attempt
 
 router = APIRouter(prefix="/quests", tags=["Quests"])
 
@@ -121,6 +121,19 @@ def complete_simple_quest(
     current_user=Depends(get_current_user),
 ):
     result = simple_finish_quest(db=db, user_id=current_user.id, quest_id=quest_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.get("message", "처리 실패"))
+    return result
+
+
+# 퀘스트 완료 (시도 기록 자동 생성)
+@router.post("/{quest_id}/claim", summary="퀘스트 완료 및 경험치 수령")
+def claim_quest_reward(
+    quest_id: str,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = complete_quest_with_auto_attempt(db=db, user_id=current_user.id, quest_id=quest_id)
     if not result.get("success"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.get("message", "처리 실패"))
     return result

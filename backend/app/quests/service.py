@@ -121,6 +121,55 @@ def complete_quest(db: Session, user_id: str, quest_id: str):
         return {"success": False, "message": str(e)}
 
 
+# 퀘스트 완료 (시도 기록 자동 생성)
+def complete_quest_with_auto_attempt(db: Session, user_id: str, quest_id: str) -> dict:
+    """
+    퀘스트 완료: 시도 기록이 없으면 자동 생성 후 완료 처리
+    - 프론트엔드에서 CLEAR 상태로 표시된 퀘스트 완료용
+    """
+    try:
+        # 1. 기존 시도 기록 확인
+        quest_attempts = db.query(QuestAttempt).filter(
+            QuestAttempt.quest_id == quest_id, 
+            QuestAttempt.user_id == user_id
+        ).first()
+        
+        # 2. 시도 기록이 없으면 자동 생성
+        if not quest_attempts:
+            # 퀘스트 정보 조회
+            quest = db.query(Quest).filter(Quest.id == quest_id).first()
+            if not quest:
+                raise ValueError("존재하지 않는 퀘스트입니다.")
+            
+            # 새로운 시도 기록 생성
+            now = _now_kst()
+            quest_attempts = QuestAttempt(
+                id=_gen_id(),
+                quest_id=quest_id,
+                user_id=user_id,
+                status=QuestAttemptStatusEnum.IN_PROGRESS,
+                progress_count=0,
+                target_count=quest.target_count,
+                proof_url=None,
+                period_scope=PeriodScopeEnum.ANY,
+                period_key="-",
+                started_at=now,
+                submitted_at=None,
+                approved_at=None,
+            )
+            db.add(quest_attempts)
+            db.flush()
+        
+        # 3. 이미 완료된 퀘스트인지 확인
+        if quest_attempts.status == QuestAttemptStatusEnum.APPROVED:
+            raise ValueError("이미 완료된 퀘스트입니다.")
+        
+        # 4. 기존 완료 로직 실행
+        return simple_finish_quest(db, user_id, quest_id)
+        
+    except (SQLAlchemyError, ValueError) as e:
+        db.rollback()
+        return {"success": False, "message": str(e)}
 # (시현용) 단일 퀘스트 즉시 완료
 def simple_finish_quest(db: Session, user_id: str, quest_id: str) -> dict:
     """
