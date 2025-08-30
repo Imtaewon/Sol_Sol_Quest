@@ -552,16 +552,34 @@ export const QuestsScreen: React.FC = () => {
                        console.log('📁 navigation 객체 타입:', typeof navigation);
                        console.log('📁 navigation.navigate 존재:', !!navigation.navigate);
                        
-                                                                       // 단순한 navigate 방식으로 변경
-                        console.log('📁 QuestUpload로 단순 navigate 시도');
-                        navigation.navigate('QuestUpload', {
-                          quest: {
-                            id: quest.id,
-                            title: quest.title,
-                            description: quest.description || quest.title,
-                          },
-                        });
-                        console.log('📁 QuestUpload로 navigate 완료');
+                                                                       // React Native Web 호환성을 위한 네비게이션 처리
+                        console.log('📁 QuestUpload로 네비게이션 시도');
+                        try {
+                          // 웹 환경에서는 push 방식이 더 안정적일 수 있음
+                          if (Platform.OS === 'web') {
+                            console.log('📁 웹 환경에서 push 방식 사용');
+                            navigation.push('QuestUpload', {
+                              quest: {
+                                id: quest.id,
+                                title: quest.title,
+                                description: quest.description || quest.title,
+                              },
+                            });
+                          } else {
+                            console.log('📁 모바일 환경에서 navigate 방식 사용');
+                            navigation.navigate('QuestUpload', {
+                              quest: {
+                                id: quest.id,
+                                title: quest.title,
+                                description: quest.description || quest.title,
+                              },
+                            });
+                          }
+                          console.log('📁 QuestUpload로 네비게이션 완료');
+                        } catch (error) {
+                          console.error('📁 네비게이션 에러:', error);
+                          Alert.alert('오류', '화면 이동에 실패했습니다.');
+                        }
                      }}
                   >
                     <Ionicons name="cloud-upload-outline" size={16} color={COLORS.white} />
