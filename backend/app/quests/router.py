@@ -125,7 +125,6 @@ def complete_simple_quest(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.get("message", "처리 실패"))
     return result
 
-
 # 업로드 인증 퀘스트 완료처리
 @router.post("/{quest_id}/upload", summary="업로드 인증 퀘스트 완료처리")
 def complete_upload_quest(
