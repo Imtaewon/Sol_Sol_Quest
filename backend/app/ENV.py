@@ -10,7 +10,7 @@ BASE_URL = "https://finopenapi.ssafy.io/ssafy/api/v1/edu"
 DEPOSIT_ACCOUNT_UNIQUE_NO = "088-1-265cb9baa69c45"
 
 # 적금 상품 accountTypeUniqueNo
-SAVINGS_ACCOUNT_UNIQUE_NO = "088-3-833ca6d906884e"
+SAVINGS_ACCOUNT_UNIQUE_NO = "088-3-bf9d3444101a45"
 
 def _now_kr():
     return datetime.now(ZoneInfo("Asia/Seoul"))

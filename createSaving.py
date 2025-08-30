@@ -79,11 +79,11 @@ if __name__ == "__main__":
     async def _test():
         result = await create_savings_product(
             bank_code="088",
-            account_name="쏠쏠한 적금",
+            account_name="쏠쏠한 적금 상품",
             subscription_period="180",
             min_balance=10000,
-            max_balance=300000,
-            interest_rate=7.0,
+            max_balance=200000,
+            interest_rate=10.0,
             account_description="퀘스트 완료하면 우대금리를 제공하는 상품입니다.",
             rate_description="티어별로 다른 금리를 제공합니다.",
         )
