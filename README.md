@@ -1,38 +1,40 @@
-# Sol_Sol_Quest
-## 신한 은행 해커톤, 팀 - "금리복잡도 O(1)" 프로젝트
-
-# Sol Sol Quest – Monorepo README
-
-> FastAPI 백엔드 + Docker 인프라 + RN/Expo 프론트엔드
-> 신한은행 해커톤 프로젝트
----
-
-## 🔎 개요
-
-이 레포지토리는 **FastAPI 기반 백엔드 서버**, **Docker 기반 인프라**, 그리고 **React Native + Expo 프론트엔드**를 포함합니다.
-<hr>
-
-핵심 기능:
-
-* 사용자 인증 (JWT)
-* 퀘스트 시스템 (EXP/티어/리더보드)
-* 출석 체크
-* **수시입출금/적금 계좌** 관리 (SSAFY 금융망 API 연동)
-* 대학별 랭킹
-* Redis 캐싱
-* 추천 시스템 (Cold Start → 하이브리드 자동 전환)
-
-* 시현영상
-    <video controls src="시연영상.mp4" title="Title"></video>
-
-> [팀 금리복잡도 O(1) 노션페이지]
-
-> 참고: API 설계 및 문서화 방식은 FastAPI 공식 문서 스타일을 따릅니다.
-
+아래는 **업데이트된 프론트엔드 README**를 반영해 백엔드·인프라까지 한 번에 보는 **통합 `README.md`** 초안입니다. 그대로 붙여 넣어도 되고, 팀 컨벤션에 맞게 섹션을 더/빼면 돼요.
 
 ---
 
-## 📁 모놀리포 구조
+# Sol Sol Quest – Monorepo
+
+> FastAPI 백엔드 + Docker 인프라 + React Native Web 프론트엔드
+> 신한은행 해커톤 프로젝트 (팀 S\_OS)
+
+---
+
+## 📌 개요
+
+이 레포지토리는 다음 3가지를 한 저장소에서 관리합니다.
+
+1. **Backend** — FastAPI 기반 API 서버, MySQL/Redis 연동, SSAFY 금융망 API 연동
+2. **Infra** — Nginx Reverse Proxy, Docker / docker-compose
+3. **Frontend** — React Native Web 기반의 적금·퀘스트 앱
+
+핵심 도메인:
+
+* 사용자 인증(JWT)
+* 퀘스트(진행/검증/경험치/티어/리더보드)
+* 출석
+* 계좌(수시입출금/적금, SSAFY 금융망 API)
+* 추천 시스템(Cold Start → 하이브리드 자동전환)
+
+---
+
+### [노션]
+
+### 시현영상
+<video controls src="시연영상-1.mp4" title="Title"></video>
+
+---
+
+## 🗂️ 모놀리포 구조
 
 ```
 .
@@ -47,7 +49,7 @@
 │   │   ├── models.py        # SQLAlchemy 모델
 │   │   ├── database.py      # DB 세션/엔진
 │   │   ├── cache.py         # Redis 연결
-│   │   ├── ENV.py           # SSAFY 금융 API 키/고정값
+│   │   ├── ENV.py           # SSAFY 금융망 API 설정
 │   │   └── main.py          # FastAPI 엔트리포인트
 │   ├── requirements.txt
 │   ├── Dockerfile
@@ -55,71 +57,76 @@
 │   ├── nginx.conf
 │   └── .gitignore
 └── frontend/
+    ├── src/
+    │   ├── components/          # 공통/기능 컴포넌트
+    │   ├── screens/             # auth/signup/quests/deposit/leaderboard ...
+    │   ├── navigation/          # MainTabs, 스택들
+    │   ├── store/               # RTK Query (api/ 포함)
+    │   ├── hooks/               # useUser 등
+    │   ├── utils/               # 상수/포매터
+    │   └── types/
     ├── App.tsx
-    ├── package.json
-    ├── components/
-    ├── screens/              # auth/home/mypage/quests/leaderboard/assets/payment...
-    ├── navigation/
-    ├── services/             # axios api clients
-    ├── hooks/
-    ├── store/                # Redux Toolkit + RTK Query
-    ├── types/
-    ├── utils/
-    └── config/
-        └── env.development.ts
+    └── package.json
 ```
 
 ---
 
 ## 🧱 기술 스택
 
-**Backend**: FastAPI, Uvicorn, SQLAlchemy, Alembic, PyMySQL, Redis, httpx, python-jose (JWT)
+**Backend**: FastAPI, Uvicorn, SQLAlchemy, Alembic, PyMySQL, Redis, httpx, python-jose(JWT)
 **Infra**: Docker / docker-compose, Nginx, MySQL, Redis
-**Frontend**: React Native + Expo, TypeScript, Redux Toolkit, React Query, React Navigation, Axios, Zod
+**Frontend**: React Native Web, TypeScript, React Navigation, RTK Query, React Hook Form, Zod, Axios
 
 ---
 
-## 🧩 아키텍처
-
-```
-[Client (Web/Mobile)]
-        │
-        ▼
-    [Nginx:80]
-  (Reverse Proxy/CORS/보안헤더/정적자원)
-        │             ┌──────────┐
-        ├────────────▶│FastAPI   │───▶ MySQL
-        │             │(Uvicorn) │───▶ Redis
-        │             └──────────┘    ▲
-        │                 │            │
-        │                 └───httpx────┘
-        │                 (SSAFY 금융망 API)
-        ▼
-  /health /docs /redoc
-```
+## 아키텍처
+![alt text](아키텍처_최종수정.png)
 
 ---
 
-## 🔧 개발 환경 & 실행 (로컬)
+## 🔧 개발 환경 준비
 
-### 1) Python/Node 버전
+### 공통 요구 사항
 
 * Python 3.11+
 * Node.js 18+
+* Docker / docker-compose (선택: 컨테이너 기반 실행 시)
 
-### 2) 백엔드 환경 변수
+### 백엔드 환경 변수
 
 `backend/.env` (예시)
 
 ```env
 DATABASE_URL=mysql+pymysql://quest_user:questpass123@mysql:3306/quest_db
 REDIS_URL=redis://redis:6379
-# 필요 시 JWT/SSAFY 등 환경 변수 추가
+# JWT_SECRET, SENTRY_DSN 등 민감값은 여기(또는 배포 비밀 관리자)에 설정
 ```
 
-> `ENV.py`에는 SSAFY 금융망 API 키/기관코드/앱번호/계좌 고유번호 등이 존재합니다.
+> SSAFY 금융 명세는 제공된 엑셀 파일(비번 **ssafy**)을 참고하세요. 키/기관코드 등 민감정보는 저장소에 커밋하지 말고 환경변수/비밀 저장소로 관리합니다.
 
-### 3) 백엔드 실행 (가상환경)
+---
+
+## ▶️ 빠른 시작 (Docker 추천)
+
+```bash
+cd backend
+docker-compose up --build -d
+```
+
+접속 경로:
+
+* API: `http://localhost/api/v1`
+* Swagger: `http://localhost/docs`
+* Redoc: `http://localhost/redoc`
+* Health: `http://localhost/health`
+
+> Nginx가 프록시로 `app:8000`(FastAPI)로 라우팅합니다. 정적 웹 배포를 함께 쓰는 경우, `/`는 정적, `/api/`는 FastAPI로 분리하는 구성이 일반적입니다.
+
+---
+
+## 🧑‍💻 로컬 개발 (비도커)
+
+### 1) Backend
 
 ```bash
 cd backend
@@ -128,163 +135,178 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-접속:
+* Swagger: `http://localhost:8000/docs`
+* Redoc: `http://localhost:8000/redoc`
+* Health: `http://localhost:8000/health`
 
-* Swagger: [http://localhost:8000/docs](http://localhost:8000/docs)
-* Redoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)
-* Health: [http://localhost:8000/health](http://localhost:8000/health)
+#### DB 마이그레이션
 
-### 4) 프론트엔드 실행
+```bash
+cd backend
+alembic revision --autogenerate -m "init or changes"
+alembic upgrade head
+```
+
+> 운영/스테이징 DB 스키마는 **항상 Alembic으로 버전 관리**합니다.
+
+### 2) Frontend (React Native Web)
 
 ```bash
 cd frontend
 npm install
-npm start           # Expo Dev Server
-# or
-npm run ios         # iOS 시뮬레이터
-npm run android     # Android 에뮬레이터
+npm start          # 개발 서버
+# 웹 빌드
+npm run build
 ```
 
-`config/env.development.ts`
+환경 설정 샘플(웹 빌드 시 API 주소):
 
 ```ts
-export const developmentConfig = {
+// 예: src/utils/env.ts
+export const ENV = {
   API_BASE_URL: 'http://localhost:8000/api/v1',
   APP_NAME: 'SolQuest',
-  DEBUG_MODE: true,
-  LOG_LEVEL: 'debug',
+  DEBUG: true,
 };
 ```
 
 ---
 
-## 🐳 Docker 기반 실행
+## 🔌 프론트엔드 주요 플로우 & 파일
 
-### 1) 기본 실행
+### 1. 회원가입
 
-```bash
-cd backend
-docker-compose up --build -d
+```
+회원가입 → 적금 가입 → 설문조사 → 메인
 ```
 
-서비스:
+* `screens/signup/SignupScreen.tsx`
+* `screens/signup/SavingOpenScreen.tsx`
+* `store/api/baseApi.ts` (회원가입)
+* `store/api/savingApi.ts` (설문)
 
-* Nginx: `http://localhost/`
-* API: `http://localhost/api/v1` (프록시)
-* Swagger: `http://localhost/docs`
-* Redoc: `http://localhost/redoc`
-* Health: `http://localhost/health`
-* MySQL/Redis: docker 네트워크 내부에서 접근
+### 2. 로그인
 
-### 2) 정적 프런트 배포(예시)
-
-빌드 산출물(`dist/` 또는 `web-build/`)을 Nginx 루트(`/var/www/app/`)로 복사하도록 compose 혹은 별도 스크립트를 사용합니다.
-Nginx `nginx.conf`에서 정적 경로와 API 프록시(`/api/`)를 분리합니다.
-
----
-
-## 🗃️ 데이터베이스 & 마이그레이션
-
-### 1) Alembic
-
-```bash
-cd backend
-alembic revision --autogenerate -m "add new table"
-alembic upgrade head
+```
+로그인 → 메인(자동 리다이렉트)
 ```
 
-> 운영 DB 스키마 변경은 **항상 Alembic으로 버전 관리**하세요.
+* `screens/auth/LoginScreen.tsx`
+* `store/api/baseApi.ts` (로그인)
+* `App.tsx` (인증 라우팅)
 
-### 2) 초기 테이블 생성 (임시 스크립트)
+### 3. 적금 가입
 
-```python
-from app.database import create_tables
-create_tables()
+```
+적금 정보 → 상시입출금 계좌 생성 → 설문 → 적금 가입 → 메인
 ```
 
-> 실제 운영에서는 Alembic을 권장합니다.
+* `screens/signup/SavingOpenScreen.tsx`
+* `screens/signup/DepositOpenScreen.tsx`
+* `store/api/baseApi.ts` (계좌 생성)
+* `hooks/useUser.ts` (사용자/계좌)
 
----
+### 4. 입금
 
-## 📡 SSAFY 금융망 API 연동
-
-* `ENV.py`의 고정값: `API_KEY`, `INSTITUTION_CODE`, `FINTECH_APP_NO`, `DEPOSIT_ACCOUNT_UNIQUE_NO`, `SAVINGS_ACCOUNT_UNIQUE_NO` 등
-* 요청 헤더 생성: `make_header()` (전송일자/시간/기관/앱번호/거래고유번호)
-* 구현 예:
-
-  * 수시입출금 계좌 개설 / 조회
-  * 적금 계좌 개설 / 조회
-  * 입출금 트랜잭션 (입금/출금)
-
-> SSAFY\_교육용\_금융망\_API\_Interface\_예제\_v4\_해커톤용.xlsx 비밀번호: `ssafy`
-
----
-
-## 🧠 퀘스트 추천 시스템 (요약)
-
-* **Cold Start** (설문 + 사용자 속성 → 카테고리 점수 → 다양성 보장 3개 추천)
-* **하이브리드 전환**: 상호작용 ≥10,000 / 활성 사용자 ≥1,000 / 활성 퀘스트 ≥30 / 평균 ≥5
-  → CF 60% + CBF 40%
-
-인덱스 권장:
-
-```sql
-CREATE INDEX idx_user_date ON quest_recommendations(user_id, recommendation_date);
-CREATE INDEX idx_interactions ON quest_recommendations(is_click, is_cleared);
+```
+메인 → 입금하기 → DD 계좌 입금 → 메인
 ```
 
----
+* `screens/deposit/DepositMoneyScreen.tsx`
+* `store/api/baseApi.ts` (입금)
+* `hooks/useUser.ts`
 
-## 🔌 대표 API (백엔드)
+### 5. 퀘스트
 
-### 인증
-
-* `POST /api/v1/auth/login` – 로그인
-* `POST /api/v1/auth/register` – 회원가입
-* 공통 응답: `{ success:boolean, data:any, message?:string, error?:string }`
-
-### 사용자/계좌
-
-* `GET /api/v1/users/me` – 내 정보
-* `GET /api/v1/accounts/demand-deposit` – 수시입출금 목록
-* `GET /api/v1/accounts/savings` – 적금 목록
-* `POST /api/v1/accounts/demand-deposit` – 수시입출금 계좌 개설
-* `POST /api/v1/accounts/savings` – 적금 계좌 개설
-
-### 퀘스트
-
-* `GET /api/v1/quests` – 전체 목록(+유저 진행상태)
-* `POST /api/v1/quests/start` – 시작
-* `POST /api/v1/quests/submit` – 제출
-* `POST /api/v1/quests/verify` – 검증
-* `POST /api/v1/quests/claim` – EXP 수령
-* `GET /api/v1/quests/recommended` – 추천 3개
-
-### 랭킹/출석
-
-* `GET /api/v1/universities/leaderboard` – 학교 랭킹
-* `GET /api/v1/attendance/{year}/{month}` – 출석 내역
-* `POST /api/v1/attendance/check-in` – 출석하기
-
-> 상세 스키마는 `/docs` 참조.
-
----
-
-## 🧪 테스트
-
-```bash
-cd backend
-pytest -v
+```
+퀘스트 목록 → 수행 → 경험치 수령 → 티어 증가
 ```
 
-* `pytest-asyncio`로 비동기 핸들러 테스트
-* API E2E: httpx/requests + faker로 샘플 시나리오 작성 권장
+* `screens/quests/QuestsScreen.tsx`
+* `screens/quests/QuestDetailScreen.tsx`
+* `screens/quests/QuestUploadScreen.tsx`
+* `navigation/QuestsStack.tsx`
+* `store/api/baseApi.ts` (퀘스트)
+
+### 6. 리더보드
+
+```
+메인 → 리더보드 → 학교별 순위
+```
+
+* `screens/leaderboard/LeaderboardScreen.tsx`
+* `store/api/baseApi.ts`
+* `services/rankService.ts`
+
+**상태 관리 규칙**
+
+* 서버 상태: **RTK Query** (`store/api/*`)
+* 전역 클라이언트 상태: Redux Slice
+* 로컬 UI 상태: React 훅(useState/useReducer)
 
 ---
 
-## 🚀 배포 가이드 (예시)
+## 📡 SSAFY 금융망 API
 
-### 백엔드 (수동)
+* `ENV.py`에서 **헤더 생성**/고정값 유틸 제공 (기관코드, 앱번호, 거래고유번호 등)
+* 지원 기능 예시:
+
+  * 수시입출금/적금 **계좌 개설**
+  * **입금/출금** 트랜잭션
+* 실제 키/식별자는 환경변수로 주입(운영 커밋 금지)
+* 참고 명세: `SSAFY_교육용_금융망_API_Interface_예제_v4_해커톤용.xlsx` (암호 **ssafy**)
+
+---
+
+## 📑 대표 API (요약)
+
+* 인증
+
+  * `POST /api/v1/auth/login` — 로그인
+  * `POST /api/v1/auth/register` — 회원가입
+* 사용자/계좌
+
+  * `GET /api/v1/users/me` — 내 프로필
+  * `GET /api/v1/accounts/demand-deposit` — 수시입출금 목록
+  * `GET /api/v1/accounts/savings` — 적금 목록
+  * `POST /api/v1/accounts/demand-deposit` — 수시입출금 생성
+  * `POST /api/v1/accounts/savings` — 적금 생성
+* 퀘스트
+
+  * `GET /api/v1/quests` — 필터/정렬/페이지 지원 목록(유저 최신 진행상태 포함)
+  * `POST /api/v1/quests/{quest_id}/complete` — (데모) 즉시 완료
+* 랭킹/출석
+
+  * `GET /api/v1/universities/leaderboard` — 학교 랭킹(총/평균 + 내 학교)
+  * `GET /api/v1/attendance/{year}/{month}` — 출석 내역
+  * `POST /api/v1/attendance/check-in` — 출석
+
+> 모든 엔드포인트 스키마·예시는 Swagger(`/docs`)에서 확인하세요.
+
+---
+
+## 🧠 추천 시스템 (요약)
+
+* **Cold Start**: 가입 정보+설문으로 카테고리 점수화 → 3개 추천(다양성 보장)
+* **하이브리드 자동전환**: 상호작용/활성 사용자/퀘스트 수/평균 상호작용 기준 충족 시
+  `hybrid_score = 0.6 * CF + 0.4 * CBF`
+* 지표: CTR, 완료율, 다양성 / 인덱스 권장:
+
+  ```sql
+  CREATE INDEX idx_user_date ON quest_recommendations(user_id, recommendation_date);
+  CREATE INDEX idx_interactions ON quest_recommendations(is_click, is_cleared);
+  ```
+
+---
+
+## 🛰️ 배포 가이드
+
+### A. 컨테이너 기반(권장)
+
+* `docker-compose.yml`에 Nginx(리버스 프록시), FastAPI, MySQL, Redis 정의
+* API는 `/api/` 경로로 프록시, 정적 웹은 `/`로 서빙하도록 구성 가능
+
+### B. 수동(예시, 백엔드 systemd)
 
 ```bash
 # 서버
@@ -293,19 +315,18 @@ git pull
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 sudo systemctl daemon-reload
-sudo systemctl restart quest-backend   # Unit 파일에 ExecStart=uvicorn ...
+sudo systemctl restart quest-backend
 sudo systemctl status quest-backend
 ```
 
-### 프론트 (정적 배포)
+### C. 프론트 정적 배포(웹)
 
 ```bash
-# 로컬 빌드
 cd frontend
 npm ci
-npm run build:static   # 혹은 expo export 등
+npm run build  # 웹 빌드 산출물 생성
 
-# 서버로 업로드 (예: scp/rsync)
+# 서버 복사 (예: Nginx 루트 /var/www/app)
 scp -i ../backend/solquest.pem -r dist/* ubuntu@SERVER:/var/www/app/
 
 # 검증
@@ -313,92 +334,49 @@ curl -I http://SERVER/
 curl -I http://SERVER/index.html
 ```
 
-> Nginx가 정적 파일 경로와 `/api/` 프록시를 올바르게 라우팅하는지 확인하세요.
+> Nginx에서 **정적 파일 경로**와 **API 프록시(/api/)** 라우팅을 반드시 분리하세요.
 
 ---
 
 ## 🧯 트러블슈팅
 
-### 1) 404 (예: `/attendance/{year}/{month}`)
+* **404 (경로 오타/프록시 이슈)**
 
-* 라우터 prefix 및 경로 파라미터 타입 확인
-* Nginx에서 `/api/` 프록시 경로 누락/오타 여부 확인
-* 실제 엔드포인트는 `/api/v1/attendance/2025/8` 형식인지 점검
+  * Nginx `/api/` 프록시 경로 매칭 확인
+  * FastAPI 라우터 prefix(`/api/v1`) 일치 확인
+* **422 (요청 바디 불일치)**
 
-### 2) 422 Unprocessable Entity (POST)
+  * Pydantic 스키마와 요청 JSON 키/타입 확인
+  * Query/Path/Body 구분(예: `proof_url`은 **Body**)
+* **500/502 (서버 내부/프록시 실패)**
 
-* `pydantic` 스키마와 요청 바디(JSON) 일치 확인
-* Query/Path/Body 구분 (예: `proof_url`을 **query**가 아닌 **body**로 받을 때 `BaseModel`로 정의)
+  * `journalctl -u quest-backend -f`로 백엔드 로그
+  * DB 연결/마이그레이션 일치 여부 확인
+  * Nginx 업스트림 포트/헬스체크 점검
+* **정적 404**
 
-### 3) 500/502
-
-* Uvicorn 로그 확인 (`journalctl -u quest-backend -f`)
-* DB 커넥션/마이그레이션 불일치 확인 (Alembic)
-* Nginx 업스트림 포트/컨테이너 헬스체크 확인
-
-### 4) 정적 파일 404
-
-* 빌드 산출물 디렉터리명(`dist/`, `web-build/`)과 Nginx `root` 일치
-* 캐시/압축 파일 경로 (`/_expo/static/js/...`)가 존재하는지 확인
-
-### 5) phpMyAdmin 연결 이슈
-
-* `PMA_HOST=mysql` 설정 확인 (compose 네트워크 상의 서비스명)
-* MySQL `bind-address`는 컨테이너 내부 기본 설정 유지
+  * 빌드 산출물 폴더명(`dist/` vs `web-build/`)과 Nginx `root` 일치
 
 ---
 
-## 🔐 보안/운영 체크리스트
+## 🔐 보안 & 운영 체크리스트
 
-* JWT 비밀키/SSAFY API 키는 환경변수/비밀 스토리지로 관리
+* 비밀키/토큰/금융 API 키는 **환경변수/비밀관리**로만 주입 (커밋 금지)
 * CORS: 개발/운영 분리
-* 요청 크기 제한(Nginx `client_max_body_size`)
-* Rate limiting/WAF(선택)
-* 헬스체크 엔드포인트 `/health`
+* 파일 업로드 크기 제한 (Nginx `client_max_body_size`)
+* 헬스체크 `/health` 제공
+* 로그/모니터링: 필요 시 Sentry/CloudWatch 등 연동
 
 ---
 
-## 📞 지원
+## 📞 문의
 
-* 이슈 트래커에 버그/요청 등록
-* 재현 절차, 요청/응답 샘플, 로그 포함 시 빠른 대응 가능
-
----
-
-## 🗓️ 변경 이력
-
-* **2025-08-30**: README 통합/정리, 실행/배포/트러블슈팅 보강
+이슈 트래커에 버그·요청을 등록해주세요.
+재현 절차, 요청/응답 샘플, 로그를 포함하면 빠르게 대응할 수 있습니다.
 
 ---
 
-### 부록 – 요청 바디 예시 (업로드 인증 퀘스트)
+**Last Updated**: 2025-08-30
 
-```python
-# router
-@router.post("/{quest_id}/upload", summary="업로드 인증 퀘스트 완료처리")
-def complete_upload_quest(
-    quest_id: str,
-    body: UploadProofRequest,  # BaseModel: { proof_url: HttpUrl }
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
-):
-    result = quest_submitted(
-        db=db,
-        user_id=current_user.id,
-        quest_id=quest_id,
-        proof_url=body.proof_url,
-    )
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail=result.get("message", "처리 실패"))
-    return result
-```
 
-```python
-# schemas.py
-from pydantic import BaseModel, HttpUrl
-
-class UploadProofRequest(BaseModel):
-    proof_url: HttpUrl
-```
-
-[팀 금리복잡도 O(1) 노션페이지]: https://meeting.ssafy.com/s13p01b01/pl/1wdu7z1rubyk9ryqut4xq8swaw
+[노션]: https://meeting.ssafy.com/s13p01b01/pl/1wdu7z1rubyk9ryqut4xq8swaw
