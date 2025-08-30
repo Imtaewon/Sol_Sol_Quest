@@ -32,13 +32,25 @@ def university_leaderboard(
 ):
     # 현재 사용자 학교 코드 조회
     user_school_code = None
+    print(f"🔍 DEBUG: current_user = {current_user}")
+    print(f"🔍 DEBUG: current_user.school = {getattr(current_user, 'school', None) if current_user else None}")
+    print(f"🔍 DEBUG: current_user.school_id = {getattr(current_user, 'school_id', None) if current_user else None}")
+    
     if current_user and getattr(current_user, "school", None):
         user_school_code = current_user.school.code
+        print(f"🔍 DEBUG: 학교 코드 (관계에서): {user_school_code}")
     elif current_user and getattr(current_user, "school_id", None):
         # 관계 미로딩 대비: 필요시 schools 테이블에서 조회
         row = db.query(School.code).filter(School.id == current_user.school_id).first()
         if row:
             user_school_code = row[0]
+            print(f"🔍 DEBUG: 학교 코드 (DB 조회): {user_school_code}")
+        else:
+            print(f"🔍 DEBUG: 학교 코드 조회 실패 - school_id: {current_user.school_id}")
+    else:
+        print(f"🔍 DEBUG: 사용자 학교 정보 없음")
+    
+    print(f"🔍 DEBUG: 최종 user_school_code = {user_school_code}")
 
     def _to_float_avg(items):
         for it in items:

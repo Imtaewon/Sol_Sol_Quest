@@ -86,8 +86,13 @@ def build_leaderboards(
 
     # 내 학교
     my_item: Optional[UniversityLeaderboardItem] = None
+    print(f"🔍 DEBUG: user_school_code = {user_school_code}")
+    print(f"🔍 DEBUG: by_code keys = {list(by_code.keys())}")
+    print(f"🔍 DEBUG: user_school_code in by_code = {user_school_code in by_code if user_school_code else False}")
+    
     if user_school_code and user_school_code in by_code:
         my_school_data = dict(by_code[user_school_code])
+        print(f"🔍 DEBUG: my_school_data = {my_school_data}")
         
         # 사용자 개인 경험치 조회
         user_total_exp = 0
@@ -96,8 +101,12 @@ def build_leaderboards(
             user_stats = db.query(UserStats.total_exp).filter(UserStats.user_id == user_id).first()
             if user_stats:
                 user_total_exp = user_stats[0]
+            print(f"🔍 DEBUG: user_id = {user_id}, user_total_exp = {user_total_exp}")
         
         my_school_data['user_total_exp'] = user_total_exp
         my_item = _to_item(my_school_data)
+        print(f"🔍 DEBUG: my_item = {my_item}")
+    else:
+        print(f"🔍 DEBUG: 내 학교 데이터 생성 실패")
 
     return my_item, top10_overall, top10_avg
