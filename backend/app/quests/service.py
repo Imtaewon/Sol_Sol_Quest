@@ -231,9 +231,34 @@ def quest_submitted(db: Session, user_id: str, quest_id: str, proof_url: str) ->
     - 중복 제출 고려 X (데모용)
     """
     try:
+        # 퀘스트 정보 조회
+        quest = db.query(Quest).filter(Quest.id == quest_id).first()
+        if not quest:
+            raise ValueError("존재하지 않는 퀘스트입니다.")
+        
+        # 기존 시도 기록 조회
         quest_attempts = db.query(QuestAttempt).filter(QuestAttempt.quest_id == quest_id, QuestAttempt.user_id == user_id).first()
+        
+        # 기존 시도가 없으면 자동으로 생성
         if not quest_attempts:
-            raise ValueError("존재하지 않거나 비활성화된 퀘스트입니다.")
+            # 퀘스트 시작 기록 생성
+            now = _now_kst()
+            quest_attempts = QuestAttempt(
+                id=_gen_id(),
+                quest_id=quest_id,
+                user_id=user_id,
+                status=QuestAttemptStatusEnum.IN_PROGRESS,   # 진행 중 상태로 시작
+                progress_count=0,
+                target_count=quest.target_count or 1,
+                proof_url=None,
+                period_scope=PeriodScopeEnum.ANY,
+                period_key="-",
+                started_at=now,
+                submitted_at=None,
+                approved_at=None,
+            )
+            db.add(quest_attempts)
+            db.flush()
 
         # 만약 quest user_status == 'APPROVED'라면
         if quest_attempts.status == 'APPROVED':
