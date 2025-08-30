@@ -72,61 +72,102 @@ export const QuestUploadScreen: React.FC = () => {
    */
   const handleFileSelect = async () => {
     try {
-      Alert.alert(
-        '파일 선택',
-        '어떤 타입의 파일을 선택하시겠습니까?',
-        [
-          {
-            text: '이미지',
-            onPress: async () => {
-              const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.All,
-                allowsEditing: true,
-                aspect: [4, 3],
-                quality: 0.8,
-              });
+      console.log('📁 파일 선택 함수 호출됨');
+      console.log('📁 Platform.OS:', Platform.OS);
+      
+      if (Platform.OS === 'web') {
+        // 웹 환경에서는 input file을 사용
+        console.log('📁 웹 환경에서 파일 선택 시도');
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*,.pdf,.doc,.docx';
+        input.multiple = false;
+        
+        input.onchange = (event) => {
+          const target = event.target as HTMLInputElement;
+          const file = target.files?.[0];
+          
+          if (file) {
+            console.log('📁 웹에서 파일 선택됨:', file);
+            setSelectedFile({
+              uri: URL.createObjectURL(file),
+              name: file.name,
+              type: file.type,
+              size: file.size,
+            });
+          }
+        };
+        
+        input.click();
+      } else {
+        // 모바일 환경에서는 기존 방식 사용
+        console.log('📁 모바일 환경에서 파일 선택 시도');
+        Alert.alert(
+          '파일 선택',
+          '어떤 타입의 파일을 선택하시겠습니까?',
+          [
+            {
+              text: '이미지',
+              onPress: async () => {
+                try {
+                  const result = await ImagePicker.launchImageLibraryAsync({
+                    mediaTypes: ImagePicker.MediaTypeOptions.All,
+                    allowsEditing: true,
+                    aspect: [4, 3],
+                    quality: 0.8,
+                  });
 
-              if (!result.canceled && result.assets[0]) {
-                setSelectedFile({
-                  uri: result.assets[0].uri,
-                  name: result.assets[0].fileName || 'image.jpg',
-                  type: result.assets[0].type || 'image/jpeg',
-                  size: result.assets[0].fileSize || 0,
-                });
-              }
+                  if (!result.canceled && result.assets[0]) {
+                    setSelectedFile({
+                      uri: result.assets[0].uri,
+                      name: result.assets[0].fileName || 'image.jpg',
+                      type: result.assets[0].type || 'image/jpeg',
+                      size: result.assets[0].fileSize || 0,
+                    });
+                  }
+                } catch (error) {
+                  console.error('📁 이미지 선택 에러:', error);
+                  Alert.alert('오류', '이미지를 선택하는 중 오류가 발생했습니다.');
+                }
+              },
             },
-          },
-          {
-            text: '문서',
-            onPress: async () => {
-              const result = await DocumentPicker.getDocumentAsync({
-                type: [
-                  'application/pdf',
-                  'application/msword',
-                  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                  'image/*',
-                ],
-                copyToCacheDirectory: true,
-              });
+            {
+              text: '문서',
+              onPress: async () => {
+                try {
+                  const result = await DocumentPicker.getDocumentAsync({
+                    type: [
+                      'application/pdf',
+                      'application/msword',
+                      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                      'image/*',
+                    ],
+                    copyToCacheDirectory: true,
+                  });
 
-              if (!result.canceled && result.assets[0]) {
-                setSelectedFile({
-                  uri: result.assets[0].uri,
-                  name: result.assets[0].name,
-                  type: result.assets[0].mimeType || 'application/octet-stream',
-                  size: result.assets[0].size || 0,
-                });
-              }
+                  if (!result.canceled && result.assets[0]) {
+                    setSelectedFile({
+                      uri: result.assets[0].uri,
+                      name: result.assets[0].name,
+                      type: result.assets[0].mimeType || 'application/octet-stream',
+                      size: result.assets[0].size || 0,
+                    });
+                  }
+                } catch (error) {
+                  console.error('📁 문서 선택 에러:', error);
+                  Alert.alert('오류', '문서를 선택하는 중 오류가 발생했습니다.');
+                }
+              },
             },
-          },
-          {
-            text: '취소',
-            style: 'cancel',
-          },
-        ]
-      );
+            {
+              text: '취소',
+              style: 'cancel',
+            },
+          ]
+        );
+      }
     } catch (error) {
-      console.error('파일 선택 중 오류:', error);
+      console.error('📁 파일 선택 중 오류:', error);
       Alert.alert('오류', '파일을 선택하는 중 오류가 발생했습니다.');
     }
   };
@@ -188,9 +229,8 @@ export const QuestUploadScreen: React.FC = () => {
              onPress: () => {
                // 퀘스트 페이지로 리디렉트
                navigation.reset({
-                 index: 1,
+                 index: 0,
                  routes: [
-                   { name: 'Home' },
                    { name: 'Quests' }
                  ],
                });
@@ -229,18 +269,18 @@ export const QuestUploadScreen: React.FC = () => {
             if (navigation.canGoBack()) {
               navigation.goBack();
             } else {
-              // 스택에 이전 화면이 없으면 홈으로 이동
+              // 스택에 이전 화면이 없으면 퀘스트 목록으로 이동
               navigation.reset({
                 index: 0,
-                routes: [{ name: 'Home' }],
+                routes: [{ name: 'Quests' }],
               });
             }
           } catch (error) {
             console.error('📁 뒤로가기 에러:', error);
-            // 에러 발생 시 홈으로 강제 이동
+            // 에러 발생 시 퀘스트 목록으로 강제 이동
             navigation.reset({
               index: 0,
-              routes: [{ name: 'Home' }],
+              routes: [{ name: 'Quests' }],
             });
           }
         }}
@@ -257,19 +297,22 @@ export const QuestUploadScreen: React.FC = () => {
         <View style={styles.fileSection}>
           <Text style={styles.sectionTitle}>증빙 파일</Text>
           
-          {!selectedFile ? (
-            <TouchableOpacity
-              style={styles.fileSelectButton}
-              onPress={handleFileSelect}
-              disabled={isUploading}
-            >
-              <Ionicons name="cloud-upload-outline" size={48} color={COLORS.primary} />
-              <Text style={styles.fileSelectText}>파일 선택하기</Text>
-              <Text style={styles.fileSelectSubtext}>
-                이미지, PDF, 문서 파일을 선택할 수 있습니다
-              </Text>
-            </TouchableOpacity>
-          ) : (
+                     {!selectedFile ? (
+             <TouchableOpacity
+               style={styles.fileSelectButton}
+               onPress={() => {
+                 console.log('📁 파일 선택 버튼 클릭됨');
+                 handleFileSelect();
+               }}
+               disabled={isUploading}
+             >
+               <Ionicons name="cloud-upload-outline" size={48} color={COLORS.primary} />
+               <Text style={styles.fileSelectText}>파일 선택하기</Text>
+               <Text style={styles.fileSelectSubtext}>
+                 {Platform.OS === 'web' ? '클릭하여 파일을 선택하세요' : '이미지, PDF, 문서 파일을 선택할 수 있습니다'}
+               </Text>
+             </TouchableOpacity>
+           ) : (
             <View style={styles.selectedFileContainer}>
               <View style={styles.fileInfo}>
                 <Ionicons name="document" size={24} color={COLORS.primary} />
@@ -377,6 +420,8 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: COLORS.primary + '05',
+    minHeight: 120,
   },
   fileSelectText: {
     fontSize: FONT_SIZES.md,

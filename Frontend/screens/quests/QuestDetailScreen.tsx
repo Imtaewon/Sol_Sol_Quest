@@ -60,7 +60,7 @@ const QUEST_TYPE_COLORS = {
  * 퀘스트 카테고리별 아이콘 정의
  * 각 카테고리에 맞는 Ionicons 아이콘명
  */
-const QUEST_CATEGORY_ICONS = {
+const QUEST_CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   STUDY: 'school',      // 학업
   HEALTH: 'fitness',    // 건강
   ECON: 'trending-up',  // 경제
@@ -264,7 +264,7 @@ export const QuestDetailScreen: React.FC = () => {
 
             <View style={styles.questTitleContainer}>
               <Ionicons 
-                name={QUEST_CATEGORY_ICONS[quest.category] as any} 
+                name={QUEST_CATEGORY_ICONS[quest.category as keyof typeof QUEST_CATEGORY_ICONS] || 'help-outline'} 
                 size={24} 
                 color={COLORS.gray[600]} 
               />
@@ -309,7 +309,7 @@ export const QuestDetailScreen: React.FC = () => {
         {/* 퀘스트 제목 */}
         <View style={styles.questTitleContainer}>
           <Ionicons 
-            name={QUEST_CATEGORY_ICONS[quest.category] as any} 
+            name={QUEST_CATEGORY_ICONS[quest.category as keyof typeof QUEST_CATEGORY_ICONS] || 'help-outline'} 
             size={24} 
             color={COLORS.gray[600]} 
           />
