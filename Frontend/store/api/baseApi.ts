@@ -213,6 +213,15 @@ export const baseApi = createApi({
       invalidatesTags: ['Quest'],
     }),
 
+    // 퀘스트 완료 및 경험치 수령 (시도 기록 자동 생성)
+    claimQuestReward: builder.mutation<any, { quest_id: string }>({
+      query: ({ quest_id }) => ({
+        url: `/api/v1/quests/${quest_id}/claim`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Quest', 'User', 'Account'],
+    }),
+
     // 적금 계좌 생성
     createSavingsAccount: builder.mutation<any, {
       user_id: string;
@@ -278,6 +287,7 @@ export const {
   // 퀘스트
   useGetQuestsQuery,
   useCompleteQuestMutation,
+  useClaimQuestRewardMutation,
   
   // 계좌
   useCreateSavingsAccountMutation,

@@ -45,6 +45,7 @@ import {
   useSurpriseQuests,
   useClaimQuest
 } from '../../hooks/useQuests';
+import { useClaimQuestRewardMutation } from '../../store/api/baseApi';
 import { useSavingsAccount } from '../../hooks/useUser';
 import { RootState } from '../../store';
 import { HomeStackParamList } from '../../navigation/HomeStack';
@@ -185,8 +186,8 @@ export const QuestsScreen: React.FC = () => {
     refetch: refetchSurprise 
   } = useSurpriseQuests();
 
-  // 퀘스트 수령 훅
-  const claimQuestMutation = useClaimQuest();
+  // 퀘스트 수령 훅 (새로운 API 사용)
+  const claimQuestRewardMutation = useClaimQuestRewardMutation();
 
   // 선택된 타입에 따른 데이터와 로딩 상태
   const getQuestsData = () => {
@@ -283,19 +284,19 @@ export const QuestsScreen: React.FC = () => {
     * 퀘스트 완료 처리 함수
     * 완료된 퀘스트의 보상을 수령
     */
-   const handleClaimQuest = async (quest: any) => {
-     try {
-       console.log('🎯 퀘스트 완료 요청:', quest.id);
-       await claimQuestMutation.mutateAsync({ 
-         questId: quest.id
-       });
-       
-       // 성공적으로 완료되면 퀘스트 목록을 새로고침
-       await refetch();
-     } catch (error) {
-       console.error('퀘스트 완료 실패:', error);
-     }
-   };
+                  const handleClaimQuest = async (quest: any) => {
+       try {
+         console.log('🎯 퀘스트 완료 요청:', quest.id);
+         await claimQuestRewardMutation[0]({ 
+           quest_id: quest.id
+         });
+         
+         // 성공적으로 완료되면 퀘스트 목록을 새로고침
+         await refetch();
+       } catch (error) {
+         console.error('퀘스트 완료 실패:', error);
+       }
+     };
 
   /**
    * 퀘스트 진행률 계산 함수
