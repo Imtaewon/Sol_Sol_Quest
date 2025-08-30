@@ -42,23 +42,9 @@ interface RouteParams {
 }
 
 export const QuestUploadScreen: React.FC = () => {
-  console.log('📁 QuestUploadScreen 렌더링 시작');
-  console.log('📁 QuestUploadScreen 컴포넌트가 실제로 마운트됨');
-  
   const navigation = useNavigation<QuestUploadScreenNavigationProp>();
   const route = useRoute();
   const { quest } = route.params as RouteParams;
-  
-  console.log('📁 QuestUploadScreen route params:', route.params);
-  console.log('📁 QuestUploadScreen quest:', quest);
-  console.log('📁 QuestUploadScreen navigation 객체:', navigation);
-  
-  // React Navigation v7 호환성을 위한 추가 로깅
-  console.log('📁 QuestUploadScreen 네비게이션 상태:', {
-    canGoBack: navigation.canGoBack(),
-    getState: navigation.getState(),
-    isFocused: navigation.isFocused(),
-  });
 
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -72,12 +58,8 @@ export const QuestUploadScreen: React.FC = () => {
    */
   const handleFileSelect = async () => {
     try {
-      console.log('📁 파일 선택 함수 호출됨');
-      console.log('📁 Platform.OS:', Platform.OS);
-      
       if (Platform.OS === 'web') {
         // 웹 환경에서는 input file을 사용
-        console.log('📁 웹 환경에서 파일 선택 시도');
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*,.pdf,.doc,.docx';
@@ -88,7 +70,6 @@ export const QuestUploadScreen: React.FC = () => {
           const file = target.files?.[0];
           
           if (file) {
-            console.log('📁 웹에서 파일 선택됨:', file);
             setSelectedFile({
               uri: URL.createObjectURL(file),
               name: file.name,
@@ -101,7 +82,6 @@ export const QuestUploadScreen: React.FC = () => {
         input.click();
       } else {
         // 모바일 환경에서는 기존 방식 사용
-        console.log('📁 모바일 환경에서 파일 선택 시도');
         Alert.alert(
           '파일 선택',
           '어떤 타입의 파일을 선택하시겠습니까?',
@@ -125,10 +105,10 @@ export const QuestUploadScreen: React.FC = () => {
                       size: result.assets[0].fileSize || 0,
                     });
                   }
-                } catch (error) {
-                  console.error('📁 이미지 선택 에러:', error);
-                  Alert.alert('오류', '이미지를 선택하는 중 오류가 발생했습니다.');
-                }
+                                 } catch (error) {
+                   console.error('이미지 선택 에러:', error);
+                   Alert.alert('오류', '이미지를 선택하는 중 오류가 발생했습니다.');
+                 }
               },
             },
             {
@@ -153,10 +133,10 @@ export const QuestUploadScreen: React.FC = () => {
                       size: result.assets[0].size || 0,
                     });
                   }
-                } catch (error) {
-                  console.error('📁 문서 선택 에러:', error);
-                  Alert.alert('오류', '문서를 선택하는 중 오류가 발생했습니다.');
-                }
+                                 } catch (error) {
+                   console.error('문서 선택 에러:', error);
+                   Alert.alert('오류', '문서를 선택하는 중 오류가 발생했습니다.');
+                 }
               },
             },
             {
@@ -166,10 +146,10 @@ export const QuestUploadScreen: React.FC = () => {
           ]
         );
       }
-    } catch (error) {
-      console.error('📁 파일 선택 중 오류:', error);
-      Alert.alert('오류', '파일을 선택하는 중 오류가 발생했습니다.');
-    }
+         } catch (error) {
+       console.error('파일 선택 중 오류:', error);
+       Alert.alert('오류', '파일을 선택하는 중 오류가 발생했습니다.');
+     }
   };
 
   /**
@@ -178,8 +158,6 @@ export const QuestUploadScreen: React.FC = () => {
    */
   const uploadFileToServer = async (file: any): Promise<string> => {
     try {
-      console.log('📁 파일명 기반 URL 생성 시작:', file.name);
-      
       // 실제 파일 업로드 없이 파일명으로 URL 생성
       const timestamp = Date.now();
       const randomId = Math.random().toString(36).substring(2, 15);
@@ -191,14 +169,10 @@ export const QuestUploadScreen: React.FC = () => {
       
       const fakeUrl = `https://sol-sol-quest-uploads.s3.amazonaws.com/quest-proofs/${safeFileName}`;
       
-      console.log('📁 생성된 파일 URL:', fakeUrl);
-      console.log('📁 원본 파일명:', file.name);
-      console.log('📁 파일 크기:', file.size, 'bytes');
-      
       return fakeUrl;
       
     } catch (error) {
-      console.error('📁 URL 생성 에러:', error);
+      console.error('URL 생성 에러:', error);
       
       // 에러 발생 시 기본 URL 생성
       const timestamp = Date.now();
@@ -222,17 +196,13 @@ export const QuestUploadScreen: React.FC = () => {
 
     try {
       // 1. 파일을 서버에 업로드하고 URL 받기
-      console.log('📁 파일 업로드 시작:', selectedFile.name);
       const proofUrl = await uploadFileToServer(selectedFile);
-      console.log('📁 파일 업로드 완료, URL:', proofUrl);
 
       // 2. 퀘스트 제출 API 호출
-      console.log('🎯 퀘스트 제출 API 호출 시작');
       await uploadQuestProof({
         quest_id: quest.id,
         proof_url: proofUrl,
       }).unwrap();
-      console.log('🎯 퀘스트 제출 API 호출 완료');
 
              Alert.alert(
          '제출 완료',
@@ -278,7 +248,6 @@ export const QuestUploadScreen: React.FC = () => {
         title="파일 제출" 
         showBackButton 
         onBackPress={() => {
-          console.log('📁 뒤로가기 버튼 클릭됨');
           try {
             if (navigation.canGoBack()) {
               navigation.goBack();
@@ -290,7 +259,7 @@ export const QuestUploadScreen: React.FC = () => {
               });
             }
           } catch (error) {
-            console.error('📁 뒤로가기 에러:', error);
+            console.error('뒤로가기 에러:', error);
             // 에러 발생 시 퀘스트 목록으로 강제 이동
             navigation.reset({
               index: 0,
@@ -314,10 +283,9 @@ export const QuestUploadScreen: React.FC = () => {
                      {!selectedFile ? (
              <TouchableOpacity
                style={styles.fileSelectButton}
-               onPress={() => {
-                 console.log('📁 파일 선택 버튼 클릭됨');
-                 handleFileSelect();
-               }}
+                               onPress={() => {
+                  handleFileSelect();
+                }}
                disabled={isUploading}
              >
                <Ionicons name="cloud-upload-outline" size={48} color={COLORS.primary} />

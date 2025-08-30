@@ -30,17 +30,17 @@ export const developmentConfig = {
   NODE_ENV: 'development',
   
   // 해커톤 시연용 핵심 설정
-  DEBUG_MODE: true,                // 시연용 디버그 활성화 (문제 발생 시 확인용)
-  LOG_LEVEL: 'info',               // 정보 로그 (시연 중 문제 파악용)
+  DEBUG_MODE: false,               // 배포용 디버그 비활성화
+  LOG_LEVEL: 'error',              // 에러 로그만 (배포용)
   MOCK_API: false,                 // 실제 API 사용
   
-  // 해커톤 시연용 특별 설정
-  DEMO_MODE: true,                 // 시연 모드 활성화
+  // 배포용 특별 설정
+  DEMO_MODE: false,                // 배포 모드 비활성화
   OFFLINE_FALLBACK: true,          // 오프라인 시 대체 데이터 사용
-  NETWORK_TIMEOUT: 20000,          // 네트워크 타임아웃 (20초 - 시연용 여유)
+  NETWORK_TIMEOUT: 15000,          // 네트워크 타임아웃 (15초 - 배포용)
   
-  // 시연용 추가 설정
+  // 배포용 추가 설정
   SHOW_LOADING_INDICATORS: true,   // 로딩 인디케이터 표시
   ENABLE_ERROR_BOUNDARIES: true,   // 에러 바운더리 활성화
-  AUTO_REFRESH_INTERVAL: 30000,    // 자동 새로고침 간격 (30초)
+  AUTO_REFRESH_INTERVAL: 60000,    // 자동 새로고침 간격 (60초 - 배포용)
 };
