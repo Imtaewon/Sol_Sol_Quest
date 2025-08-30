@@ -155,12 +155,29 @@ export const DepositMoneyScreen: React.FC = () => {
        // result 자체가 success 필드를 가지고 있는지 확인
        if (result && result.success === true) {
          console.log('✅ 입금 성공, 메인페이지로 이동 시작');
-         // 즉시 메인페이지로 이동 (Alert 없이)
-         navigation.reset({ 
-           index: 0, 
-           routes: [{ name: 'Home' }] 
-         });
-         console.log('✅ 메인페이지로 이동 완료');
+         
+         // React Native Web 호환성을 위한 네비게이션 처리
+         try {
+           console.log('💰 웹 환경에서 메인페이지로 이동 시도');
+           navigation.reset({ 
+             index: 0, 
+             routes: [{ name: 'Home' }] 
+           });
+           console.log('✅ 메인페이지로 이동 완료');
+         } catch (navError) {
+           console.error('💰 네비게이션 에러:', navError);
+           // 대안: navigate 방식 시도
+           try {
+             navigation.navigate('Home');
+             console.log('✅ navigate 방식으로 메인페이지 이동 완료');
+           } catch (navigateError) {
+             console.error('💰 navigate도 실패:', navigateError);
+             // 최후 수단: 페이지 새로고침
+             if (Platform.OS === 'web' && typeof window !== 'undefined') {
+               window.location.reload();
+             }
+           }
+         }
        } else {
          console.log('❌ 입금 실패 - 응답:', result);
          throw new Error('입금 실패');
