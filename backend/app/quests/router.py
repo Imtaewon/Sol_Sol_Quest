@@ -6,7 +6,7 @@ from sqlalchemy import func, and_
 from app.database import get_db
 from app.auth.deps import get_current_user
 from app.models import Quest, QuestAttempt, QuestAttemptStatusEnum
-from .schemas import QuestListItem
+from .schemas import QuestListItem, CompleteQuestRequest
 from .service import simple_finish_quest, quest_submitted, complete_quest_with_auto_attempt
 
 router = APIRouter(prefix="/quests", tags=["Quests"])
@@ -130,11 +130,11 @@ def complete_simple_quest(
 @router.post("/{quest_id}/upload", summary="업로드 인증 퀘스트 완료처리")
 def complete_upload_quest(
     quest_id: str,
-    proof_url: str,
+    request: CompleteQuestRequest,
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    result = quest_submitted(db=db, user_id=current_user.id, quest_id=quest_id, proof_url=proof_url)
+    result = quest_submitted(db=db, user_id=current_user.id, quest_id=quest_id, proof_url=request.proof_url)
     if not result.get("success"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=result.get("message", "처리 실패"))
     return result
