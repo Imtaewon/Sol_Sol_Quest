@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   },
   mySection: {
     paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.md, // SPACING.xl에서 SPACING.md로 줄임
   },
   mySchoolSection: {
     marginBottom: SPACING.lg,
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
     color: COLORS.gray[600],
   },
   mySchoolExpStats: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.sm, // SPACING.lg에서 SPACING.sm으로 줄임
   },
   mySchoolTotalExp: {
     fontSize: FONT_SIZES.md,

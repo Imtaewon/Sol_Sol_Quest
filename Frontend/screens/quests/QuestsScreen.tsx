@@ -514,13 +514,21 @@ export const QuestsScreen: React.FC = () => {
                         hasSavings: hasSavings
                       });
                       
-                      navigation.navigate('QuestUpload', {
-                        quest: {
-                          id: quest.id,
-                          title: quest.title,
-                          description: quest.description || quest.title,
-                        },
-                      });
+                      console.log('📁 navigation 객체:', navigation);
+                      console.log('📁 QuestUpload로 이동 시도...');
+                      
+                      try {
+                        navigation.navigate('QuestUpload', {
+                          quest: {
+                            id: quest.id,
+                            title: quest.title,
+                            description: quest.description || quest.title,
+                          },
+                        });
+                        console.log('📁 QuestUpload로 이동 성공');
+                      } catch (error) {
+                        console.error('📁 QuestUpload로 이동 실패:', error);
+                      }
                     }}
                   >
                     <Ionicons name="cloud-upload-outline" size={16} color={COLORS.white} />

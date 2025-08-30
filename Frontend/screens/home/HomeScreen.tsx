@@ -539,7 +539,9 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    paddingTop: SPACING.md, // 상단 패딩 줄임
+    paddingBottom: SPACING.lg, // 하단 패딩 늘림
+    paddingHorizontal: SPACING.lg, // 좌우 패딩 유지
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -569,7 +571,7 @@ const styles = StyleSheet.create({
   accountType: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.gray[600],
-    fontWeight: '500',
+    fontWeight: '700', // 볼드체로 변경
   },
   accountBalance: {
     marginBottom: SPACING.md,

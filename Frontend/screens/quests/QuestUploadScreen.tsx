@@ -42,9 +42,14 @@ interface RouteParams {
 }
 
 export const QuestUploadScreen: React.FC = () => {
+  console.log('📁 QuestUploadScreen 렌더링 시작');
+  
   const navigation = useNavigation<QuestUploadScreenNavigationProp>();
   const route = useRoute();
   const { quest } = route.params as RouteParams;
+  
+  console.log('📁 QuestUploadScreen route params:', route.params);
+  console.log('📁 QuestUploadScreen quest:', quest);
 
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);

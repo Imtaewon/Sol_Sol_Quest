@@ -312,7 +312,11 @@ export const AttendanceScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <AppHeader title="출석 관리" showBackButton />
+      <AppHeader 
+        title="출석 관리" 
+        showBackButton 
+        onBackPress={() => navigation.goBack()}
+      />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderAttendanceCard()}
