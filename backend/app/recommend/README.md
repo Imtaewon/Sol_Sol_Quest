@@ -163,10 +163,6 @@ else: STUDY +1, SAVING +1, ECON +1
 hybrid_score = 0.6 * CF_score + 0.4 * CBF_score
 ```
 
-### 제외 조건
-- 이미 완료한 퀘스트 (`is_cleared = 1`)
-- 최근 7일 내 추천된 퀘스트
-
 ---
 
 ## 데이터베이스 구조

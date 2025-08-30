@@ -817,14 +817,13 @@ class QuestRecommendationSystem:
         return min(score, 1.0)
     
     def _get_excluded_quests(self, db: Session, user_id: str) -> set:
-        """제외할 퀘스트 목록 (이미 완료 or 최근 추천)"""
         query = text("""
             SELECT DISTINCT quest_id
             FROM quest_recommendations
             WHERE user_id = :user_id
             AND (
-                is_cleared = 1  -- 이미 완료한 퀘스트
-                OR recommendation_date >= :recent_date  -- 최근 7일 내 추천된 퀘스트
+                is_cleared = 1  
+                OR recommendation_date >= :recent_date 
             )
         """)
         
