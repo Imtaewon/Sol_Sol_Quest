@@ -263,6 +263,15 @@ export const useSignup = () => {
           dispatch(loginSuccess({ token: access_token }));
           console.log('🔐 회원가입 후 Redux loginSuccess 액션 호출됨');
           
+          // 회원가입 후 캐시 무효화 (새로운 사용자 정보 로드)
+          console.log('🔄 회원가입 후 캐시 무효화 시작');
+          queryClient.invalidateQueries({ queryKey: ['user'] });
+          queryClient.invalidateQueries({ queryKey: ['account'] });
+          queryClient.invalidateQueries({ queryKey: ['savingsAccount'] });
+          queryClient.invalidateQueries({ queryKey: ['depositAccount'] });
+          queryClient.invalidateQueries({ queryKey: ['ranks'] });
+          console.log('✅ 회원가입 후 캐시 무효화 완료');
+          
           Toast.show({
             type: 'success',
             text1: '회원가입 성공',

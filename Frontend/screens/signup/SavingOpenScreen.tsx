@@ -369,11 +369,8 @@ export const SavingOpenScreen: React.FC = () => {
           {
             text: '확인',
             onPress: () => {
-              // 네비게이션 스택을 초기화하고 메인페이지로 이동
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Home' }],
-              });
+              // 메인페이지로 이동
+              navigation.navigate('Home');
             },
           },
         ]

@@ -207,6 +207,7 @@ export const useClaimQuest = () => {
         // 관련 쿼리 무효화하여 리페치
         queryClient.invalidateQueries({ queryKey: ['quests'] });
         queryClient.invalidateQueries({ queryKey: ['user'] });
+        queryClient.invalidateQueries({ queryKey: ['ranks'] }); // 학교 랭킹 캐시 무효화
         
         Toast.show({
           type: 'success',
