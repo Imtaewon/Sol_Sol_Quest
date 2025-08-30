@@ -364,45 +364,41 @@ export const SavingOpenScreen: React.FC = () => {
         return;
       }
 
-      Alert.alert(
-        '설문 완료',
-        '적금 계좌 개설이 완료되었습니다!',
-        [
-          {
-            text: '확인',
-            onPress: async () => {
-              try {
-                // 캐시 무효화 후 메인페이지로 이동
-                await Promise.all([
-                  queryClient.invalidateQueries({ queryKey: ['user'] }),
-                  queryClient.invalidateQueries({ queryKey: ['account'] }),
-                  queryClient.invalidateQueries({ queryKey: ['savingsAccount'] }),
-                  queryClient.invalidateQueries({ queryKey: ['depositAccount'] }),
-                  queryClient.invalidateQueries({ queryKey: ['ranks'] }),
-                  queryClient.invalidateQueries({ queryKey: ['quests'] }),
-                  queryClient.invalidateQueries({ queryKey: ['dailyQuests'] }),
-                  queryClient.invalidateQueries({ queryKey: ['growthQuests'] }),
-                  queryClient.invalidateQueries({ queryKey: ['surpriseQuests'] }),
-                  queryClient.invalidateQueries({ queryKey: ['recommendedQuests'] }),
-                ]);
-                
-                // 강제로 메인페이지로 이동
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Home' }],
-                });
-              } catch (error) {
-                console.error('캐시 무효화 중 오류:', error);
-                // 오류가 발생해도 메인페이지로 이동
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Home' }],
-                });
-              }
-            },
-          },
-        ]
-      );
+      console.log('✅ 설문 및 적금 가입 완료, 메인페이지로 이동 시작');
+      
+      // Alert 제거하고 바로 라우팅
+      try {
+        // 캐시 무효화 후 메인페이지로 이동
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['user'] }),
+          queryClient.invalidateQueries({ queryKey: ['account'] }),
+          queryClient.invalidateQueries({ queryKey: ['savingsAccount'] }),
+          queryClient.invalidateQueries({ queryKey: ['depositAccount'] }),
+          queryClient.invalidateQueries({ queryKey: ['ranks'] }),
+          queryClient.invalidateQueries({ queryKey: ['quests'] }),
+          queryClient.invalidateQueries({ queryKey: ['dailyQuests'] }),
+          queryClient.invalidateQueries({ queryKey: ['growthQuests'] }),
+          queryClient.invalidateQueries({ queryKey: ['surpriseQuests'] }),
+          queryClient.invalidateQueries({ queryKey: ['recommendedQuests'] }),
+        ]);
+        
+        console.log('✅ 캐시 무효화 완료, 메인페이지로 이동');
+        
+        // 강제로 메인페이지로 이동
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+        
+        console.log('✅ 메인페이지로 이동 완료');
+      } catch (error) {
+        console.error('캐시 무효화 중 오류:', error);
+        // 오류가 발생해도 메인페이지로 이동
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      }
     } catch (error) {
       console.error('설문 제출 오류:', error);
       Alert.alert('오류', '적금 가입 또는 설문 제출에 실패했습니다.');
