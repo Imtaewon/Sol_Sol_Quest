@@ -14,9 +14,13 @@ export interface StepGoal {
   monthly: number;
 }
 
+export interface AccelerometerSubscription {
+  remove: () => void;
+}
+
 export class StepCounterService {
   private static instance: StepCounterService;
-  private subscription: any = null;
+  private subscription: AccelerometerSubscription | null = null;
   private isTracking = false;
   private stepData: StepData = {
     totalSteps: 0,

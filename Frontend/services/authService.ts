@@ -9,7 +9,8 @@ export interface FrontendSignupRequest {
   username: string;
   password: string;
   email: string;
-  school: string;
+  school: string; // 학교 코드
+  schoolName?: string; // 학교 이름 (선택적)
   department: string;
   grade: number;
 }
@@ -81,8 +82,8 @@ export const transformSignupData = (frontendData: FrontendSignupRequest): Signup
     real_name: frontendData.name,
     gender: frontendData.gender,  // 이미 Backend 형식이므로 변환 불필요
     birth_year: frontendData.birthYear,
-    university_code: frontendData.school,
-    university_name: frontendData.school, // 임시로 같은 값 사용
+    university_code: frontendData.school, // 학교 코드
+    university_name: frontendData.schoolName || '', // 학교 이름 (기본값 빈 문자열)
     department: frontendData.department,
     grade: frontendData.grade,
   };
@@ -92,20 +93,38 @@ export const transformSignupData = (frontendData: FrontendSignupRequest): Signup
 export const authService = {
   // 로그인
   login: async (data: LoginRequest): Promise<ApiResponse<LoginResponse>> => {
-    const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', data);
+    const response = await apiClient.post<ApiResponse<LoginResponse>>('/api/v1/auth/login', data);
     return response.data;
   },
 
   // 회원가입 (Frontend 형식 받아서 변환)
   signup: async (frontendData: FrontendSignupRequest): Promise<ApiResponse<SignupResponse>> => {
+    console.log('🚀 authService.signup 호출됨');
+    console.log('Frontend 데이터:', JSON.stringify(frontendData, null, 2));
+    
     const backendData = transformSignupData(frontendData);
-    const response = await apiClient.post<ApiResponse<SignupResponse>>('/auth/register', backendData);
+    console.log('Backend로 변환된 데이터:', JSON.stringify(backendData, null, 2));
+    
+    console.log('📡 API 호출 시작: /api/v1/auth/register');
+    const response = await apiClient.post<ApiResponse<SignupResponse>>('/api/v1/auth/register', backendData);
+    console.log('📡 API 호출 완료');
+    console.log('Backend 응답:', JSON.stringify(response.data, null, 2));
+    
     return response.data;
   },
 
   // 로그아웃
   logout: async (): Promise<ApiResponse> => {
-    const response = await apiClient.post<ApiResponse>('/auth/logout');
-    return response.data;
+    console.log('🔍 authService.logout() 호출됨');
+    console.log('📡 로그아웃 API 요청 시작: /api/v1/auth/logout');
+    try {
+      const response = await apiClient.post<ApiResponse>('/api/v1/auth/logout');
+      console.log('📡 로그아웃 API 요청 완료:', response.status);
+      console.log('📡 로그아웃 API 응답:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ 로그아웃 API 요청 실패:', error);
+      throw error;
+    }
   },
 };

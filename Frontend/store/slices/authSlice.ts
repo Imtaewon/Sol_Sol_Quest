@@ -25,9 +25,15 @@ const authSlice = createSlice({
       state.error = action.payload;
     },
     loginSuccess: (state, action: PayloadAction<{ token: string }>) => {
+      console.log('🔐 Redux loginSuccess 액션 호출됨');
+      console.log('토큰:', action.payload.token);
+      console.log('이전 인증 상태:', state.isAuthenticated);
+      
       state.isAuthenticated = true;
       state.token = action.payload.token;
       state.error = null;
+      
+      console.log('✅ 인증 상태 업데이트 완료:', state.isAuthenticated);
     },
     logout: (state) => {
       state.isAuthenticated = false;

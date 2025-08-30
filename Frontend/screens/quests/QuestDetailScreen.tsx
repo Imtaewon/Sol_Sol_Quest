@@ -34,16 +34,13 @@ import { AppHeader } from '../../components/common/AppHeader';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
 import { QuestWithAttempt, QuestAttempt } from '../../types/database';
-import { 
-  useStartQuestMutation,
-  useSubmitQuestMutation,
-  useVerifyQuestMutation,
-  useLogQuestInteractionMutation
-} from '../../store/api/questApi';
-import { HomeStackParamList } from '../../navigation/HomeStack';
 
-type QuestDetailRouteProp = RouteProp<HomeStackParamList, 'QuestDetail'>;
-type QuestDetailNavigationProp = StackNavigationProp<HomeStackParamList, 'QuestDetail'>;
+import { useCompleteQuestMutation } from '../../store/api/baseApi';
+import { useSavingsAccount } from '../../hooks/useUser';
+import { QuestsStackParamList } from '../../navigation/QuestsStack';
+
+type QuestDetailRouteProp = RouteProp<QuestsStackParamList, 'QuestDetail'>;
+type QuestDetailNavigationProp = StackNavigationProp<QuestsStackParamList, 'QuestDetail'>;
 
 const { width } = Dimensions.get('window');
 
@@ -63,7 +60,7 @@ const QUEST_TYPE_COLORS = {
  * 퀘스트 카테고리별 아이콘 정의
  * 각 카테고리에 맞는 Ionicons 아이콘명
  */
-const QUEST_CATEGORY_ICONS = {
+const QUEST_CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   STUDY: 'school',      // 학업
   HEALTH: 'fitness',    // 건강
   ECON: 'trending-up',  // 경제
@@ -98,21 +95,25 @@ export const QuestDetailScreen: React.FC = () => {
   // QuestsScreen에서 전달받은 퀘스트 객체 (별도 API 호출 없음)
   const { quest } = route.params;
 
+  // 적금 계좌 정보 조회
+  const { data: savingsAccount } = useSavingsAccount();
+  
+  // 적금 가입 여부 판단 (실제 계좌 데이터 기반)
+  const hasSavings = savingsAccount?.data?.data && savingsAccount.data.data.length > 0;
+
   // 퀘스트 제출 중 로딩 상태 관리
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 퀘스트 관련 API 뮤테이션 훅들
-  const [startQuest] = useStartQuestMutation();        // 퀘스트 시작
-  const [submitQuest] = useSubmitQuestMutation();      // 퀘스트 제출
-  const [verifyQuest] = useVerifyQuestMutation();      // 퀘스트 인증
-  const [logQuestInteraction] = useLogQuestInteractionMutation(); // 상호작용 로그
+  const [completeQuest] = useCompleteQuestMutation(); // 퀘스트 즉시 완료 (시연용)
 
   /**
    * 퀘스트 진행률 계산 함수
    * @returns 진행률 퍼센트 (0-100)
    */
   const getQuestProgress = () => {
-    if (!quest.attempt) return 0;
+    // QuestWithAttempt 구조에 맞게 수정
+    if (!quest.attempt?.progress_count || !quest.attempt?.target_count) return 0;
     return Math.min((quest.attempt.progress_count / quest.attempt.target_count) * 100, 100);
   };
 
@@ -120,14 +121,13 @@ export const QuestDetailScreen: React.FC = () => {
    * 퀘스트 상태 텍스트 반환 함수
    * @returns 상태에 따른 한글 텍스트
    */
-  const getQuestStatusText = () => {
-    if (!quest.attempt) return '미시작';
-    
-    switch (quest.attempt.status) {
-      case 'in_progress': return '진행중';
-      case 'clear': return '목표 달성';
-      case 'submitted': return '제출됨';
-      case 'approved': return '완료';
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'DEACTIVE': return '비활성';
+      case 'IN_PROGRESS': return '진행중';
+      case 'CLEAR': return '목표 달성';
+      case 'SUBMITTED': return '제출됨';
+      case 'APPROVED': return '완료';
       default: return '미시작';
     }
   };
@@ -136,52 +136,29 @@ export const QuestDetailScreen: React.FC = () => {
    * 퀘스트 상태 색상 반환 함수
    * @returns 상태에 따른 색상
    */
-  const getQuestStatusColor = () => {
-    if (!quest.attempt) return COLORS.gray[400];
-    
-    switch (quest.attempt.status) {
-      case 'in_progress': return COLORS.primary;
-      case 'clear': return COLORS.success;
-      case 'submitted': return COLORS.warning;
-      case 'approved': return COLORS.success;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'DEACTIVE': return COLORS.gray[500];
+      case 'IN_PROGRESS': return COLORS.primary;
+      case 'CLEAR': return COLORS.success;
+      case 'SUBMITTED': return COLORS.warning;
+      case 'APPROVED': return COLORS.success;
       default: return COLORS.gray[400];
     }
   };
 
-  const handleStartQuest = async () => {
-    try {
-      await startQuest({ quest_id: quest.id });
-      
-      await logQuestInteraction({
-        quest_id: quest.id,
-        event: 'start',
-        context: 'quest_detail'
-      });
 
-      Alert.alert('퀘스트 시작', `${quest.title} 퀘스트를 시작했습니다!`);
-      // 상세 화면에서 데이터 갱신이 필요하면 목록 화면으로 돌아가서 새로고침하도록 안내
-      navigation.goBack();
-    } catch (error) {
-      Alert.alert('오류', '퀘스트 시작에 실패했습니다.');
-    }
-  };
 
-  const handleSubmitQuest = async () => {
+  const handleCompleteQuest = async () => {
     try {
       setIsSubmitting(true);
-      await submitQuest({ quest_id: quest.id });
-      
-      await logQuestInteraction({
-        quest_id: quest.id,
-        event: 'complete',
-        context: 'quest_detail'
-      });
+      await completeQuest({ quest_id: quest.id });
 
-      Alert.alert('퀘스트 제출', '퀘스트가 성공적으로 제출되었습니다!');
+      Alert.alert('퀘스트 즉시 완료', `${quest.reward_exp} EXP를 획득했습니다!`);
       // 상세 화면에서 데이터 갱신이 필요하면 목록 화면으로 돌아가서 새로고침하도록 안내
       navigation.goBack();
     } catch (error) {
-      Alert.alert('오류', '퀘스트 제출에 실패했습니다.');
+      Alert.alert('오류', '퀘스트 즉시 완료에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
     }
@@ -189,67 +166,140 @@ export const QuestDetailScreen: React.FC = () => {
 
   const handleVerifyQuest = async () => {
     try {
-      // 인증 방식에 따른 처리
-      let verifyData = {};
-      
-      switch (quest.verify_method) {
-        case 'GPS':
-          // GPS 인증 로직
-          verifyData = { lat: quest.lat, lng: quest.lng };
-          break;
-        case 'STEPS':
-          // 걸음 수 인증 로직
-          verifyData = { steps: quest.attempt?.progress_count || 0 };
-          break;
-        case 'PAYMENT':
-          // 결제 인증 로직
-          verifyData = { payment_id: 'sample_payment_id' };
-          break;
-        case 'ATTENDANCE':
-          // 출석 인증 로직
-          verifyData = { attendance_date: new Date().toISOString() };
-          break;
-        default:
-          verifyData = {};
-      }
-
-      await verifyQuest({ 
-        quest_id: quest.id, 
-        verify_data: verifyData 
-      });
-
-      Alert.alert('인증 완료', '퀘스트 인증이 완료되었습니다!');
-      // 상세 화면에서 데이터 갱신이 필요하면 목록 화면으로 돌아가서 새로고침하도록 안내
-      navigation.goBack();
+      // 파일 업로드 시뮬레이션 (UI만)
+      Alert.alert(
+        '파일 업로드',
+        '증빙 파일을 선택해주세요',
+        [
+          {
+            text: '취소',
+            style: 'cancel',
+          },
+          {
+            text: '파일 선택',
+            onPress: () => {
+              // 파일 선택 시뮬레이션
+              setTimeout(() => {
+                Alert.alert(
+                  '제출 완료',
+                  '증빙 파일이 성공적으로 업로드되었습니다!\n퀘스트가 완료되었습니다!',
+                  [
+                    {
+                      text: '확인',
+                      onPress: () => navigation.goBack(),
+                    },
+                  ]
+                );
+              }, 1000);
+            },
+          },
+        ]
+      );
     } catch (error) {
       Alert.alert('오류', '퀘스트 인증에 실패했습니다.');
     }
   };
 
-  const canStart = !quest.attempt || quest.attempt.status === 'deactive';
-  const canSubmit = quest.attempt?.status === 'clear';
-  const canVerify = quest.attempt?.status === 'in_progress';
-  const isCompleted = quest.attempt?.status === 'approved';
+  // 전체 퀘스트 데이터 디버깅 (모든 퀘스트)
+  console.log('🔍 전체 퀘스트 데이터:', {
+    questId: quest.id,
+    questTitle: quest.title,
+    questType: quest.type,
+    questCategory: quest.category,
+    questRewardExp: quest.reward_exp,
+    questTargetCount: quest.target_count,
+    // 모든 필드 확인
+    questKeys: Object.keys(quest),
+    questValues: Object.values(quest),
+    // 링크 관련 필드
+    verifyMethod: quest.verify_method,
+    linkUrl: quest.link_url,
+    // 상태 관련 필드
+    userStatus: quest.user_status,
+    attempt: quest.attempt,
+    attemptStatus: quest.attempt?.status,
+    // 적금 관련
+    hasSavings,
+    savingsAccountData: savingsAccount?.data
+  });
+
+  const canStart = false; // 시작 버튼 제거 (적금 가입 시 자동 시작)
+  const canSubmit = quest.attempt?.status === 'CLEAR';
+  const canVerify = quest.attempt?.status === 'IN_PROGRESS' || !quest.attempt; // 미시작도 인증 가능으로 표시
+  const isCompleted = quest.attempt?.status === 'APPROVED';
+  const canClaimReward = quest.attempt?.status === 'CLEAR'; // 경험치 받기 가능 여부
+
+  // 모든 퀘스트 버튼 조건 디버깅
+  console.log('🔍 버튼 조건 디버깅:', {
+    questId: quest.id,
+    questTitle: quest.title,
+    canClaimReward,
+    canVerify,
+    isCompleted,
+    verifyMethod: quest.verify_method,
+    hasLink: !!quest.link_url,
+    linkButtonShouldShow: quest.verify_method === 'LINK',
+    userStatus: quest.user_status,
+    attemptStatus: quest.attempt?.status,
+    hasSavings,
+    // 렌더링 조건들
+    shouldShowSimpleView: !hasSavings,
+    shouldShowDetailView: hasSavings
+  });
 
   return (
     <View style={styles.container}>
       <AppHeader title="퀘스트 상세" showBackButton />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* 퀘스트 헤더 */}
-        <View style={styles.questHeader}>
-          <View style={styles.questTypeContainer}>
-            <View 
-              style={[
-                styles.questTypeIndicator, 
-                { backgroundColor: QUEST_TYPE_COLORS[quest.type] }
-              ]} 
-            />
-            <Text style={styles.questTypeText}>
-              {quest.type === 'life' ? '일상' : quest.type === 'growth' ? '성장' : '돌발'}
-            </Text>
+        {/* 적금 비가입자인 경우 간단한 정보만 표시 */}
+        {!hasSavings ? (
+          <View style={styles.simpleContainer}>
+            <View style={styles.questHeader}>
+              <View style={styles.questReward}>
+                <Ionicons name="star" size={20} color={COLORS.secondary} />
+                <Text style={styles.questRewardText}>{quest.reward_exp} EXP</Text>
+              </View>
+            </View>
+
+            <View style={styles.questTitleContainer}>
+              <Ionicons 
+                name={QUEST_CATEGORY_ICONS[quest.category as keyof typeof QUEST_CATEGORY_ICONS] || 'help-outline'} 
+                size={24} 
+                color={COLORS.gray[600]} 
+              />
+              <Text style={styles.questTitle}>{quest.title}</Text>
+            </View>
+
+            <View style={styles.descriptionContainer}>
+              <Text style={styles.sectionTitle}>퀘스트 설명</Text>
+              <View style={styles.descriptionCard}>
+                <Text style={styles.descriptionText}>
+                  이 퀘스트는 {quest.category === 'STUDY' ? '학업' :
+                              quest.category === 'HEALTH' ? '건강' :
+                              quest.category === 'ECON' ? '경제' :
+                              quest.category === 'LIFE' ? '일상' :
+                              quest.category === 'ENT' ? '엔터테인먼트' : '저축'} 
+                  카테고리에 속하며, {quest.target_count}회 달성을 목표로 합니다.
+                </Text>
+              </View>
+            </View>
+
+
+
+            <View style={styles.noSavingsOverlay}>
+              <Ionicons name="lock-closed" size={48} color={COLORS.gray[400]} />
+              <Text style={styles.noSavingsText}>적금 가입 후 이용 가능합니다</Text>
+              <Text style={styles.noSavingsSubtext}>
+                퀘스트 진행, 경험치 획득, 상세 정보 확인이 가능합니다
+              </Text>
+            </View>
           </View>
-          
+        ) : (
+          // 적금 가입자인 경우 상세 정보 표시
+          <>
+            {/* 퀘스트 헤더 */}
+            <View style={styles.questHeader}>
           <View style={styles.questReward}>
             <Ionicons name="star" size={20} color={COLORS.secondary} />
             <Text style={styles.questRewardText}>{quest.reward_exp} EXP</Text>
@@ -259,7 +309,7 @@ export const QuestDetailScreen: React.FC = () => {
         {/* 퀘스트 제목 */}
         <View style={styles.questTitleContainer}>
           <Ionicons 
-            name={QUEST_CATEGORY_ICONS[quest.category] as any} 
+            name={QUEST_CATEGORY_ICONS[quest.category as keyof typeof QUEST_CATEGORY_ICONS] || 'help-outline'} 
             size={24} 
             color={COLORS.gray[600]} 
           />
@@ -272,10 +322,10 @@ export const QuestDetailScreen: React.FC = () => {
             <View 
               style={[
                 styles.statusDot, 
-                { backgroundColor: getQuestStatusColor() }
+                { backgroundColor: getStatusColor(quest.attempt?.status || 'DEACTIVE') }
               ]} 
             />
-            <Text style={styles.statusText}>{getQuestStatusText()}</Text>
+            <Text style={styles.statusText}>{getStatusText(quest.attempt?.status || 'DEACTIVE')}</Text>
           </View>
         </View>
 
@@ -294,7 +344,7 @@ export const QuestDetailScreen: React.FC = () => {
                   styles.progressFill, 
                   { 
                     width: `${getQuestProgress()}%`,
-                    backgroundColor: isCompleted ? COLORS.success : QUEST_TYPE_COLORS[quest.type]
+                    backgroundColor: isCompleted ? COLORS.success : QUEST_TYPE_COLORS[quest.type.toLowerCase() as keyof typeof QUEST_TYPE_COLORS]
                   }
                 ]} 
               />
@@ -313,7 +363,7 @@ export const QuestDetailScreen: React.FC = () => {
                    quest.verify_method === 'ATTENDANCE' ? 'calendar' :
                    'checkmark-circle'} 
               size={24} 
-              color={QUEST_TYPE_COLORS[quest.type]} 
+              color={QUEST_TYPE_COLORS[quest.type.toLowerCase() as keyof typeof QUEST_TYPE_COLORS]} 
             />
             <View style={styles.verifyMethodContent}>
               <Text style={styles.verifyMethodTitle}>
@@ -324,7 +374,7 @@ export const QuestDetailScreen: React.FC = () => {
                  '일반 인증'}
               </Text>
               <Text style={styles.verifyMethodDescription}>
-                {VERIFY_METHOD_DESCRIPTIONS[quest.verify_method]}
+                {VERIFY_METHOD_DESCRIPTIONS[quest.verify_method as keyof typeof VERIFY_METHOD_DESCRIPTIONS]}
               </Text>
             </View>
           </View>
@@ -345,31 +395,136 @@ export const QuestDetailScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* 액션 버튼 */}
+                {/* 액션 버튼 */}
         <View style={styles.actionContainer}>
-          {canStart && (
-            <PrimaryButton
-              title="퀘스트 시작하기"
-              onPress={handleStartQuest}
-              size="large"
-            />
+
+          {/* 링크 퀘스트의 경우 링크 열기 버튼 (가장 우선순위) */}
+          {(() => {
+            const isLinkQuest = quest.verify_method === 'LINK';
+            if (isLinkQuest) {
+              console.log('🔗 링크 버튼 렌더링:', {
+                questId: quest.id,
+                questTitle: quest.title,
+                verifyMethod: quest.verify_method,
+                linkUrl: quest.link_url,
+                userStatus: quest.user_status
+              });
+            }
+            return isLinkQuest;
+          })() ? (
+            <TouchableOpacity
+              style={[
+                styles.linkButton,
+                isSubmitting && styles.linkButtonDisabled
+              ]}
+              onPress={() => {
+                // 링크 퀘스트 상태에 따른 처리
+                if (quest.user_status === 'CLEAR') {
+                  // 수령 가능한 상태: 링크 열기 + 퀘스트 완료
+                  Alert.alert(
+                    '링크 열기',
+                    '외부 링크로 이동하고 퀘스트를 완료하시겠습니까?',
+                    [
+                      { text: '취소', style: 'cancel' },
+                      { 
+                        text: '열기 및 완료', 
+                        onPress: async () => {
+                          try {
+                            setIsSubmitting(true);
+                            console.log('🔗 링크 퀘스트 완료 요청:', quest.id);
+                            
+                            // 퀘스트 완료 API 호출
+                            await completeQuest({ quest_id: quest.id });
+                            
+                            Alert.alert(
+                              '퀘스트 완료!', 
+                              `링크를 열고 ${quest.reward_exp} EXP를 획득했습니다!`,
+                              [
+                                {
+                                  text: '확인',
+                                  onPress: () => navigation.goBack()
+                                }
+                              ]
+                            );
+                                                     } catch (error) {
+                             console.error('🔗 링크 퀘스트 완료 실패:', error);
+                            Alert.alert('오류', '퀘스트 완료에 실패했습니다.');
+                          } finally {
+                            setIsSubmitting(false);
+                          }
+                        }
+                      }
+                    ]
+                  );
+                } else {
+                  // 미시작 상태: 링크만 열기
+                  Alert.alert(
+                    '링크 열기',
+                    '외부 링크로 이동하시겠습니까?',
+                    [
+                      { text: '취소', style: 'cancel' },
+                      { 
+                        text: '열기', 
+                                                 onPress: () => {
+                           console.log('🔗 링크 열기:', quest.link_url);
+                          // 실제 링크 열기 구현 (Linking.openURL 등)
+                          Alert.alert('링크 열기', `링크: ${quest.link_url || '링크 URL 없음'}`);
+                        }
+                      }
+                    ]
+                  );
+                }
+              }}
+              disabled={isSubmitting}
+            >
+              <Ionicons name="open-outline" size={20} color={COLORS.white} />
+              <Text style={styles.linkButtonText}>
+                {isSubmitting ? '처리중...' : 
+                 quest.user_status === 'CLEAR' ? '링크 열기 및 완료' : '링크 열기'}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              {/* 진행중인 퀘스트의 경우 계속하기 버튼 */}
+              {quest.attempt?.status === 'IN_PROGRESS' && (
+                <PrimaryButton
+                  title="계속하기"
+                  onPress={handleVerifyQuest}
+                  size="large"
+                  variant="primary"
+                />
+              )}
+
+              {/* EXP 받기 가능한 경우 */}
+              {canClaimReward && (
+                <PrimaryButton
+                  title={`${quest.reward_exp} EXP 받기`}
+                  onPress={handleCompleteQuest}
+                  size="large"
+                  variant="success"
+                  loading={isSubmitting}
+                />
+              )}
+
+              {/* 미시작 퀘스트의 경우 시작하기 버튼 */}
+              {(!quest.attempt || quest.attempt.status === 'DEACTIVE') && (
+                <PrimaryButton
+                  title="시작하기"
+                  onPress={handleVerifyQuest}
+                  size="large"
+                  variant="primary"
+                />
+              )}
+            </>
           )}
 
-          {canVerify && (
+          {/* 시연용 퀘스트 즉시 완료 버튼 */}
+          {!isCompleted && !canClaimReward && (
             <PrimaryButton
-              title="인증하기"
-              onPress={handleVerifyQuest}
+              title="퀘스트 즉시 완료 (시연용)"
+              onPress={handleCompleteQuest}
               size="large"
-              variant="secondary"
-            />
-          )}
-
-          {canSubmit && (
-            <PrimaryButton
-              title="퀘스트 제출하기"
-              onPress={handleSubmitQuest}
-              size="large"
-              variant="success"
+              variant="warning"
               loading={isSubmitting}
             />
           )}
@@ -384,6 +539,8 @@ export const QuestDetailScreen: React.FC = () => {
             </View>
           )}
         </View>
+          </>
+        )}
       </ScrollView>
     </View>
   );
@@ -400,7 +557,7 @@ const styles = StyleSheet.create({
   },
   questHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginBottom: SPACING.lg,
   },
@@ -617,4 +774,48 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
   },
+  // 적금 비가입자용 스타일
+  simpleContainer: {
+    flex: 1,
+  },
+  noSavingsOverlay: {
+    alignItems: 'center',
+    paddingVertical: SPACING.xl * 2,
+    marginTop: SPACING.xl,
+  },
+  noSavingsText: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.gray[500],
+    textAlign: 'center',
+    marginTop: SPACING.md,
+    fontWeight: '600',
+  },
+  noSavingsSubtext: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray[400],
+    textAlign: 'center',
+    marginTop: SPACING.sm,
+    lineHeight: 20,
+  },
+  // 링크 버튼 스타일
+  linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+    gap: SPACING.sm,
+  },
+     linkButtonText: {
+     color: COLORS.white,
+     fontSize: FONT_SIZES.md,
+     fontWeight: '600',
+   },
+   linkButtonDisabled: {
+     backgroundColor: COLORS.gray[400],
+     opacity: 0.6,
+   },
 });

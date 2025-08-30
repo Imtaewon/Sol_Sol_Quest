@@ -1,32 +1,26 @@
 /**
  * GPSScreen.tsx
  * 
- * GPS 위치 및 만보기 기능 화면
+ * GPS 위치 기능 화면
  * 
  * 주요 기능:
  * - 현재 위치 표시
- * - 만보기 시작/중지 기능
- * - 걸음 수 카운터
  * - 위치 권한 관리
  * 
  * 화면 구성:
  * - 현재 위치 섹션: 위도/경도 및 주소 정보
- * - 만보기 섹션: 시작/중지 버튼 및 걸음 수 표시
- * - 권한 요청: 위치 및 센서 권한 관리
+ * - 권한 요청: 위치 권한 관리
  * 
  * 사용 라이브러리:
  * - expo-location: GPS 위치 정보
- * - expo-sensors: 만보기 센서 데이터
  * 
  * 상태 관리:
  * - 위치 권한 상태
- * - 만보기 활성화 상태
  * - 현재 위치 정보
- * - 걸음 수 카운터
  * 
  * 제한사항:
  * - 적금 가입자만 접근 가능
- * - 위치 및 센서 권한 필요
+ * - 위치 권한 필요
  * - 백그라운드에서도 동작 가능
  */
 
@@ -50,25 +44,18 @@ type GPSScreenNavigationProp = StackNavigationProp<MyPageStackParamList, 'GPS'>;
 
 export const GPSScreen: React.FC = () => {
   const navigation = useNavigation<GPSScreenNavigationProp>();
-  const [isTracking, setIsTracking] = useState(false);
-  const [stepCount, setStepCount] = useState(0);
+  const [currentLocation, setCurrentLocation] = useState<string>('위치 정보를 가져오는 중...');
 
-  const handleStartTracking = () => {
-    setIsTracking(true);
-    // TODO: 실제 만보기 시작 로직 구현
-    console.log('만보기 시작');
-  };
-
-  const handleStopTracking = () => {
-    setIsTracking(false);
-    // TODO: 실제 만보기 중지 로직 구현
-    console.log('만보기 중지');
+  const handleGetLocation = () => {
+    // TODO: 실제 GPS 위치 가져오기 로직 구현
+    console.log('GPS 위치 가져오기');
+    setCurrentLocation('서울특별시 강남구 테헤란로 123');
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <AppHeader
-        title="GPS·만보기"
+        title="GPS"
         showBack
         onBackPress={() => navigation.goBack()}
         showNotification={false}
@@ -81,44 +68,18 @@ export const GPSScreen: React.FC = () => {
           <View style={styles.locationCard}>
             <View style={styles.locationHeader}>
               <Ionicons name="location" size={24} color={COLORS.primary} />
-              <Text style={styles.locationText}>위치 정보를 가져오는 중...</Text>
+              <Text style={styles.locationText}>{currentLocation}</Text>
             </View>
             <Text style={styles.locationSubtext}>
               GPS 권한이 필요합니다
             </Text>
           </View>
-        </View>
-
-        {/* 만보기 섹션 */}
-        <View style={styles.stepSection}>
-          <Text style={styles.sectionTitle}>만보기</Text>
-          <View style={styles.stepCard}>
-            <View style={styles.stepDisplay}>
-              <Text style={styles.stepCount}>{stepCount}</Text>
-              <Text style={styles.stepLabel}>걸음</Text>
-            </View>
-            
-            <View style={styles.stepInfo}>
-              <View style={styles.stepInfoItem}>
-                <Text style={styles.stepInfoLabel}>거리</Text>
-                <Text style={styles.stepInfoValue}>{(stepCount * 0.7).toFixed(1)}m</Text>
-              </View>
-              <View style={styles.stepInfoItem}>
-                <Text style={styles.stepInfoLabel}>칼로리</Text>
-                <Text style={styles.stepInfoValue}>{(stepCount * 0.04).toFixed(1)}kcal</Text>
-              </View>
-            </View>
-
-            <PrimaryButton
-              title={isTracking ? "만보기 중지" : "만보기 시작"}
-              onPress={isTracking ? handleStopTracking : handleStartTracking}
-              variant={isTracking ? "outline" : "primary"}
-              size="large"
-              style={styles.trackingButton}
-              accessibilityRole="button"
-              accessibilityLabel={isTracking ? "만보기 중지 버튼" : "만보기 시작 버튼"}
-            />
-          </View>
+          
+          <PrimaryButton
+            title="위치 새로고침"
+            onPress={handleGetLocation}
+            style={styles.refreshButton}
+          />
         </View>
 
         {/* 권한 요청 섹션 */}
@@ -132,17 +93,6 @@ export const GPSScreen: React.FC = () => {
                 style={styles.permissionButton}
                 accessibilityRole="button"
                 accessibilityLabel="위치 권한 요청"
-              >
-                <Text style={styles.permissionButtonText}>요청</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.permissionItem}>
-              <Ionicons name="footsteps" size={20} color={COLORS.gray[600]} />
-              <Text style={styles.permissionText}>활동 권한</Text>
-              <TouchableOpacity 
-                style={styles.permissionButton}
-                accessibilityRole="button"
-                accessibilityLabel="활동 권한 요청"
               >
                 <Text style={styles.permissionButtonText}>요청</Text>
               </TouchableOpacity>
@@ -276,9 +226,12 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
     borderRadius: BORDER_RADIUS.sm,
   },
-  permissionButtonText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.white,
-    fontWeight: '600',
-  },
-});
+     permissionButtonText: {
+     fontSize: FONT_SIZES.sm,
+     color: COLORS.white,
+     fontWeight: '600',
+   },
+   refreshButton: {
+     marginTop: SPACING.md,
+   },
+ });

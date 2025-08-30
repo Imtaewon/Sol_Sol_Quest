@@ -33,13 +33,43 @@ const SHINHAN_COLORS = {
 };
 import { AppHeader } from '../../components/common/AppHeader';
 import { Skeleton } from '../../components/common/Skeleton';
-import { useGetPaymentHistoryQuery } from '../../store/api/baseApi';
 import { formatters } from '../../utils/formatters';
 
-export const PaymentHistoryScreen: React.FC = () => {
-  const { data: paymentHistory, isLoading, refetch } = useGetPaymentHistoryQuery();
+// 결제 내역 아이템 타입 정의
+interface PaymentHistoryItem {
+  id: string;
+  merchantName: string;
+  description: string;
+  amount: number;
+  status: 'completed' | 'failed' | 'pending';
+  createdAt: Date;
+}
 
-  const renderPaymentItem = ({ item }: { item: any }) => (
+export const PaymentHistoryScreen: React.FC = () => {
+  // 더미 데이터 사용 (API가 아직 구현되지 않음)
+  const paymentHistory: PaymentHistoryItem[] = [
+    {
+      id: '1',
+      merchantName: '스타벅스 강남점',
+      description: '아메리카노 결제',
+      amount: 4500,
+      status: 'completed',
+      createdAt: new Date('2024-01-15T10:30:00Z'),
+    },
+    {
+      id: '2',
+      merchantName: '올리브영',
+      description: '화장품 구매',
+      amount: 25000,
+      status: 'completed',
+      createdAt: new Date('2024-01-14T15:20:00Z'),
+    },
+  ];
+  
+  const isLoading = false; // 더미 데이터 사용으로 로딩 상태 제거
+  const refetch = () => {}; // 더미 함수
+
+  const renderPaymentItem = ({ item }: { item: PaymentHistoryItem }) => (
     <View style={styles.paymentItem}>
       <View style={styles.paymentInfo}>
         <View style={styles.paymentHeader}>

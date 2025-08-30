@@ -32,7 +32,7 @@ import {
  * 퀘스트 목록 조회 요청 인터페이스
  */
 export interface QuestListRequest {
-  type?: 'life' | 'growth' | 'surprise';  // 퀘스트 타입 필터
+  type?: 'LIFE' | 'GROWTH' | 'SURPRISE';  // 퀘스트 타입 필터 (대문자로 통일)
   category?: 'STUDY' | 'HEALTH' | 'ECON' | 'LIFE' | 'ENT' | 'SAVING';  // 카테고리 필터
   page?: number;  // 페이지 번호
   limit?: number;  // 페이지당 항목 수
@@ -54,11 +54,63 @@ export interface QuestSubmitRequest {
 }
 
 /**
+ * 퀘스트 인증 데이터 타입
+ */
+export interface QuestVerifyData {
+  // GPS 인증
+  latitude?: number;
+  longitude?: number;
+  radius?: number;
+  
+  // 스텝 카운터 인증
+  steps?: number;
+  target_steps?: number;
+  
+  // 결제 인증
+  payment_amount?: number;
+  merchant_id?: string;
+  
+  // 링크 인증
+  url?: string;
+  
+  // 업로드 인증
+  file_url?: string;
+  
+  // 출석 인증
+  attendance_date?: string;
+  
+  // 인증서 인증
+  certificate_url?: string;
+  
+  // 대회 인증
+  contest_result?: string;
+  
+  // 퀴즈 인증
+  quiz_answers?: string[];
+  correct_count?: number;
+}
+
+/**
  * 퀘스트 인증 요청 인터페이스
  */
 export interface QuestVerifyRequest {
   quest_id: string;  // 퀘스트 ID
-  verify_data: any;  // GPS, STEPS, PAYMENT 등 인증 데이터
+  verify_data: QuestVerifyData;  // 구체적인 인증 데이터 타입
+}
+
+/**
+ * 퀘스트 완료 응답 인터페이스
+ */
+export interface QuestCompleteResponse {
+  success: boolean;
+  data: {
+    quest_id: string;
+    completed: boolean;
+    reward_exp: number;
+    new_total_exp: number;
+    new_tier?: string;
+  };
+  message?: string;
 }
 
 /**
@@ -95,78 +147,83 @@ export const questApi = baseApi.injectEndpoints({
 
     /**
      * 퀘스트 시작
-     * POST /quests/start
-     * 퀘스트를 시작하고 진행 상황을 초기화
+     * POST /quests/{questId}/start
+     * 퀘스트를 시작하고 QuestAttempt 레코드 생성
      */
     startQuest: builder.mutation<ApiResponse<QuestAttempt>, QuestStartRequest>({
-      query: (data) => ({
-        url: '/quests/start',
+      query: ({ quest_id }) => ({
+        url: `/quests/${quest_id}/start`,
         method: 'POST',
-        data,
       }),
+      invalidatesTags: ['Quest'],
     }),
 
     /**
      * 퀘스트 제출
-     * POST /quests/submit
-     * 목표를 달성한 퀘스트를 제출하여 완료 처리
+     * POST /quests/{questId}/submit
+     * 퀘스트를 제출하고 증빙 자료 업로드
      */
     submitQuest: builder.mutation<ApiResponse<QuestAttempt>, QuestSubmitRequest>({
-      query: (data) => ({
-        url: '/quests/submit',
+      query: ({ quest_id, proof_url }) => ({
+        url: `/quests/${quest_id}/submit`,
         method: 'POST',
-        data,
+        body: { proof_url },
       }),
+      invalidatesTags: ['Quest'],
     }),
 
     /**
      * 퀘스트 인증
-     * POST /quests/verify
-     * GPS, STEPS, PAYMENT 등 다양한 인증 방식으로 퀘스트 진행
+     * POST /quests/{questId}/verify
+     * 퀘스트 인증 데이터를 제출하여 완료 처리
      */
-    verifyQuest: builder.mutation<ApiResponse<QuestAttempt>, QuestVerifyRequest>({
-      query: (data) => ({
-        url: '/quests/verify',
+    verifyQuest: builder.mutation<QuestCompleteResponse, QuestVerifyRequest>({
+      query: ({ quest_id, verify_data }) => ({
+        url: `/quests/${quest_id}/verify`,
         method: 'POST',
-        data,
+        body: { verify_data },
       }),
+      invalidatesTags: ['Quest'],
     }),
 
-    // 내 퀘스트 진행 상황
-    getMyQuestProgress: builder.query<QuestProgress[], void>({
+    /**
+     * 퀘스트 진행 상황 조회
+     * GET /quests/progress
+     * 사용자의 모든 퀘스트 진행 상황 반환
+     */
+    getQuestProgress: builder.query<QuestProgress[], void>({
       query: () => ({
-        url: '/quests/my-progress',
+        url: '/quests/progress',
         method: 'GET',
       }),
     }),
 
-    // 추천 퀘스트 조회
-    getRecommendedQuests: builder.query<QuestWithAttempt[], void>({
+    /**
+     * 추천 퀘스트 조회
+     * GET /quests/recommendations
+     * 사용자 맞춤 추천 퀘스트 목록 반환
+     */
+    getQuestRecommendations: builder.query<QuestRecommendation[], void>({
       query: () => ({
-        url: '/quests/recommended',
+        url: '/quests/recommendations',
         method: 'GET',
       }),
     }),
 
-    // 퀘스트 추천 클릭 로그
-    logQuestClick: builder.mutation<void, { quest_id: string; context?: string }>({
-      query: (data) => ({
-        url: '/quests/log-click',
-        method: 'POST',
-        data,
-      }),
-    }),
-
-    // 퀘스트 상호작용 로그
-    logQuestInteraction: builder.mutation<void, {
+    /**
+     * 퀘스트 상호작용 로그
+     * POST /quests/{questId}/interaction
+     * 퀘스트 관련 사용자 상호작용 기록
+     */
+    logQuestInteraction: builder.mutation<ApiResponse<void>, {
       quest_id: string;
       event: 'impression' | 'detail_click' | 'start' | 'complete';
       context?: string;
     }>({
-      query: (data) => ({
-        url: '/quests/log-interaction',
+      query: ({ quest_id, event, context }) => ({
+        url: `/quests/${quest_id}/interaction`,
         method: 'POST',
-        data,
+        body: { event, context },
       }),
     }),
   }),
@@ -178,9 +235,8 @@ export const {
   useStartQuestMutation,
   useSubmitQuestMutation,
   useVerifyQuestMutation,
-  useGetMyQuestProgressQuery,
-  useGetRecommendedQuestsQuery,
-  useLogQuestClickMutation,
+  useGetQuestProgressQuery,
+  useGetQuestRecommendationsQuery,
   useLogQuestInteractionMutation,
 } = questApi;
 

@@ -34,17 +34,25 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  SafeAreaView,
+  Image,
+  Platform,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '../../components/common/AppHeader';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
+import { formatCurrency } from '../../utils/formatters';
 import { logout } from '../../store/slices/authSlice';
 import { clearUser } from '../../store/slices/userSlice';
 import { RootState } from '../../store';
 import { MyPageStackParamList } from '../../navigation/MyPageStack';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useLogout } from '../../hooks/useAuth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useUserInfo, useSavingsAccount, useDepositAccount } from '../../hooks/useUser';
+import { authService } from '../../services/authService';
 
 // 카드 너비를 고정값으로 설정 (Dimensions 제거)
 const CARD_WIDTH = 300;
@@ -52,16 +60,16 @@ const CARD_WIDTH = 300;
 type MyPageScreenNavigationProp = StackNavigationProp<MyPageStackParamList, 'MyPage'>;
 
 // 티어별 색상
-const TIER_COLORS = {
+const TIER_COLORS: Record<string, string> = {
   BASIC: COLORS.gray[400],
   BRONZE: '#CD7F32',
   SILVER: '#C0C0C0',
   GOLD: '#FFD700',
-  SOL: '#FF6B35',
+  SOL: '#0046ff',
 };
 
 // 티어별 이름
-const TIER_NAMES = {
+const TIER_NAMES: Record<string, string> = {
   BASIC: '기본',
   BRONZE: '브론즈',
   SILVER: '실버',
@@ -74,54 +82,157 @@ export const MyPageScreen: React.FC = () => {
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.user.user);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const logoutMutation = useLogout();
 
-  // 더미 데이터 (실제로는 API에서 가져올 데이터)
-  const userStats = {
-    total_exp: 1250,
-    current_tier: 'SILVER' as const,
-    savings_accounts: [
-      {
-        id: '1',
-        product_name: '솔 적금',
-        balance: 500000,
-        monthly_amount: 100000,
-        interest_rate: 3.5,
-        maturity_date: '2024-12-31',
-        status: 'active' as const,
-      },
-    ],
-    deposit_accounts: [
-      {
-        id: '2',
-        account_name: '솔 입출금',
-        balance: 1500000,
-        interest_rate: 1.2,
-      },
-    ],
+  // API 훅들
+  const { data: userInfo, isLoading: userInfoLoading, error: userInfoError } = useUserInfo();
+  
+  // 계좌 정보 API 호출 (항상 호출하되, 데이터 존재 여부로 판단)
+  const { data: savingsAccount, isLoading: savingsLoading, error: savingsError } = useSavingsAccount();
+  const { data: depositAccount, isLoading: depositLoading, error: depositError } = useDepositAccount();
+  
+  // 계좌 존재 여부로 hasAccounts 판단 (적금 또는 예금 중 하나라도 있으면 true)
+  const hasAccounts = (savingsAccount?.data?.data && savingsAccount.data.data.length > 0) || 
+                      (depositAccount?.data?.data && depositAccount.data.data.length > 0);
+  
+  // 개별 계좌 유무 판단
+  const hasSavings = savingsAccount?.data?.data && savingsAccount.data.data.length > 0;
+  const hasDeposit = depositAccount?.data?.data && depositAccount.data.data.length > 0;
+
+  // 티어별 이율 계산 함수
+  const getInterestRateByTier = (tier: string | undefined): number => {
+    switch (tier) {
+      case 'BASIC': return 2.5;
+      case 'BRONZE': return 3.0;
+      case 'SILVER': return 4.5;
+      case 'GOLD': return 6.0;
+      case 'SOL': return 10.0;
+      default: return 2.5; // 기본값
+    }
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      '로그아웃',
-      '정말 로그아웃하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '로그아웃',
-          style: 'destructive',
-          onPress: () => {
-            dispatch(logout());
-            dispatch(clearUser());
-            // 로그인 화면으로 이동 (AuthStack의 Landing으로 이동)
-            // TODO: 실제 구현에서는 AuthStack으로 네비게이션해야 함
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Landing' }],
-            });
-          },
-        },
-      ]
+  // API 요청 로그
+  console.log('👤 MyPageScreen API 상태:', {
+    userInfo: { loading: userInfoLoading, error: userInfoError, data: userInfo?.data ? '있음' : '없음' },
+    hasAccounts,
+    hasSavings,
+    hasDeposit,
+    savingsAccount: { loading: savingsLoading, error: savingsError, data: savingsAccount?.data ? '있음' : '없음' },
+    depositAccount: { loading: depositLoading, error: depositError, data: depositAccount?.data ? '있음' : '없음' }
+  });
+
+  // 로딩 상태 처리
+  console.log('👤 MyPageScreen 로딩 상태:', {
+    userInfoLoading,
+    savingsLoading,
+    depositLoading,
+    isLoading: userInfoLoading || savingsLoading || depositLoading
+  });
+  
+  if (userInfoLoading || savingsLoading || depositLoading) {
+    console.log('👤 MyPageScreen 로딩 화면 표시');
+    return (
+      <SafeAreaView style={styles.container}>
+        <AppHeader />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>사용자 정보를 불러오는 중...</Text>
+        </View>
+      </SafeAreaView>
     );
+  }
+
+  // 티어 계산 함수
+  const calculateTierInfo = (totalExp: number) => {
+    const tierThresholds = {
+      BASIC: 0,
+      BRONZE: 100,
+      SILVER: 250,
+      GOLD: 500,
+      SOL: 900
+    };
+
+    let currentTier = 'BASIC';
+    let nextTier = 'BRONZE';
+    let expToNextTier = 100;
+
+    if (totalExp >= 900) {
+      currentTier = 'SOL';
+      nextTier = 'SOL';
+      expToNextTier = 0;
+    } else if (totalExp >= 500) {
+      currentTier = 'GOLD';
+      nextTier = 'SOL';
+      expToNextTier = 900 - totalExp;
+    } else if (totalExp >= 250) {
+      currentTier = 'SILVER';
+      nextTier = 'GOLD';
+      expToNextTier = 500 - totalExp;
+    } else if (totalExp >= 100) {
+      currentTier = 'BRONZE';
+      nextTier = 'SILVER';
+      expToNextTier = 250 - totalExp;
+    } else {
+      currentTier = 'BASIC';
+      nextTier = 'BRONZE';
+      expToNextTier = 100 - totalExp;
+    }
+
+    return { currentTier, nextTier, expToNextTier };
+  };
+
+  // 티어 혜택 계산 함수 - 현재 유저의 티어 기준 적금 우대금리
+  const getTierBenefit = (tier: string) => {
+    const benefits = {
+      BASIC: '2.5%',
+      BRONZE: '3.0%',
+      SILVER: '4.5%',
+      GOLD: '6.0%',
+      SOL: '10.0%'
+    };
+    return benefits[tier as keyof typeof benefits] || '2.5%';
+  };
+
+  const totalExp = userInfo?.data?.total_exp || 0;
+  const { currentTier, nextTier, expToNextTier } = calculateTierInfo(totalExp);
+  const tierBenefit = getTierBenefit(currentTier);
+
+
+  const handleLogout = async () => {
+    console.log('🔍 handleLogout 함수 호출됨');
+    
+    // Alert 없이 바로 로그아웃 실행 (테스트용)
+    console.log('🔍 바로 로그아웃 실행 시작');
+    try {
+      console.log('🔍 직접 authService.logout() 호출 시작');
+      // 직접 authService.logout() 호출로 테스트
+      const result = await authService.logout();
+      console.log('🔍 authService.logout() 결과:', result);
+      
+      // 성공 시 로컬 정리
+      if (result.success) {
+        console.log('🔍 로그아웃 성공 - 로컬 정리 시작');
+        // 토큰 삭제
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          localStorage.removeItem('access_token');
+        } else {
+          await AsyncStorage.removeItem('access_token');
+        }
+        
+        // Redux 상태 초기화
+        dispatch(logout());
+        
+        console.log('🔍 로그아웃 완료 - 랜딩페이지로 이동');
+      }
+    } catch (error) {
+      console.error('❌ 로그아웃 실패:', error);
+      // 에러가 발생해도 로컬 토큰은 삭제
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        localStorage.removeItem('access_token');
+      } else {
+        await AsyncStorage.removeItem('access_token');
+      }
+      dispatch(logout());
+    }
   };
 
   const renderPersonalInfo = () => (
@@ -130,13 +241,31 @@ export const MyPageScreen: React.FC = () => {
       <View style={styles.personalInfoCard}>
         <View style={styles.profileRow}>
           <View style={styles.profileImage}>
-            <Ionicons name="person" size={24} color={COLORS.white} />
+            <Image 
+              source={require('../../assets/MySolCharacter.png')} 
+              style={styles.profileImageStyle}
+              resizeMode="cover"
+            />
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{user?.real_name || '사용자'}</Text>
-            <Text style={styles.userDetails}>
-              {user?.school_id ? '대학생' : '게스트'} • {user?.department || '학과 미설정'}
-            </Text>
+            {userInfoLoading ? (
+              <>
+                <View style={styles.skeletonName} />
+                <View style={styles.skeletonDetails} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.userName}>
+                  {userInfo?.data?.name || '사용자'}
+                </Text>
+                <Text style={styles.userSchool}>
+                  {userInfo?.data?.university_name || '학교 미설정'}
+                </Text>
+                <Text style={styles.userDetails}>
+                  {`${userInfo?.data?.major || '학과 미설정'} • ${userInfo?.data?.grade ? `${userInfo.data.grade}학년` : '학년 미설정'}`}
+                </Text>
+              </>
+            )}
           </View>
           <TouchableOpacity style={styles.editButton}>
             <Ionicons name="pencil" size={16} color={COLORS.primary} />
@@ -148,16 +277,16 @@ export const MyPageScreen: React.FC = () => {
           <View style={styles.tierHeader}>
             <View style={[
               styles.tierBadge,
-              { backgroundColor: TIER_COLORS[userStats.current_tier] + '20' }
+              { backgroundColor: TIER_COLORS[currentTier] + '20' }
             ]}>
               <Text style={[
                 styles.tierName,
-                { color: TIER_COLORS[userStats.current_tier] }
+                { color: TIER_COLORS[currentTier] }
               ]}>
-                {TIER_NAMES[userStats.current_tier]}
+                {TIER_NAMES[currentTier]}
               </Text>
             </View>
-            <Text style={styles.tierExp}>{userStats.total_exp.toLocaleString()} EXP</Text>
+            <Text style={styles.tierExp}>{totalExp.toLocaleString()} EXP</Text>
           </View>
           
           <View style={styles.tierProgress}>
@@ -166,19 +295,24 @@ export const MyPageScreen: React.FC = () => {
                 style={[
                   styles.progressFill,
                   { 
-                    width: '60%',
-                    backgroundColor: TIER_COLORS[userStats.current_tier]
+                    width: expToNextTier === 0 ? '100%' : `${Math.min((totalExp / (totalExp + expToNextTier)) * 100, 100)}%`,
+                    backgroundColor: TIER_COLORS[currentTier]
                   }
                 ]} 
               />
             </View>
-            <Text style={styles.progressText}>다음 티어까지 750 EXP 남음</Text>
+            <Text style={styles.progressText}>
+              {expToNextTier === 0 
+                ? '최고 티어 달성!' 
+                : `다음 티어까지 ${expToNextTier.toLocaleString()} EXP 남음`
+              }
+            </Text>
           </View>
           
           <View style={styles.tierBenefits}>
             <Text style={styles.benefitsTitle}>티어 혜택</Text>
             <Text style={styles.benefitsText}>
-              적금 우대금리 {userStats.current_tier === 'SILVER' ? '0.5%' : '0.3%'} 추가
+              적금 우대금리 {tierBenefit}
             </Text>
           </View>
         </View>
@@ -188,104 +322,86 @@ export const MyPageScreen: React.FC = () => {
 
   const renderAccountCarousel = () => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>내 적금/예금</Text>
+             <Text style={styles.sectionTitle}>내 계좌</Text>
       
-      {/* 적금/예금 통합 캐러셀 */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.accountCarousel}
-      >
-        {/* 적금 카드 */}
-        {userStats.savings_accounts.length > 0 ? (
-          userStats.savings_accounts.map((account) => (
-            <View key={account.id} style={styles.accountCard}>
-              <View style={styles.accountHeader}>
-                <View style={styles.accountTypeContainer}>
-                  <Text style={styles.accountTypeLabel}>적금</Text>
-                  <Text style={styles.accountName}>{account.product_name}</Text>
-                </View>
-                <View style={[
-                  styles.statusBadge,
-                  { backgroundColor: account.status === 'active' ? COLORS.success + '20' : COLORS.gray[200] }
-                ]}>
-                  <Text style={[
-                    styles.statusText,
-                    { color: account.status === 'active' ? COLORS.success : COLORS.gray[600] }
-                  ]}>
-                    {account.status === 'active' ? '진행중' : '만기'}
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.accountBalance}>
-                <Text style={styles.balanceLabel}>현재 잔액</Text>
-                <Text style={styles.balanceAmount}>
-                  {account.balance.toLocaleString()}원
-                </Text>
-              </View>
-              
-              <View style={styles.accountDetails}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>월 납입금</Text>
-                  <Text style={styles.detailValue}>
-                    {account.monthly_amount.toLocaleString()}원
-                  </Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>금리</Text>
-                  <Text style={styles.detailValue}>{account.interest_rate}%</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>만기일</Text>
-                  <Text style={styles.detailValue}>{account.maturity_date}</Text>
-                </View>
-              </View>
-            </View>
-          ))
-        ) : (
-          <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
-            <Ionicons name="add-circle-outline" size={32} color={COLORS.primary} />
-            <Text style={styles.newAccountText}>새 적금 개설</Text>
-          </TouchableOpacity>
-        )}
+             {/* 항상 ScrollView로 감싸고, 개별 계좌 유무에 따라 조건부 렌더링 */}
+       <ScrollView 
+         horizontal 
+         showsHorizontalScrollIndicator={false}
+         contentContainerStyle={styles.accountCarousel}
+       >
+         {/* 적금 카드 - hasSavings가 true면 정보, false면 가입하기 버튼 */}
+         {hasSavings ? (
+           <View style={styles.accountCard}>
+             <View style={styles.accountHeader}>
+               <View style={styles.accountTypeContainer}>
+                 <Text style={styles.accountTypeLabel}>적금</Text>
+                 <Text style={styles.accountName}>쏠쏠한 퀘스트 적금</Text>
+               </View>
+             </View>
+             
+             <View style={styles.accountBalance}>
+               <Text style={styles.balanceLabel}>월 납입금</Text>
+               <Text style={styles.balanceAmount}>
+                 {savingsAccount?.data?.data?.[0]?.monthly_amount?.toLocaleString()}원
+               </Text>
+             </View>
+             
+             <View style={styles.accountDetails}>
+               <View style={styles.detailRow}>
+                 <Text style={styles.detailLabel}>이율</Text>
+                 <Text style={styles.detailValue}>
+                   {getInterestRateByTier(userInfo?.data?.current_tier)}%
+                 </Text>
+               </View>
+               <View style={styles.detailRow}>
+                 <Text style={styles.detailLabel}>계좌번호</Text>
+                 <Text style={styles.detailValue}>{savingsAccount?.data?.data?.[0]?.product_code}</Text>
+               </View>
+             </View>
+           </View>
+         ) : (
+           <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
+             <View style={styles.newAccountIconContainer}>
+               <Ionicons name="add-circle" size={32} color={COLORS.primary} />
+             </View>
+             <Text style={styles.newAccountText}>새 적금 개설</Text>
+           </TouchableOpacity>
+         )}
 
-        {/* 예금 카드 */}
-        {userStats.deposit_accounts.length > 0 ? (
-          userStats.deposit_accounts.map((account) => (
-            <View key={account.id} style={styles.accountCard}>
-              <View style={styles.accountHeader}>
-                <View style={styles.accountTypeContainer}>
-                  <Text style={styles.accountTypeLabel}>예금</Text>
-                  <Text style={styles.accountName}>{account.account_name}</Text>
-                </View>
-                <View style={styles.statusBadge}>
-                  <Text style={styles.statusText}>활성</Text>
-                </View>
-              </View>
-              
-              <View style={styles.accountBalance}>
-                <Text style={styles.balanceLabel}>현재 잔액</Text>
-                <Text style={styles.balanceAmount}>
-                  {account.balance.toLocaleString()}원
-                </Text>
-              </View>
-              
-              <View style={styles.accountDetails}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>금리</Text>
-                  <Text style={styles.detailValue}>{account.interest_rate}%</Text>
-                </View>
-              </View>
-            </View>
-          ))
-        ) : (
-          <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
-            <Ionicons name="add-circle-outline" size={32} color={COLORS.primary} />
-            <Text style={styles.newAccountText}>새 예금 개설</Text>
-          </TouchableOpacity>
-        )}
-      </ScrollView>
+         {/* 예금 카드 - hasDeposit이 true면 정보, false면 가입하기 버튼 */}
+         {hasDeposit ? (
+           <View style={styles.accountCard}>
+             <View style={styles.accountHeader}>
+                                <View style={styles.accountTypeContainer}>
+                   <Text style={styles.accountTypeLabel}>상시입출금</Text>
+                   <Text style={styles.accountName}>쏠 입출금</Text>
+                 </View>
+             </View>
+             
+                            <View style={styles.accountBalance}>
+                 <Text style={styles.balanceLabel}>계좌 잔액</Text>
+                 <Text style={styles.balanceAmount}>
+                   {formatCurrency(depositAccount?.data?.data?.[0]?.balance || 0)}
+                 </Text>
+               </View>
+             
+             <View style={styles.accountDetails}>
+               <View style={styles.detailRow}>
+                 <Text style={styles.detailLabel}>계좌번호</Text>
+                 <Text style={styles.detailValue}>{depositAccount?.data?.data?.[0]?.account_no}</Text>
+               </View>
+             </View>
+           </View>
+         ) : (
+           <TouchableOpacity style={[styles.accountCard, styles.newAccountCard]}>
+             <View style={styles.newAccountIconContainer}>
+               <Ionicons name="add-circle" size={32} color={COLORS.primary} />
+             </View>
+             <Text style={styles.newAccountText}>새 상시입출금 개설</Text>
+           </TouchableOpacity>
+         )}
+       </ScrollView>
     </View>
   );
 
@@ -306,10 +422,24 @@ export const MyPageScreen: React.FC = () => {
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('GPS')}
+        >
           <View style={styles.menuItemLeft}>
-            <Ionicons name="notifications" size={24} color={COLORS.gray[600]} />
-            <Text style={styles.menuItemText}>알림 설정</Text>
+            <Ionicons name="location" size={24} color={COLORS.gray[600]} />
+            <Text style={styles.menuItemText}>GPS</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('StepCounter')}
+        >
+          <View style={styles.menuItemLeft}>
+            <Ionicons name="footsteps" size={24} color={COLORS.gray[600]} />
+            <Text style={styles.menuItemText}>만보기</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray[400]} />
         </TouchableOpacity>
@@ -379,6 +509,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,
+    overflow: 'hidden',
+  },
+  profileImageStyle: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
   },
   profileInfo: {
     flex: 1,
@@ -386,6 +522,12 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: FONT_SIZES.lg,
     fontWeight: '700',
+    color: COLORS.dark,
+    marginBottom: SPACING.xs,
+  },
+  userSchool: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: '600',
     color: COLORS.dark,
     marginBottom: SPACING.xs,
   },
@@ -450,11 +592,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
     color: COLORS.dark,
-  },
-  statusBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
   },
   statusText: {
     fontSize: FONT_SIZES.xs,
@@ -593,6 +730,41 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.error,
     marginLeft: SPACING.sm,
+  },
+  // 새로운 계좌 가입 카드 스타일
+  newAccountIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: COLORS.primary + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.xl,
+  },
+  loadingText: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.gray[600],
+    textAlign: 'center',
+  },
+  // 스켈레톤 UI 스타일
+  skeletonName: {
+    width: 120,
+    height: 24,
+    backgroundColor: COLORS.gray[200],
+    borderRadius: 4,
+    marginBottom: SPACING.xs,
+  },
+  skeletonDetails: {
+    width: 200,
+    height: 16,
+    backgroundColor: COLORS.gray[200],
+    borderRadius: 4,
   },
 });
 

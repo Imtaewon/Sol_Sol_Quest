@@ -40,19 +40,28 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import { SPACING, FONT_SIZES, BORDER_RADIUS, COLORS } from '../../utils/constants';
 import { AppHeader } from '../../components/common/AppHeader';
 import { LoadingView } from '../../components/common/LoadingView';
 import { ErrorView } from '../../components/common/ErrorView';
 import { useAttendanceData, useCheckAttendance } from '../../hooks/useAttendance';
+import { RootState } from '../../store';
+import { useQueryClient } from '@tanstack/react-query';
 
 const { width } = Dimensions.get('window');
 
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 
 export const AttendanceScreen: React.FC = () => {
+  const navigation = useNavigation();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [checkAnimation] = useState(new Animated.Value(1));
+  
+  // Redux에서 user 정보 가져오기
+  const user = useSelector((state: RootState) => state.user.user);
+  const queryClient = useQueryClient();
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -61,7 +70,17 @@ export const AttendanceScreen: React.FC = () => {
   const { data: attendanceData, isLoading, error, refetch } = useAttendanceData(year, month);
   const checkAttendanceMutation = useCheckAttendance();
 
-  const isAttendedToday = attendanceData?.data?.days?.[day] || false;
+  // 백엔드 API 응답 구조에 맞춰 수정
+  const attendanceDays = attendanceData?.attendance_dates || [];
+
+  // API 요청 로그
+  console.log('📅 AttendanceScreen API 상태:', {
+    attendanceData: { loading: isLoading, error, data: attendanceData?.attendance_dates ? '있음' : '없음' },
+    year,
+    month,
+    attendanceDays: attendanceDays.length
+  });
+  const isAttendedToday = attendanceDays.includes(new Date().toISOString().split('T')[0]);
 
   const handleAttendanceCheck = async () => {
     if (isAttendedToday) {
@@ -83,9 +102,21 @@ export const AttendanceScreen: React.FC = () => {
     ]).start();
 
     try {
-      await checkAttendanceMutation.mutateAsync({ year, month, day });
-      // 성공 시 데이터 리페치
-      refetch();
+      await checkAttendanceMutation.mutateAsync({ 
+        year, 
+        month, 
+        day, 
+        user_id: user?.id?.toString() || '' 
+      });
+      // 성공 시 데이터 리페치 및 퀘스트 데이터도 새로고침
+      await Promise.all([
+        refetch(),
+        // 퀘스트 관련 데이터도 새로고침하여 출석 퀘스트 상태 업데이트
+        queryClient.invalidateQueries({ queryKey: ['quests'] }),
+        queryClient.invalidateQueries({ queryKey: ['dailyQuests'] }),
+        queryClient.invalidateQueries({ queryKey: ['growthQuests'] }),
+        queryClient.invalidateQueries({ queryKey: ['surpriseQuests'] }),
+      ]);
     } catch (error) {
       console.error('출석 체크 실패:', error);
     }
@@ -133,7 +164,7 @@ export const AttendanceScreen: React.FC = () => {
       
       calendarData.push({
         date: dateString,
-        isAttended: attendanceData?.data?.days?.[day] || false,
+        isAttended: attendanceDays.includes(dateString),
         isToday,
         isPast: date <= today,
         isCurrentMonth: true,
@@ -176,7 +207,7 @@ export const AttendanceScreen: React.FC = () => {
       <View style={styles.attendanceContent}>
         <View style={styles.streakInfo}>
           <Text style={styles.streakNumber}>
-            {Object.values(attendanceData?.data?.days || {}).filter(Boolean).length}
+            {attendanceDays.length}
           </Text>
           <Text style={styles.streakLabel}>이번 달 출석</Text>
         </View>
@@ -283,7 +314,11 @@ export const AttendanceScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <AppHeader title="출석 관리" showBackButton />
+      <AppHeader 
+        title="출석 관리" 
+        showBackButton 
+        onBackPress={() => navigation.goBack()}
+      />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderAttendanceCard()}

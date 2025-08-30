@@ -24,11 +24,13 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { MyPageScreen } from '../screens/mypage/MyPageScreen';
 import { AttendanceScreen } from '../screens/mypage/AttendanceScreen';
 import { GPSScreen } from '../screens/mypage/GPSScreen';
+import { StepCounterScreen } from '../screens/mypage/StepCounterScreen';
 
 export type MyPageStackParamList = {
   MyPage: undefined;
   Attendance: undefined;
   GPS: undefined;
+  StepCounter: undefined;
   Landing: undefined;
 };
 
@@ -44,6 +46,7 @@ export const MyPageStack: React.FC = () => {
       <Stack.Screen name="MyPage" component={MyPageScreen} />
       <Stack.Screen name="Attendance" component={AttendanceScreen} />
       <Stack.Screen name="GPS" component={GPSScreen} />
+      <Stack.Screen name="StepCounter" component={StepCounterScreen} />
     </Stack.Navigator>
   );
 };

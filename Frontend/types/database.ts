@@ -53,7 +53,7 @@ export interface User {
   school_id: string; // 소속 학교
   department: string; // 학과
   grade: number; // 학년
-  role: 'guest' | 'member' | 'admin'; // 권한
+  role: 'GUEST' | 'MEMBER' | 'ADMIN'; // 백엔드 UserRoleEnum과 정확히 일치
   created_at: string; // 가입 시각
   updated_at: string; // 수정 시각
 }
@@ -76,7 +76,7 @@ export interface SurveyAnswer {
 
 // 3) Gamification (티어·경험치)
 export interface Tier {
-  name: 'BASIC' | 'BRONZE' | 'SILVER' | 'GOLD' | 'SOL'; // 티어명
+  name: 'BASIC' | 'BRONZE' | 'SILVER' | 'GOLD' | 'SOL'; // 백엔드 TierNameEnum과 정확히 일치
   required_exp: number; // 진입 최소 누적 EXP
   interest_rate: number; // 우대금리(%)
 }
@@ -84,35 +84,36 @@ export interface Tier {
 export interface UserStats {
   user_id: string; // PK, FK→users.id
   total_exp: number; // 누적 경험치
-  current_tier: 'BASIC' | 'BRONZE' | 'SILVER' | 'GOLD' | 'SOL'; // 현재 티어
+  current_tier: 'BASIC' | 'BRONZE' | 'SILVER' | 'GOLD' | 'SOL'; // 백엔드 TierNameEnum과 정확히 일치
   updated_at: string; // 갱신 시각
 }
 
 // 4) Quests (정의 → 진행/완료)
 export interface Quest {
   id: string; // ULID
-  type: 'life' | 'growth' | 'surprise'; // 유형
+  type: 'LIFE' | 'GROWTH' | 'SURPRISE'; // 백엔드 QuestTypeEnum과 정확히 일치
   title: string; // 제목
-  category: 'STUDY' | 'HEALTH' | 'ECON' | 'LIFE' | 'ENT' | 'SAVING'; // 성격
-  verify_method: 'GPS' | 'STEPS' | 'LINK' | 'UPLOAD' | 'PAYMENT' | 'ATTENDANCE' | 'CERTIFICATION' | 'CONTEST'; // 인증 방식
+  category: 'STUDY' | 'HEALTH' | 'ECON' | 'LIFE' | 'ENT' | 'SAVING'; // 백엔드 QuestCategoryEnum과 정확히 일치
+  verify_method: 'GPS' | 'STEPS' | 'LINK' | 'UPLOAD' | 'PAYMENT' | 'ATTENDANCE' | 'CERTIFICATION' | 'CONTEST' | 'QUIZ'; // 백엔드 QuestVerifyMethodEnum과 정확히 일치
   verify_params: string; // 인증 파라미터(JSON)
   reward_exp: number; // 보상 EXP
   target_count: number; // 누적형 목표
-  period_scope: 'any' | 'daily' | 'weekly' | 'monthly'; // 중복완료 방지 단위
+  period_scope: 'ANY' | 'DAILY' | 'WEEKLY' | 'MONTHLY'; // 백엔드 PeriodScopeEnum과 정확히 일치
   active: boolean; // 노출 여부
   lat?: number; // GPS 미션용 좌표
   lng?: number; // GPS 미션용 좌표
+  link_url?: string; // 백엔드와 일치하도록 link_url 필드 추가
 }
 
 export interface QuestAttempt {
   id: string; // ULID
   quest_id: string; // FK→quests.id
   user_id: string; // FK→users.id
-  status: 'deactive' | 'in_progress' | 'clear' | 'submitted' | 'approved'; // 상태
+  status: 'DEACTIVE' | 'IN_PROGRESS' | 'CLEAR' | 'SUBMITTED' | 'APPROVED'; // 백엔드 QuestAttemptStatusEnum과 정확히 일치
   progress_count: number; // 진행 누적
   target_count: number; // 시도 시작 시점의 목표
   proof_url?: string; // 증빙 URL
-  period_scope: 'any' | 'daily' | 'weekly' | 'monthly'; // 스코프
+  period_scope: 'ANY' | 'DAILY' | 'WEEKLY' | 'MONTHLY'; // 백엔드 PeriodScopeEnum과 정확히 일치
   period_key: string; // 스코프 키
   started_at: string; // 시작 시각
   submitted_at?: string; // 제출 시각
@@ -183,15 +184,15 @@ export interface Transfer {
   from_dd_account_id: string; // FK→demand_deposit_accounts.id
   to_savings_account_id: string; // FK→installment_savings_accounts.id
   amount: number; // 금액
-  status: 'requested' | 'success' | 'failed'; // 상태
+  status: 'REQUESTED' | 'SUCCESS' | 'FAILED'; // 백엔드 TransferStatusEnum과 정확히 일치
   created_at: string; // 시각
 }
 
 export interface AccountTransaction {
   id: string; // ULID
-  account_type: 'DEMAND' | 'SAVINGS'; // 대상 종류
+  account_type: 'DEMAND' | 'SAVINGS'; // 백엔드 AccountTypeEnum과 정확히 일치
   account_id: string; // 대상 계좌 id
-  direction: 'credit' | 'debit'; // 입금/출금
+  direction: 'CREDIT' | 'DEBIT'; // 백엔드 TransactionDirectionEnum과 정확히 일치
   amount: number; // 금액
   balance_after?: number; // 거래 후 잔액
   related_payment_id?: string; // 결제 연계 시 payments.id
@@ -246,6 +247,7 @@ export interface QuestWithAttempt extends Quest {
   attempt?: QuestAttempt;
   is_recommended?: boolean;
   is_clicked?: boolean;
+  user_status?: 'DEACTIVE' | 'IN_PROGRESS' | 'CLEAR' | 'SUBMITTED' | 'APPROVED'; // 백엔드에서 오는 사용자 상태
 }
 
 export interface QuestProgress {

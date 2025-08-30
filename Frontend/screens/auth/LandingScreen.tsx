@@ -46,24 +46,28 @@ export const LandingScreen: React.FC = () => {
       <View style={styles.content}>
         {/* 로고 영역 */}
         <View style={styles.logoSection}>
-          <Text style={styles.mainTitle}>헤이영</Text>
-          <Text style={styles.subTitle}>쏠쏠한 퀘스트</Text>
-          <Text style={styles.slogan}>
+          <Image
+            source={require('../../assets/heyoung_logo.png')}
+            style={styles.logoImage}
+            resizeMode="contain"
+            accessibilityLabel="Heyoung logo"
+          />
+          <Text style={styles.systemText}>헤이영 스마트 캠퍼스 시스템</Text>
+        
+          {/* <Text style={styles.slogan}>
             성장이 이자가 되고{'\n'}경쟁이 나눔이 되다
-          </Text>
+          </Text> */}
         </View>
 
-        {/* 캐릭터 이미지 영역 */}
-        <View style={styles.characterSection}>
-          <View style={styles.characterContainer}>
-            <Image
-              source={require('../../assets/SolCharacter.png')}
-              style={styles.characterImage}
-              resizeMode="contain"
-            />
-          </View>
+        {/* 히어로 이미지 영역 (landing-cpu) */}
+        <View style={styles.heroSection}>
+          <Image
+            source={require('../../assets/landing-cpu.png')}
+            style={styles.heroImage}
+            resizeMode="contain"
+            accessibilityLabel="Landing hero"
+          />
         </View>
-
         {/* 버튼 영역 */}
         <View style={styles.buttonSection}>
           <TouchableOpacity
@@ -95,13 +99,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: SPACING.lg,
-    justifyContent: 'space-between',
-    paddingTop: SPACING.xxl,
-    paddingBottom: SPACING.xl,
+  justifyContent: 'flex-start',
+  paddingTop: SPACING.xxl + SPACING.lg,
+  paddingBottom: SPACING.lg,
   },
   logoSection: {
-    alignItems: 'center',
-    marginTop: SPACING.xl,
+  alignItems: 'center',
+  marginBottom: SPACING.xxl + SPACING.md,
+  transform: [{ translateY: SPACING.sm }],
   },
   mainTitle: {
     fontSize: 36,
@@ -110,15 +115,34 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
     textAlign: 'center',
   },
-  subTitle: {
-    fontSize: FONT_SIZES.lg,
-    color: '#495057',
+  logoImage: {
+    width: 220,
+    height: 80,
+    marginBottom: SPACING.sm,
+  },
+  systemText: {
+    fontSize: FONT_SIZES.xs,
+    color: '#1428A0',
     fontWeight: '500',
-    marginBottom: SPACING.lg,
+  marginBottom: SPACING.md,
     textAlign: 'center',
   },
+  subTitle: {
+    fontFamily: 'gothic-bold',
+    fontSize: FONT_SIZES.xxxl,
+    color: '#1428A0',
+    fontWeight: '700',
+    marginTop: SPACING.xl,
+    marginBottom: SPACING.xxl,
+    textAlign: 'center',
+  },
+  subTitleWrapper: {
+    alignItems: 'center',
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
   slogan: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: 'bold',
     color: '#343A40',
     textAlign: 'center',
@@ -141,15 +165,35 @@ const styles = StyleSheet.create({
     width: 300,
     height: 400,
   },
+  heroSection: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginVertical: SPACING.xxl,
+  },
+  heroImage: {
+  width: '86%',
+  maxWidth: 360,
+  height: 230,
+  alignSelf: 'center',
+  },
   buttonSection: {
-    marginBottom: SPACING.xl,
+    position: 'absolute',
+    left: SPACING.lg,
+    right: SPACING.lg,
+    bottom: SPACING.xl,
+    gap: SPACING.sm,
+    alignItems: 'center',
   },
   loginButton: {
     backgroundColor: '#1428A0', // 신한 블루
-    borderRadius: BORDER_RADIUS.lg,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xl,
-    marginBottom: SPACING.md,
+  borderRadius: BORDER_RADIUS.lg,
+  paddingVertical: SPACING.md,
+  paddingHorizontal: SPACING.lg,
+  marginBottom: SPACING.sm,
+  minHeight: 44,
+  justifyContent: 'center',
+  width: '88%',
+  alignSelf: 'center',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
@@ -162,17 +206,20 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: FONT_SIZES.lg,
+  fontSize: FONT_SIZES.md,
     fontWeight: '600',
   },
   signupButton: {
     backgroundColor: '#FFFFFF',
     borderRadius: BORDER_RADIUS.lg,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.xl,
+  paddingVertical: SPACING.md,
+  paddingHorizontal: SPACING.lg,
     borderWidth: 2,
     borderColor: '#1428A0', // 신한 블루
-    alignItems: 'center',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '88%',
+  alignSelf: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -184,7 +231,7 @@ const styles = StyleSheet.create({
   },
   signupButtonText: {
     color: '#1428A0', // 신한 블루
-    fontSize: FONT_SIZES.lg,
+  fontSize: FONT_SIZES.md,
     fontWeight: '600',
   },
 });

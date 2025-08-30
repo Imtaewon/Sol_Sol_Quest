@@ -4,9 +4,9 @@
  * 적금 가입 화면 컴포넌트
  * 
  * 주요 기능:
- * - 1단계: 개인정보 조회 + 적금 정보 입력
+ * - 1단계: 적금 정보 입력 + 상시입출금 계좌 생성
  * - 2단계: 설문 조사 (12문제)
- * - 최종 제출: 모든 데이터를 백엔드로 전송
+ * - 최종 제출: 설문 응답 제출
  */
 
 import React, { useState, useEffect } from 'react';
@@ -27,16 +27,19 @@ import { AppHeader } from '../../components/common/AppHeader';
 import { FormTextInput } from '../../components/common/FormTextInput';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../../utils/constants';
+import { formatCurrency } from '../../utils/formatters';
+import { useGetUserInfoQuery, useCreateDemandAccountMutation, useCreateSavingsAccountMutation } from '../../store/api/baseApi';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDepositAccount } from '../../hooks/useUser';
 import { 
-  useGetPersonalInfoQuery,
   useGetSurveyQuestionQuery,
-  useSubmitSavingSignupMutation,
   useSubmitSurveyResponsesMutation 
 } from '../../store/api/savingApi';
+
 import { 
-  PersonalInfo, 
   SurveyQuestion, 
-  SurveyResponse, 
+  SurveyResponse,
+  SurveyAnswerIn,
   QUESTION_TYPE_MAPPING 
 } from '../../types/saving';
 import { HomeStackParamList } from '../../navigation/HomeStack';
@@ -51,12 +54,13 @@ interface SavingFormData {
 
 // 설문 응답 저장용 상태
 interface SurveyState {
-  responses: { [key: number]: number };
+  responses: { [key: number]: { answer: number; questionId: string; optionId: string } };
   currentQuestion: number;
 }
 
 export const SavingOpenScreen: React.FC = () => {
   const navigation = useNavigation<SavingOpenScreenNavigationProp>();
+  const queryClient = useQueryClient();
   
   // 현재 단계 (1: 적금 정보 입력, 2: 설문 조사)
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -67,64 +71,221 @@ export const SavingOpenScreen: React.FC = () => {
     currentQuestion: 1,
   });
 
+
+
   // 폼 컨트롤
-  const { control, handleSubmit, formState: { errors }, watch } = useForm<SavingFormData>({
+  const { control, handleSubmit, formState: { errors }, watch, setValue } = useForm<SavingFormData>({
     defaultValues: {
       monthlyAmount: 0,
       accountNumber: '',
     },
   });
 
-  // API 호출
+  // API 호출 - 로그인한 사용자 정보 조회
   const { 
-    data: personalInfo, 
-    isLoading: isPersonalInfoLoading, 
-    error: personalInfoError 
-  } = useGetPersonalInfoQuery();
+    data: userInfo, 
+    isLoading: isUserInfoLoading, 
+    error: userInfoError 
+  } = useGetUserInfoQuery();
+
+  // 상시입출금 계좌 정보 조회
+  const { 
+    data: depositAccount, 
+    isLoading: isDepositLoading, 
+    error: depositError 
+  } = useDepositAccount();
 
   const { 
     data: surveyQuestion, 
-    isLoading: isSurveyLoading 
+    isLoading: isSurveyLoading,
+    error: surveyError,
+    isFetching: isSurveyFetching,
+    isError: isSurveyError
   } = useGetSurveyQuestionQuery(surveyState.currentQuestion, {
     skip: currentStep !== 2,
   });
 
-  const [submitSavingSignup, { isLoading: isSubmittingSaving }] = useSubmitSavingSignupMutation();
+  // 설문 API 호출 상태 상세 로그
+  console.log('🔍 설문 API 호출 상태:', {
+    currentStep,
+    currentQuestion: surveyState.currentQuestion,
+    skip: currentStep !== 2,
+    isSurveyLoading,
+    isSurveyFetching,
+    isSurveyError,
+    surveyError,
+    surveyQuestion,
+    hasData: !!surveyQuestion
+  });
+
+  // 설문 에러 처리
+  React.useEffect(() => {
+    if (surveyError && currentStep === 2) {
+      console.error('❌ 설문 문제 조회 실패:', surveyError);
+      Alert.alert(
+        '설문 조회 실패',
+        '설문 문제를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.',
+        [
+          {
+            text: '확인',
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    }
+  }, [surveyError, currentStep, navigation]);
+
+  // currentStep 변경 감지
+  React.useEffect(() => {
+    console.log('🔄 currentStep 변경됨:', {
+      currentStep,
+      currentQuestion: surveyState.currentQuestion,
+      willSkip: currentStep !== 2
+    });
+  }, [currentStep, surveyState.currentQuestion]);
+
+
+  const [createSavingsAccount, { isLoading: isCreatingSavings }] = useCreateSavingsAccountMutation();
   const [submitSurveyResponses, { isLoading: isSubmittingSurvey }] = useSubmitSurveyResponsesMutation();
+
+  // API 요청 로그
+  console.log('💰 SavingOpenScreen API 상태:', {
+    userInfo: { loading: isUserInfoLoading, error: userInfoError, data: userInfo ? '있음' : '없음' },
+    depositAccount: { loading: isDepositLoading, error: depositError, data: depositAccount?.data ? '있음' : '없음' },
+    surveyQuestion: { loading: isSurveyLoading, data: surveyQuestion ? '있음' : '없음' },
+    currentStep,
+    currentQuestion: surveyState.currentQuestion
+  });
+
+  // 설문 데이터 상세 로그
+  console.log('📝 설문 데이터 상세:', {
+    surveyQuestion: surveyQuestion,
+    options: surveyQuestion?.options,
+    optionsLength: surveyQuestion?.options?.length,
+    question: surveyQuestion?.question,
+    currentStep,
+    isSurveyLoading,
+    surveyError: surveyError
+  });
+
+  // 설문 에러 상세 로그
+  if (surveyError) {
+    console.error('❌ 설문 에러 상세:', {
+      error: surveyError,
+      errorType: typeof surveyError,
+      errorKeys: Object.keys(surveyError || {}),
+      errorData: 'error' in surveyError ? surveyError.error : undefined,
+      errorStatus: 'status' in surveyError ? surveyError.status : undefined,
+      errorMessage: 'message' in surveyError ? surveyError.message : undefined
+    });
+  }
+
+  // 사용자 정보 상세 로그
+  console.log('👤 SavingOpenScreen 사용자 정보:', {
+    userInfo,
+    birth_year: userInfo?.birth_year,
+    department: userInfo?.department,
+    name: userInfo?.name,
+    university_name: userInfo?.university_name,
+    grade: userInfo?.grade
+  });
 
   // 입력된 값들 감시
   const monthlyAmount = watch('monthlyAmount');
   const accountNumber = watch('accountNumber');
 
+  // 상시입출금 계좌 정보
+  const hasDepositAccount = depositAccount?.data?.data && depositAccount.data.data.length > 0;
+  const depositAccountInfo = depositAccount?.data?.data?.[0];
+
+  // 상시입출금 계좌가 있으면 자동으로 계좌번호 설정
+  useEffect(() => {
+    if (hasDepositAccount && depositAccountInfo?.account_no) {
+      setValue('accountNumber', depositAccountInfo.account_no);
+    }
+  }, [hasDepositAccount, depositAccountInfo?.account_no, setValue]);
+
   /**
-   * 1단계 제출 처리 (적금 정보 입력)
+   * 상시입출금 계좌 생성 페이지로 이동
    */
-  const handleStep1Submit = (data: SavingFormData) => {
-    if (!data.monthlyAmount || data.monthlyAmount <= 0) {
-      Alert.alert('오류', '월 납입 금액을 입력해주세요.');
-      return;
-    }
+  const handleCreateDemandAccount = () => {
+    navigation.navigate('DepositOpen');
+  };
 
-    if (!data.accountNumber || data.accountNumber.trim() === '') {
-      Alert.alert('오류', '자동이체 계좌번호를 입력해주세요.');
-      return;
-    }
+  // 적금 정보 임시 저장용 상태
+  const [savingFormData, setSavingFormData] = useState<SavingFormData | null>(null);
 
-    // 2단계로 이동
-    setCurrentStep(2);
+  /**
+   * 설문 버튼 클릭 처리 (설문 시작)
+   */
+  const handleStartSurvey = async (data: SavingFormData) => {
+    try {
+      if (!userInfo?.user_id) {
+        Alert.alert('오류', '사용자 정보를 불러올 수 없습니다.');
+        return;
+      }
+
+      if (!data.monthlyAmount || data.monthlyAmount <= 0) {
+        Alert.alert('오류', '월 납입 금액을 입력해주세요.');
+        return;
+      }
+
+      if (!data.accountNumber || data.accountNumber.trim() === '') {
+        Alert.alert('오류', '자동이체 계좌번호를 입력해주세요.');
+        return;
+      }
+
+      // 적금 정보를 임시 저장
+      setSavingFormData(data);
+      
+      console.log('📝 설문 단계로 이동:', {
+        savingFormData: data,
+        beforeStep: currentStep,
+        afterStep: 2
+      });
+      
+      // 설문 단계로 이동
+      setCurrentStep(2);
+    } catch (error) {
+      Alert.alert('오류', '설문을 시작할 수 없습니다.');
+    }
   };
 
   /**
    * 설문 응답 처리
    */
   const handleSurveyAnswer = (answer: number) => {
-    setSurveyState(prev => ({
-      ...prev,
-      responses: {
-        ...prev.responses,
-        [prev.currentQuestion]: answer,
-      },
-    }));
+    console.log('📝 설문 응답 처리:', {
+      currentQuestion: surveyState.currentQuestion,
+      answer: answer,
+      beforeResponses: surveyState.responses,
+      currentQuestionData: surveyQuestion
+    });
+
+         // 현재 문제의 정보 가져오기
+     const currentQuestionData = surveyQuestion;
+     const selectedOption = currentQuestionData?.options?.[answer - 1]; // answer는 1부터 시작하므로 -1
+
+    setSurveyState(prev => {
+      const newState = {
+        ...prev,
+        responses: {
+          ...prev.responses,
+          [prev.currentQuestion]: {
+            answer: answer,
+                         questionId: currentQuestionData?.id || '1',
+            optionId: selectedOption?.id || '',
+          },
+        },
+      };
+      
+      console.log('📝 설문 응답 업데이트 후:', {
+        newResponses: newState.responses,
+        responsesCount: Object.keys(newState.responses).length
+      });
+      
+      return newState;
+    });
   };
 
   /**
@@ -156,38 +317,114 @@ export const SavingOpenScreen: React.FC = () => {
    */
   const handleSurveySubmit = async () => {
     try {
-      // 설문 응답 데이터 변환
-      const surveyResponses: SurveyResponse[] = Object.entries(surveyState.responses).map(([questionNum, answer]) => ({
-        questionNumber: parseInt(questionNum),
-        questionType: QUESTION_TYPE_MAPPING[parseInt(questionNum)],
-        answer,
+      if (!savingFormData || !userInfo?.user_id) {
+        Alert.alert('오류', '적금 정보가 없습니다.');
+        return;
+      }
+
+      // 설문 응답 데이터 검증
+      console.log('📝 설문 제출 전 응답 데이터:', {
+        surveyState: surveyState,
+        responses: surveyState.responses,
+        responsesCount: Object.keys(surveyState.responses).length,
+        currentQuestion: surveyState.currentQuestion,
+        allQuestionsAnswered: Object.keys(surveyState.responses).length === 12
+      });
+
+      // 모든 문제에 답변이 있는지 확인
+      if (Object.keys(surveyState.responses).length !== 12) {
+        Alert.alert('오류', '모든 설문 문제에 답변해주세요.');
+        return;
+      }
+
+      // 1. 설문 응답 데이터 변환 (백엔드 요구사항에 맞춤)
+      const surveyAnswers: SurveyAnswerIn[] = Object.entries(surveyState.responses).map(([questionNum, responseData]) => ({
+        question_id: responseData.questionId,
+        option_id: responseData.optionId,
       }));
 
-      // 설문 응답 제출
-      await submitSurveyResponses(surveyResponses).unwrap();
+      console.log('📝 변환된 설문 응답 데이터:', {
+        surveyAnswers: surveyAnswers,
+        responsesLength: surveyAnswers.length,
+        currentQuestion: surveyQuestion
+      });
 
-      // 적금 가입 데이터 준비
-      const savingData = {
-        monthlyAmount,
-        accountNumber,
-        surveyResponses,
-      };
+      // 2. 설문 응답 제출 (백엔드 요구사항에 맞춤)
+      await submitSurveyResponses({ items: surveyAnswers }).unwrap();
 
-      // 적금 가입 제출
-      await submitSavingSignup(savingData).unwrap();
+      // 3. 적금 가입 API 호출 (설문 완료 후)
+      const savingsResult = await createSavingsAccount({
+        user_id: userInfo.user_id,
+        deposit_balance: savingFormData.monthlyAmount,
+        account_no: savingFormData.accountNumber,
+      }).unwrap();
 
-      Alert.alert(
-        '적금 가입 완료',
-        '축하합니다! 적금 가입이 완료되었습니다.',
-        [
-          {
-            text: '확인',
-            onPress: () => navigation.navigate('Home'),
-          },
-        ]
-      );
+      if (!savingsResult.success) {
+        Alert.alert('오류', '적금 가입에 실패했습니다.');
+        return;
+      }
+
+      console.log('✅ 설문 및 적금 가입 완료, 메인페이지로 이동 시작');
+      
+      // Alert 제거하고 바로 라우팅
+      try {
+        // 캐시 무효화 후 메인페이지로 이동
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['user'] }),
+          queryClient.invalidateQueries({ queryKey: ['account'] }),
+          queryClient.invalidateQueries({ queryKey: ['savingsAccount'] }),
+          queryClient.invalidateQueries({ queryKey: ['depositAccount'] }),
+          queryClient.invalidateQueries({ queryKey: ['ranks'] }),
+          queryClient.invalidateQueries({ queryKey: ['quests'] }),
+          queryClient.invalidateQueries({ queryKey: ['dailyQuests'] }),
+          queryClient.invalidateQueries({ queryKey: ['growthQuests'] }),
+          queryClient.invalidateQueries({ queryKey: ['surpriseQuests'] }),
+          queryClient.invalidateQueries({ queryKey: ['recommendedQuests'] }),
+        ]);
+        
+        console.log('✅ 캐시 무효화 완료, 메인페이지로 이동');
+        
+        // 강제로 메인페이지로 이동
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+        
+        console.log('✅ 메인페이지로 이동 완료');
+      } catch (error) {
+        console.error('캐시 무효화 중 오류:', error);
+        // 오류가 발생해도 메인페이지로 이동
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      }
     } catch (error) {
-      Alert.alert('오류', '적금 가입에 실패했습니다. 다시 시도해주세요.');
+      console.error('설문 제출 오류:', error);
+      
+      // 에러가 발생해도 메인페이지로 이동 (Alert 제거)
+      console.log('❌ 설문 제출 중 오류 발생, 메인페이지로 이동');
+      try {
+        // 캐시 무효화 후 메인페이지로 이동
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['user'] }),
+          queryClient.invalidateQueries({ queryKey: ['account'] }),
+          queryClient.invalidateQueries({ queryKey: ['savingsAccount'] }),
+          queryClient.invalidateQueries({ queryKey: ['depositAccount'] }),
+        ]);
+        
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      } catch (navError) {
+        console.error('네비게이션 에러:', navError);
+        // 최후 수단으로 강제 이동
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      }
     }
   };
 
@@ -199,25 +436,25 @@ export const SavingOpenScreen: React.FC = () => {
   };
 
   // 로딩 상태 처리
-  if (isPersonalInfoLoading) {
+  if (isUserInfoLoading || isDepositLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <AppHeader title="적금 가입" showBack />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>개인정보를 불러오는 중...</Text>
+          <Text style={styles.loadingText}>사용자 정보를 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   // 에러 상태 처리
-  if (personalInfoError) {
+  if (userInfoError || depositError) {
     return (
       <SafeAreaView style={styles.container}>
         <AppHeader title="적금 가입" showBack />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={48} color={COLORS.error} />
-          <Text style={styles.errorText}>개인정보를 불러오는데 실패했습니다.</Text>
+          <Text style={styles.errorText}>사용자 정보를 불러오는데 실패했습니다.</Text>
           <TouchableOpacity style={styles.retryButton}>
             <Text style={styles.retryButtonText}>다시 시도</Text>
           </TouchableOpacity>
@@ -270,23 +507,23 @@ export const SavingOpenScreen: React.FC = () => {
               <View style={styles.personalInfoCard}>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>이름</Text>
-                  <Text style={styles.infoValue}>{personalInfo?.data?.name}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.name}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>출생연도</Text>
-                  <Text style={styles.infoValue}>{personalInfo?.data?.birthYear}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.birth_year}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학교</Text>
-                  <Text style={styles.infoValue}>{personalInfo?.data?.school}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.university_name}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학과</Text>
-                  <Text style={styles.infoValue}>{personalInfo?.data?.department}</Text>
+                  <Text style={styles.infoValue}>{userInfo?.major}</Text>
                 </View>
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>학년</Text>
-                  <Text style={styles.infoValue}>{personalInfo?.data?.grade}학년</Text>
+                  <Text style={styles.infoValue}>{userInfo?.grade}학년</Text>
                 </View>
               </View>
             </View>
@@ -303,47 +540,81 @@ export const SavingOpenScreen: React.FC = () => {
                     <FormTextInput
                       label="자동이체 금액"
                       placeholder="월 납입 금액을 입력해주세요"
-                      value={value.toString()}
-                      onChangeText={(text) => onChange(parseInt(text) || 0)}
+                      value={value ? value.toLocaleString() : ''}
+                      onChangeText={(text) => {
+                        // 콤마 제거 후 숫자만 추출
+                        const numericValue = parseInt(text.replace(/,/g, '')) || 0;
+                        onChange(numericValue);
+                      }}
                       error={errors.monthlyAmount?.message}
                       keyboardType="numeric"
                     />
                   )}
                 />
+                
+                {/* 계좌 잔액 초과 경고 메시지 */}
+                {monthlyAmount > (depositAccountInfo?.balance || 0) && hasDepositAccount && (
+                  <Text style={styles.balanceWarningText}>
+                    계좌 잔액보다 큽니다
+                  </Text>
+                )}
 
                 <View style={styles.accountSection}>
                   <Text style={styles.accountLabel}>자동이체 계좌</Text>
-                  <View style={styles.accountInputContainer}>
-                    <FormTextInput
-                      placeholder="계좌번호를 입력해주세요"
-                      value={accountNumber}
-                      onChangeText={(text) => {
-                        // 폼 값 업데이트
-                        const form = control._formValues;
-                        form.accountNumber = text;
-                      }}
-                      error={errors.accountNumber?.message}
-                      keyboardType="numeric"
-                      style={styles.accountInput}
-                    />
-                    <TouchableOpacity 
-                      style={styles.openAccountButton}
-                      onPress={handleOpenDemandAccount}
-                    >
-                      <Text style={styles.openAccountButtonText}>가입하기</Text>
-                    </TouchableOpacity>
-                  </View>
+                  
+                  {hasDepositAccount ? (
+                    // 상시입출금 계좌가 있는 경우
+                    <View style={styles.existingAccountContainer}>
+                                             <FormTextInput
+                         label="계좌번호"
+                         placeholder="계좌번호를 입력해주세요"
+                         value={depositAccountInfo?.account_no || ''}
+                         onChangeText={(text) => {
+                           setValue('accountNumber', text);
+                         }}
+                         error={errors.accountNumber?.message}
+                         keyboardType="numeric"
+                         disabled={true}
+                       />
+                      <View style={styles.balanceInfo}>
+                        <Text style={styles.balanceLabel}>현재 계좌 잔액</Text>
+                        <Text style={styles.balanceAmount}>
+                          {formatCurrency(depositAccountInfo?.balance || 0)}
+                        </Text>
+                      </View>
+                    </View>
+                  ) : (
+                    // 상시입출금 계좌가 없는 경우
+                    <>
+                      <FormTextInput
+                        placeholder="계좌번호를 입력해주세요"
+                        value={accountNumber}
+                        onChangeText={(text) => {
+                          setValue('accountNumber', text);
+                        }}
+                        error={errors.accountNumber?.message}
+                        keyboardType="numeric"
+                      />
+                      <TouchableOpacity 
+                        style={styles.openAccountButton}
+                        onPress={handleCreateDemandAccount}
+                      >
+                        <Text style={styles.openAccountButtonText}>
+                          상시입출금 계좌 만들기
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
               </View>
             </View>
 
-            {/* 다음 버튼 */}
-            <PrimaryButton
-              title="다음"
-              onPress={handleSubmit(handleStep1Submit)}
-              loading={isSubmittingSaving}
-              style={styles.nextButton}
-            />
+                         {/* 다음 버튼 */}
+             <PrimaryButton
+               title="다음"
+               onPress={handleSubmit(handleStartSurvey)}
+               style={styles.nextButton}
+             />
           </View>
         ) : (
           // 2단계: 설문 조사
@@ -359,31 +630,32 @@ export const SavingOpenScreen: React.FC = () => {
               </View>
             ) : (
               <View style={styles.surveyContainer}>
-                <View style={styles.questionCard}>
-                  <Text style={styles.questionText}>
-                    {surveyQuestion?.data?.question}
-                  </Text>
-                </View>
+                                 <View style={styles.questionCard}>
+                   <Text style={styles.questionText}>
+                     {surveyQuestion?.question}
+                   </Text>
+                 </View>
 
-                {/* 답변 옵션 */}
-                {surveyQuestion?.data?.options && (
-                  <View style={styles.optionsContainer}>
-                    {surveyQuestion.data.options.map((option, index) => (
+                 {/* 답변 옵션 */}
+                 {surveyQuestion?.options && 
+                  surveyQuestion?.options?.length > 0 && (
+                   <View style={styles.optionsContainer}>
+                     {surveyQuestion?.options?.map((option: any, index: number) => (
                       <TouchableOpacity
-                        key={index}
-                        style={[
-                          styles.optionButton,
-                          surveyState.responses[surveyState.currentQuestion] === index + 1 && 
-                          styles.optionButtonSelected
-                        ]}
-                        onPress={() => handleSurveyAnswer(index + 1)}
-                      >
-                        <Text style={[
-                          styles.optionText,
-                          surveyState.responses[surveyState.currentQuestion] === index + 1 && 
-                          styles.optionTextSelected
-                        ]}>
-                          {option}
+                        key={option.id}
+                                                 style={[
+                           styles.optionButton,
+                           surveyState.responses[surveyState.currentQuestion]?.answer === index + 1 && 
+                           styles.optionButtonSelected
+                         ]}
+                         onPress={() => handleSurveyAnswer(index + 1)}
+                       >
+                         <Text style={[
+                           styles.optionText,
+                           surveyState.responses[surveyState.currentQuestion]?.answer === index + 1 && 
+                           styles.optionTextSelected
+                         ]}>
+                          {option.option_text}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -403,28 +675,28 @@ export const SavingOpenScreen: React.FC = () => {
 
                   {surveyState.currentQuestion < 12 ? (
                     <TouchableOpacity 
-                      style={[
-                        styles.nextSurveyButton,
-                        !surveyState.responses[surveyState.currentQuestion] && styles.nextSurveyButtonDisabled
-                      ]}
-                      onPress={handleNextQuestion}
-                      disabled={!surveyState.responses[surveyState.currentQuestion]}
+                                             style={[
+                         styles.nextSurveyButton,
+                         !surveyState.responses[surveyState.currentQuestion]?.answer && styles.nextSurveyButtonDisabled
+                       ]}
+                       onPress={handleNextQuestion}
+                       disabled={!surveyState.responses[surveyState.currentQuestion]?.answer}
                     >
                       <Text style={styles.nextSurveyButtonText}>다음</Text>
                     </TouchableOpacity>
                   ) : (
-                    <TouchableOpacity 
-                      style={[
-                        styles.submitButton,
-                        !surveyState.responses[surveyState.currentQuestion] && styles.submitButtonDisabled
-                      ]}
-                      onPress={handleSurveySubmit}
-                      disabled={!surveyState.responses[surveyState.currentQuestion] || isSubmittingSurvey}
-                    >
-                      <Text style={styles.submitButtonText}>
-                        {isSubmittingSurvey ? '제출 중...' : '제출하기'}
-                      </Text>
-                    </TouchableOpacity>
+                                         <TouchableOpacity 
+                                               style={[
+                          styles.submitButton,
+                          !surveyState.responses[surveyState.currentQuestion]?.answer && styles.submitButtonDisabled
+                        ]}
+                        onPress={handleSurveySubmit}
+                        disabled={!surveyState.responses[surveyState.currentQuestion]?.answer || isCreatingSavings || isSubmittingSurvey}
+                     >
+                       <Text style={styles.submitButtonText}>
+                         {isCreatingSavings || isSubmittingSurvey ? '처리 중...' : '제출하기'}
+                       </Text>
+                     </TouchableOpacity>
                   )}
                 </View>
               </View>
@@ -547,19 +819,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: SPACING.sm,
   },
-  accountInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
-  accountInput: {
-    flex: 1,
-  },
   openAccountButton: {
     backgroundColor: COLORS.secondary,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.md,
     borderRadius: BORDER_RADIUS.sm,
+    marginTop: SPACING.sm,
+    alignItems: 'center',
   },
   openAccountButtonText: {
     color: COLORS.white,
@@ -696,4 +962,39 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontWeight: '600',
   },
-});
+  accountCreatedText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.success,
+    marginTop: SPACING.sm,
+    textAlign: 'center',
+  },
+  // 상시입출금 계좌 관련 스타일
+     existingAccountContainer: {
+     marginBottom: SPACING.md,
+   },
+  balanceInfo: {
+    marginTop: SPACING.sm,
+    padding: SPACING.md,
+    backgroundColor: COLORS.gray[50],
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.gray[200],
+  },
+  balanceLabel: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray[600],
+    marginBottom: SPACING.xs,
+  },
+     balanceAmount: {
+     fontSize: FONT_SIZES.lg,
+     fontWeight: '700',
+     color: COLORS.dark,
+   },
+   // 계좌 잔액 초과 경고 메시지 스타일
+   balanceWarningText: {
+     fontSize: FONT_SIZES.sm,
+     color: COLORS.error,
+     marginTop: SPACING.xs,
+     marginBottom: SPACING.sm,
+   },
+ });

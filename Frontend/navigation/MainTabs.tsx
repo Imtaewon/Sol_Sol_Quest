@@ -4,7 +4,7 @@ import { View, StyleSheet } from 'react-native';
 import { HomeStack } from './HomeStack';
 import { AssetsStack } from './AssetsStack';
 import { PaymentStack } from './PaymentStack';
-import { QuestsScreen } from '../screens/quests/QuestsScreen';
+import { QuestsStack } from './QuestsStack';
 import { LeaderboardScreen } from '../screens/leaderboard/LeaderboardScreen';
 import { MyPageStack } from './MyPageStack';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,7 +12,6 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../utils/constants';
 
 export type MainTabsParamList = {
   Home: undefined;
-  Assets: undefined;
   Payment: undefined;
   Quests: undefined;
   Leaderboard: undefined;
@@ -24,22 +23,30 @@ export type MainTabsParamList = {
   QRPay: undefined;
 };
 
+// 탭 아이콘 props 타입 정의
+interface CustomTabIconProps {
+  route: {
+    name: string;
+  };
+  focused: boolean;
+  color: string;
+  size: number;
+}
+
 const Tab = createBottomTabNavigator<MainTabsParamList>();
 
 // 커스텀 아이콘 컴포넌트
-const CustomTabIcon = ({ route, focused, color, size }: any) => {
+const CustomTabIcon = ({ route, focused, color, size }: CustomTabIconProps) => {
   let iconName: keyof typeof Ionicons.glyphMap;
 
   if (route.name === 'Home') {
     iconName = focused ? 'home' : 'home-outline';
-  } else if (route.name === 'Assets') {
-    iconName = focused ? 'wallet' : 'wallet-outline';
   } else if (route.name === 'Quests') {
-    iconName = focused ? 'trophy' : 'trophy-outline';
+    iconName = focused ? 'list' : 'list-outline';
   } else if (route.name === 'Payment') {
     iconName = focused ? 'card' : 'card-outline';
   } else if (route.name === 'Leaderboard') {
-    iconName = focused ? 'list' : 'list-outline';
+    iconName = focused ? 'trophy' : 'trophy-outline';
   } else if (route.name === 'MyPage') {
     iconName = focused ? 'person' : 'person-outline';
   } else {
@@ -109,13 +116,8 @@ export const MainTabs: React.FC = () => {
         options={{ tabBarLabel: '홈' }}
       />
       <Tab.Screen 
-        name="Assets" 
-        component={AssetsStack}
-        options={{ tabBarLabel: '자산' }}
-      />
-      <Tab.Screen 
         name="Quests" 
-        component={QuestsScreen}
+        component={QuestsStack}
         options={{ tabBarLabel: '퀘스트' }}
       />
       <Tab.Screen 

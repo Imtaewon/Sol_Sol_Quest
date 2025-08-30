@@ -14,19 +14,20 @@ import { LoadingView } from '../../components/common/LoadingView';
 import { ErrorView } from '../../components/common/ErrorView';
 import { COLORS, SPACING, FONT_SIZES } from '../../utils/constants';
 import { HomeStackParamList } from '../../navigation/HomeStack';
-import { usePersonalInfoForDeposit } from '../../hooks/useUser';
+import { useGetUserInfoQuery } from '../../store/api/baseApi';
 import { useDepositSignup } from '../../hooks/useDeposit';
+
 
 type DepositOpenScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'DepositOpen'>;
 
 export const DepositOpenScreen: React.FC = () => {
   const navigation = useNavigation<DepositOpenScreenNavigationProp>();
-  const { data: personalInfo, isLoading, error } = usePersonalInfoForDeposit();
+  const { data: userInfo, isLoading, error } = useGetUserInfoQuery();
   const depositSignupMutation = useDepositSignup();
 
   const handleDepositSignup = async () => {
     try {
-      const result = await depositSignupMutation.mutateAsync({ isOpened: true });
+      const result = await depositSignupMutation.mutateAsync({ user_id: userInfo?.user_id || '' });
       if (result.success) {
         // 예금 가입 성공 후 메인 화면으로 이동
         navigation.navigate('Home');
@@ -66,15 +67,23 @@ export const DepositOpenScreen: React.FC = () => {
               <Text style={styles.sectionTitle}>개인정보</Text>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>이름</Text>
-                <Text style={styles.infoValue}>{personalInfo?.data?.name}</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>휴대전화</Text>
-                <Text style={styles.infoValue}>{personalInfo?.data?.phone}</Text>
+                <Text style={styles.infoValue}>{userInfo?.name}</Text>
               </View>
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>이메일</Text>
-                <Text style={styles.infoValue}>{personalInfo?.data?.email}</Text>
+                <Text style={styles.infoValue}>{userInfo?.email}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>학교</Text>
+                <Text style={styles.infoValue}>{userInfo?.university_name}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>학과</Text>
+                <Text style={styles.infoValue}>{userInfo?.major}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>학년</Text>
+                <Text style={styles.infoValue}>{userInfo?.grade}학년</Text>
               </View>
             </View>
 

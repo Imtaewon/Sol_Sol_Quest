@@ -27,6 +27,7 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Config } from '../config/env';
+import { Platform } from 'react-native';
 
 // API 응답 타입
 export interface ApiResponse<T = any> {
@@ -35,6 +36,47 @@ export interface ApiResponse<T = any> {
   message?: string;
   error?: string;
 }
+
+// AsyncStorage fallback 함수들
+const getStorageItem = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // 웹 환경에서는 직접 localStorage 사용
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.error('❌ localStorage 읽기 실패:', error);
+      return null;
+    }
+  } else {
+    // 네이티브 환경에서는 AsyncStorage 사용
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch (error) {
+      console.error('❌ AsyncStorage 읽기 실패:', error);
+      return null;
+    }
+  }
+};
+
+const setStorageItem = async (key: string, value: string): Promise<void> => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // 웹 환경에서는 직접 localStorage 사용
+    try {
+      localStorage.setItem(key, value);
+      console.log(`✅ localStorage에 ${key} 저장 성공`);
+    } catch (error) {
+      console.error('❌ localStorage 저장 실패:', error);
+    }
+  } else {
+    // 네이티브 환경에서는 AsyncStorage 사용
+    try {
+      await AsyncStorage.setItem(key, value);
+      console.log(`✅ AsyncStorage에 ${key} 저장 성공`);
+    } catch (error) {
+      console.error('❌ AsyncStorage 저장 실패:', error);
+    }
+  }
+};
 
 // Axios 인스턴스 생성
 const apiClient: AxiosInstance = axios.create({
@@ -49,16 +91,41 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     try {
-      const token = await AsyncStorage.getItem('access_token');
-      if (token) {
+      // 설문 API 호출인지 확인
+      const isSurveyApi = config.url?.includes('/saving/survey');
+      
+      // 더미 키 확인으로 AsyncStorage 기능 테스트
+      const dummyValue = await getStorageItem('dummy_key');
+      console.log('DEBUG: Interceptor - AsyncStorage dummy_key:', dummyValue);
+      
+      const token = await getStorageItem('access_token');
+      const hasToken = !!token;
+      const tokenLength = token?.length || 0;
+      
+      console.log('🔑 API 요청 토큰 확인:', {
+        url: config.url,
+        method: config.method,
+        isSurveyApi,
+        hasToken,
+        tokenLength,
+        dummyKeyExists: !!dummyValue,
+        tokenPreview: token ? `${token.substring(0, 20)}...` : 'null'
+      });
+      
+      if (hasToken && token) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('✅ 토큰이 헤더에 추가됨');
+      } else {
+        console.log('⚠️ 토큰이 없음 - Authorization 헤더 추가 안됨');
       }
     } catch (error) {
-      console.error('토큰 가져오기 실패:', error);
+      console.error('❌ 토큰 가져오기 실패:', error);
     }
+    
     return config;
   },
   (error) => {
+    console.error('❌ 요청 인터셉터 에러:', error);
     return Promise.reject(error);
   }
 );
@@ -66,16 +133,48 @@ apiClient.interceptors.request.use(
 // 응답 인터셉터 - 에러 처리
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
+    // 설문 API 응답인지 확인
+    const isSurveyApi = response.config.url?.includes('/saving/survey');
+    
+    if (isSurveyApi) {
+      console.log('📡 설문 API 응답 성공:', {
+        url: response.config.url,
+        status: response.status,
+        statusText: response.statusText,
+        data: response.data,
+        dataKeys: Object.keys(response.data || {}),
+        hasData: !!response.data?.data
+      });
+    }
+    
     return response;
   },
   async (error: AxiosError<ApiResponse>) => {
     const originalRequest = error.config;
     
+    // 설문 API 에러인지 확인
+    const isSurveyApi = originalRequest?.url?.includes('/saving/survey');
+    
+    if (isSurveyApi) {
+      console.error('❌ 설문 API 에러:', {
+        url: originalRequest?.url,
+        method: originalRequest?.method,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        errorData: error.response?.data,
+        errorMessage: error.message
+      });
+    }
+    
     // 401 에러 (토큰 만료) 처리
     if (error.response?.status === 401 && originalRequest) {
       try {
         // 토큰 제거
-        await AsyncStorage.removeItem('access_token');
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          localStorage.removeItem('access_token');
+        } else {
+          await AsyncStorage.removeItem('access_token');
+        }
         
         // 로그인 화면으로 리다이렉트 (네비게이션 처리 필요)
         console.log('토큰이 만료되어 로그인 화면으로 이동합니다.');

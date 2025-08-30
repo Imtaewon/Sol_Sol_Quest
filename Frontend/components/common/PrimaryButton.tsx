@@ -42,7 +42,7 @@ interface PrimaryButtonProps {
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
-  variant?: 'primary' | 'secondary' | 'outline' | 'success';
+  variant?: 'primary' | 'secondary' | 'outline' | 'success' | 'warning';
   size?: 'small' | 'medium' | 'large';
   style?: ViewStyle;
   textStyle?: TextStyle;
@@ -115,6 +115,9 @@ const styles = StyleSheet.create({
   success: {
     backgroundColor: COLORS.success,
   },
+  warning: {
+    backgroundColor: COLORS.warning,
+  },
   small: {
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
@@ -147,6 +150,9 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   successText: {
+    color: COLORS.white,
+  },
+  warningText: {
     color: COLORS.white,
   },
   smallText: {

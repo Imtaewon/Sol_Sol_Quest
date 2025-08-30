@@ -28,28 +28,178 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { authService, LoginRequest, FrontendSignupRequest } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
+import { useDispatch } from 'react-redux';
+import { loginSuccess, logout } from '../store/slices/authSlice';
+import { Platform } from 'react-native';
+import { LoginResponseData } from '../types/auth';
+
+// AsyncStorage fallback 함수들
+const setStorageItem = async (key: string, value: string): Promise<void> => {
+  console.log(`🔧 setStorageItem 호출됨 - key: ${key}, value: ${value ? `${value.substring(0, 20)}...` : 'null'}`);
+  
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // 웹 환경에서는 직접 localStorage 사용
+    try {
+      localStorage.setItem(key, value);
+      console.log(`✅ localStorage에 ${key} 저장 성공`);
+      
+      // 저장 후 즉시 확인
+      const storedValue = localStorage.getItem(key);
+      console.log(`🔧 localStorage 저장 확인 - ${key}:`, storedValue ? '저장됨' : '저장 안됨');
+    } catch (error) {
+      console.error('❌ localStorage 저장 실패:', error);
+    }
+  } else {
+    // 네이티브 환경에서는 AsyncStorage 사용
+    try {
+      await AsyncStorage.setItem(key, value);
+      console.log(`✅ AsyncStorage에 ${key} 저장 성공`);
+    } catch (error) {
+      console.error('❌ AsyncStorage 저장 실패:', error);
+    }
+  }
+};
+
+const getStorageItem = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // 웹 환경에서는 직접 localStorage 사용
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      console.error('❌ localStorage 읽기 실패:', error);
+      return null;
+    }
+  } else {
+    // 네이티브 환경에서는 AsyncStorage 사용
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch (error) {
+      console.error('❌ AsyncStorage 읽기 실패:', error);
+      return null;
+    }
+  }
+};
+
+const clearStorage = async (): Promise<void> => {
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // 웹 환경에서는 직접 localStorage 사용
+    try {
+      localStorage.clear();
+      console.log('✅ localStorage 클리어 성공');
+    } catch (error) {
+      console.error('❌ localStorage 클리어 실패:', error);
+    }
+  } else {
+    // 네이티브 환경에서는 AsyncStorage 사용
+    try {
+      await AsyncStorage.clear();
+      console.log('✅ AsyncStorage 클리어 성공');
+    } catch (error) {
+      console.error('❌ AsyncStorage 클리어 실패:', error);
+    }
+  }
+};
 
 // 로그인 훅
 export const useLogin = () => {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
-  return useMutation({
-    mutationFn: (data: LoginRequest) => authService.login(data),
-    onSuccess: async (response) => {
-      if (response.success) {
-        // 토큰 저장 (access_token으로 변경)
-        await AsyncStorage.setItem('auth_token', response.data.access_token);
+  return useMutation<LoginResponseData, Error, LoginRequest>({
+    mutationFn: async (data: LoginRequest) => {
+      console.log('🔄 useLogin mutationFn 호출됨');
+      console.log('전송할 데이터:', JSON.stringify(data, null, 2));
+      
+      // AsyncStorage 클리어 (로그인 시도 전)
+      try {
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          localStorage.clear();
+        } else {
+          await AsyncStorage.clear();
+        }
+      } catch (error) {
+        console.error('❌ AsyncStorage 클리어 실패:', error);
+      }
+      
+      const response = await authService.login(data);
+      return response.data as LoginResponseData;
+    },
+    onSuccess: async (response: any) => {
+      console.log('로그인 응답:', response);
+      console.log('응답 구조 분석:', {
+        hasData: !!response.data,
+        hasSuccess: !!response.data?.success,
+        responseKeys: Object.keys(response),
+        dataKeys: response.data ? Object.keys(response.data) : []
+      });
+      
+      try {
+        // 토큰 추출 - 백엔드 응답 구조에 맞게 수정
+        let token = null;
+        let user = null;
         
-        // 사용자 정보 캐시에 저장 (Backend 응답 형식에 맞춤)
-        queryClient.setQueryData(['user'], response.data.user);
-        queryClient.setQueryData(['token'], response.data.access_token);
-        queryClient.setQueryData(['savingStatus'], response.data.user.has_savings);
+        // 백엔드에서 {access_token, user} 형태로 직접 응답하는 경우
+        if (response.access_token && response.user) {
+          token = response.access_token;
+          user = response.user;
+        } else if (response.data?.access_token && response.data?.user) {
+          token = response.data.access_token;
+          user = response.data.user;
+        } else if (response.data?.data?.access_token && response.data?.data?.user) {
+          token = response.data.data.access_token;
+          user = response.data.data.user;
+        }
+        
+        console.log('🔐 추출된 토큰:', token ? `${token.substring(0, 20)}...` : 'null');
+        console.log('🔐 추출된 사용자 정보:', user);
+        
+        if (!token) {
+          console.error('❌ 토큰을 찾을 수 없습니다. 응답 구조:', JSON.stringify(response, null, 2));
+          return;
+        }
+        
+        await setStorageItem('access_token', token);
+        console.log('🔐 토큰 저장 완료');
+        
+        // 즉시 토큰 검증
+        const storedToken = await getStorageItem('access_token');
+        console.log('DEBUG: 로그인 후 토큰 검증:', {
+          hasToken: !!storedToken,
+          tokenLength: storedToken?.length || 0,
+          tokenPreview: storedToken ? `${storedToken.substring(0, 20)}...` : 'null'
+        });
+        
+        // 더미 키도 확인
+        const dummyValue = await getStorageItem('dummy_key');
+        console.log('DEBUG: 로그인 후 dummy_key 확인:', dummyValue);
+        
+        // 사용자 정보 캐시에 저장
+        if (user) {
+          queryClient.setQueryData(['user'], user);
+          queryClient.setQueryData(['token'], token);
+          queryClient.setQueryData(['savingStatus'], user.has_savings);
+        }
+        
+        // Redux store 업데이트 (AsyncStorage와 동기화)
+        dispatch(loginSuccess({ token }));
+        console.log('🔐 Redux loginSuccess 액션 호출됨');
+        console.log('토큰:', token);
+        
+        // 로그인 성공 후 캐시 무효화 (새로운 사용자 정보 로드)
+        console.log('🔄 로그인 후 캐시 무효화 시작');
+        queryClient.invalidateQueries({ queryKey: ['user'] });
+        queryClient.invalidateQueries({ queryKey: ['account'] });
+        queryClient.invalidateQueries({ queryKey: ['savingsAccount'] });
+        queryClient.invalidateQueries({ queryKey: ['depositAccount'] });
+        console.log('✅ 캐시 무효화 완료');
         
         Toast.show({
           type: 'success',
           text1: '로그인 성공',
           text2: '환영합니다!',
         });
+      } catch (error) {
+        console.error('❌ 토큰 저장 중 에러:', error);
       }
     },
     onError: (error) => {
@@ -61,28 +211,104 @@ export const useLogin = () => {
 // 회원가입 훅
 export const useSignup = () => {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   return useMutation({
-    mutationFn: (data: FrontendSignupRequest) => authService.signup(data),
-    onSuccess: async (response) => {
-      if (response.success) {
-        // 회원가입 성공 시 자동 로그인 처리
-        await AsyncStorage.setItem('auth_token', response.data.access_token);
+    mutationFn: (data: FrontendSignupRequest) => {
+      console.log('🔄 useSignup mutationFn 호출됨');
+      console.log('전송할 데이터:', JSON.stringify(data, null, 2));
+      return authService.signup(data);
+    },
+    onSuccess: async (response: any) => {
+      console.log('🎉 회원가입 성공 콜백 호출됨');
+      console.log('전체 응답:', JSON.stringify(response, null, 2));
+      console.log('응답 타입:', typeof response);
+      console.log('response.success:', response.success);
+      console.log('response.data:', response.data);
+      
+      try {
+        // 회원가입 성공 후 자동 로그인 처리
+        // 다양한 응답 구조에 대응
+        let access_token: string | undefined;
+        let user: any | undefined;
         
-        // 사용자 정보 캐시에 저장
-        queryClient.setQueryData(['user'], response.data.user);
-        queryClient.setQueryData(['token'], response.data.access_token);
-        queryClient.setQueryData(['savingStatus'], response.data.user.has_savings);
+        if (response.success && response.data) {
+          // 표준 응답 구조
+          access_token = response.data.access_token;
+          user = response.data.user;
+        } else if (response.data?.access_token) {
+          // data 안에 직접 토큰이 있는 경우
+          access_token = response.data.access_token;
+          user = response.data.user;
+        } else if (response.access_token) {
+          // 최상위에 토큰이 있는 경우
+          access_token = response.access_token;
+          user = response.user;
+        }
         
+        console.log('추출된 토큰:', access_token ? `${access_token.substring(0, 20)}...` : 'null');
+        console.log('추출된 사용자 정보:', user);
+        
+        if (access_token && user) {
+          // 토큰 저장
+          await setStorageItem('access_token', access_token);
+          console.log('🔐 회원가입 후 토큰 저장 완료');
+          
+          // 사용자 정보 캐시에 저장
+          queryClient.setQueryData(['user'], user);
+          queryClient.setQueryData(['token'], access_token);
+          queryClient.setQueryData(['savingStatus'], user.has_savings);
+          
+          // Redux store 업데이트 (자동 로그인)
+          dispatch(loginSuccess({ token: access_token }));
+          console.log('🔐 회원가입 후 Redux loginSuccess 액션 호출됨');
+          
+          // 회원가입 후 캐시 무효화 (새로운 사용자 정보 로드)
+          console.log('🔄 회원가입 후 캐시 무효화 시작');
+          queryClient.invalidateQueries({ queryKey: ['user'] });
+          queryClient.invalidateQueries({ queryKey: ['account'] });
+          queryClient.invalidateQueries({ queryKey: ['savingsAccount'] });
+          queryClient.invalidateQueries({ queryKey: ['depositAccount'] });
+          queryClient.invalidateQueries({ queryKey: ['ranks'] });
+          console.log('✅ 회원가입 후 캐시 무효화 완료');
+          
+          Toast.show({
+            type: 'success',
+            text1: '회원가입 성공',
+            text2: '환영합니다!',
+          });
+        } else {
+          console.warn('⚠️ 토큰 또는 사용자 정보를 찾을 수 없음');
+          Toast.show({
+            type: 'info',
+            text1: '회원가입 완료',
+            text2: '로그인 후 이용해주세요.',
+          });
+        }
+      } catch (error) {
+        console.error('❌ 회원가입 후 자동 로그인 처리 중 에러:', error);
         Toast.show({
-          type: 'success',
-          text1: '회원가입 성공',
-          text2: '자동으로 로그인되었습니다.',
+          type: 'error',
+          text1: '회원가입 완료',
+          text2: '로그인 후 이용해주세요.',
         });
       }
     },
     onError: (error) => {
-      console.error('회원가입 실패:', error);
+      console.error('❌ useSignup onError 호출됨');
+      console.error('에러 타입:', typeof error);
+      console.error('에러 상세:', JSON.stringify(error, null, 2));
+      
+      if (error instanceof Error) {
+        console.error('에러 메시지:', error.message);
+        console.error('에러 스택:', error.stack);
+      }
+      
+      Toast.show({
+        type: 'error',
+        text1: '회원가입 실패',
+        text2: '다시 시도해주세요.',
+      });
     },
   });
 };
@@ -90,15 +316,28 @@ export const useSignup = () => {
 // 로그아웃 훅
 export const useLogout = () => {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
   return useMutation({
-    mutationFn: () => authService.logout(),
+    mutationFn: async () => {
+      console.log('🔍 useLogout mutationFn 호출됨');
+      const result = await authService.logout();
+      console.log('🔍 authService.logout() 완료:', result);
+      return result;
+    },
     onSuccess: async () => {
-      // 토큰 삭제
-      await AsyncStorage.removeItem('auth_token');
+      console.log('🔍 useLogout onSuccess 호출됨');
+      // 토큰 삭제 (AsyncStorage와 Redux 모두)
+      await clearStorage();
+      console.log('🔍 clearStorage 완료');
+      
+      // Redux state도 클리어
+      dispatch(logout());
+      console.log('🔍 Redux logout 액션 디스패치 완료');
       
       // 모든 쿼리 캐시 초기화
       queryClient.clear();
+      console.log('🔍 queryClient.clear() 완료');
       
       Toast.show({
         type: 'success',
@@ -107,9 +346,9 @@ export const useLogout = () => {
       });
     },
     onError: async (error) => {
-      console.error('로그아웃 실패:', error);
+      console.error('❌ useLogout onError 호출됨:', error);
       // 에러가 발생해도 로컬 토큰은 삭제
-      await AsyncStorage.removeItem('auth_token');
+      await clearStorage();
       queryClient.clear();
     },
   });
