@@ -22,6 +22,9 @@
 * Redis 캐싱
 * 추천 시스템 (Cold Start → 하이브리드 자동 전환)
 
+* 시현영상
+    <video controls src="시연영상.mp4" title="Title"></video>
+
 > [팀 금리복잡도 O(1) 노션페이지]
 
 > 참고: API 설계 및 문서화 방식은 FastAPI 공식 문서 스타일을 따릅니다.
