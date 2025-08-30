@@ -335,7 +335,22 @@ export const SavingOpenScreen: React.FC = () => {
         return;
       }
 
-      // 1. 적금 가입 API 호출
+      // 1. 설문 응답 데이터 변환 (백엔드 요구사항에 맞춤)
+      const surveyAnswers: SurveyAnswerIn[] = Object.entries(surveyState.responses).map(([questionNum, responseData]) => ({
+        question_id: responseData.questionId,
+        option_id: responseData.optionId,
+      }));
+
+      console.log('📝 변환된 설문 응답 데이터:', {
+        surveyAnswers: surveyAnswers,
+        responsesLength: surveyAnswers.length,
+        currentQuestion: surveyQuestion
+      });
+
+      // 2. 설문 응답 제출 (백엔드 요구사항에 맞춤)
+      await submitSurveyResponses({ items: surveyAnswers }).unwrap();
+
+      // 3. 적금 가입 API 호출 (설문 완료 후)
       const savingsResult = await createSavingsAccount({
         user_id: userInfo.user_id,
         deposit_balance: savingFormData.monthlyAmount,
@@ -347,24 +362,9 @@ export const SavingOpenScreen: React.FC = () => {
         return;
       }
 
-      // 2. 설문 응답 데이터 변환 (백엔드 요구사항에 맞춤)
-      const surveyAnswers: SurveyAnswerIn[] = Object.entries(surveyState.responses).map(([questionNum, responseData]) => ({
-        question_id: responseData.questionId,
-        option_id: responseData.optionId,
-      }));
-
-             console.log('📝 변환된 설문 응답 데이터:', {
-         surveyAnswers: surveyAnswers,
-         responsesLength: surveyAnswers.length,
-                   currentQuestion: surveyQuestion
-       });
-
-      // 3. 설문 응답 제출 (백엔드 요구사항에 맞춤)
-      await submitSurveyResponses({ items: surveyAnswers }).unwrap();
-
       Alert.alert(
-        '적금 가입 완료',
-        '축하합니다! 적금 가입이 완료되었습니다.\n모든 퀘스트가 자동으로 시작되었습니다!',
+        '설문 완료',
+        '적금 계좌 개설이 완료되었습니다!',
         [
           {
             text: '확인',
