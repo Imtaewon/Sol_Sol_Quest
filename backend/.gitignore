@@ -20,6 +20,7 @@ pip-selfcheck.json
 .env
 config.json
 database.yml
+ENV.py
 
 # AWS 관련
 aws-config/
