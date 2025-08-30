@@ -401,7 +401,30 @@ export const SavingOpenScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('설문 제출 오류:', error);
-      Alert.alert('오류', '적금 가입 또는 설문 제출에 실패했습니다.');
+      
+      // 에러가 발생해도 메인페이지로 이동 (Alert 제거)
+      console.log('❌ 설문 제출 중 오류 발생, 메인페이지로 이동');
+      try {
+        // 캐시 무효화 후 메인페이지로 이동
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['user'] }),
+          queryClient.invalidateQueries({ queryKey: ['account'] }),
+          queryClient.invalidateQueries({ queryKey: ['savingsAccount'] }),
+          queryClient.invalidateQueries({ queryKey: ['depositAccount'] }),
+        ]);
+        
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      } catch (navError) {
+        console.error('네비게이션 에러:', navError);
+        // 최후 수단으로 강제 이동
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+      }
     }
   };
 
