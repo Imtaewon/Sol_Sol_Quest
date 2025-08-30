@@ -28,6 +28,8 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
+  Platform,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -107,6 +109,30 @@ export const QuestsScreen: React.FC = () => {
   
   // 새로고침 상태 관리
   const [refreshing, setRefreshing] = useState(false);
+
+  /**
+   * 외부 링크 열기 함수
+   * React Native Web 환경에서 새 창/탭으로 링크를 엽니다
+   */
+  const openExternalLink = async (url: string) => {
+    try {
+      if (Platform.OS === 'web') {
+        // 웹 환경에서는 window.open을 사용하여 새 창/탭으로 열기
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        // 모바일 환경에서는 Linking API 사용
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          Alert.alert('오류', '이 링크를 열 수 없습니다.');
+        }
+      }
+    } catch (error) {
+      console.error('링크 열기 실패:', error);
+      Alert.alert('오류', '링크를 여는 중 오류가 발생했습니다.');
+    }
+  };
 
   /**
    * 퀘스트 목록 조회 API 호출
@@ -396,8 +422,7 @@ export const QuestsScreen: React.FC = () => {
                          text: '열기', 
                          onPress: () => {
                            console.log('🔗 링크 열기:', quest.link_url);
-                           // 실제 링크 열기 구현 (Linking.openURL 등)
-                           Alert.alert('링크 열기', `링크: ${quest.link_url}`);
+                           openExternalLink(quest.link_url);
                          }
                        }
                      ]
