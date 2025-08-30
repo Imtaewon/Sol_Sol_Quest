@@ -34,6 +34,7 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { AppHeader } from '../../components/common/AppHeader';
@@ -154,6 +155,17 @@ export const LeaderboardScreen: React.FC = () => {
             isTopThree && styles.schoolCardTopThree,
             !isTopThree && styles.schoolCardSmall
           ]}>
+            {isTopThree && (
+              <View style={styles.sponsorBadge} pointerEvents="none">
+                <Image
+                  source={require('../../assets/shinhan_logo.png')}
+                  style={styles.sponsorLogo}
+                  resizeMode="contain"
+                />
+                <Text style={styles.sponsorText}>신한 추가 기부</Text>
+              </View>
+            )}
+
             <View style={[
               styles.rankBadge,
               isTopThree && styles.rankBadgeTopThree
@@ -165,7 +177,7 @@ export const LeaderboardScreen: React.FC = () => {
                 {rank}
               </Text>
             </View>
-            
+
             <View style={styles.schoolInfo}>
               <Text style={[
                 styles.schoolName,
@@ -310,7 +322,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: COLORS.black,
+  position: 'relative',
+  shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
   },
@@ -521,6 +534,29 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     color: COLORS.gray[600],
     textAlign: 'center',
+  },
+  sponsorBadge: {
+    position: 'absolute',
+    top: SPACING.sm,
+    right: SPACING.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.md,
+    elevation: 4,
+  },
+  sponsorLogo: {
+  width: 20,
+  height: 12,
+  marginLeft: SPACING.xs / 2,
+  },
+  sponsorText: {
+  fontSize: FONT_SIZES.xs,
+  color: '#1428A0',
+  fontWeight: '600',
+  marginRight: SPACING.xs / 2,
   },
 });
 
