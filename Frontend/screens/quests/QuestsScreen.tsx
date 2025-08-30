@@ -122,9 +122,20 @@ export const QuestsScreen: React.FC = () => {
     try {
       if (Platform.OS === 'web') {
         console.log('🔗 웹 환경에서 window.open 호출');
+        console.log('🔗 window 객체 존재 여부:', typeof window !== 'undefined');
+        console.log('🔗 window.open 함수 존재 여부:', typeof window.open === 'function');
+        
         // 웹 환경에서는 window.open을 사용하여 새 창/탭으로 열기
-        window.open(url, '_blank', 'noopener,noreferrer');
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
         console.log('🔗 window.open 호출 완료');
+        console.log('🔗 새 창 객체:', newWindow);
+        
+        if (newWindow) {
+          console.log('🔗 새 창이 성공적으로 열렸습니다');
+        } else {
+          console.log('🔗 새 창 열기 실패 - 팝업 차단 가능성');
+          Alert.alert('팝업 차단됨', '브라우저에서 팝업을 차단했습니다. 팝업 차단을 해제해주세요.');
+        }
       } else {
         console.log('🔗 모바일 환경에서 Linking API 사용');
         // 모바일 환경에서는 Linking API 사용
@@ -452,14 +463,20 @@ export const QuestsScreen: React.FC = () => {
                      '외부 링크로 이동하시겠습니까?',
                      [
                        { text: '취소', style: 'cancel' },
-                       { 
-                         text: '열기', 
-                         onPress: () => {
-                           console.log('🔗 Alert에서 "열기" 버튼 클릭됨');
-                           console.log('🔗 openExternalLink 함수 호출 전:', quest.link_url);
-                           openExternalLink(quest.link_url);
-                         }
-                       }
+                                               { 
+                          text: '열기', 
+                          onPress: () => {
+                            console.log('🔗 Alert에서 "열기" 버튼 클릭됨');
+                            console.log('🔗 openExternalLink 함수 호출 전:', quest.link_url);
+                            console.log('🔗 openExternalLink 함수 호출 시작');
+                            try {
+                              openExternalLink(quest.link_url);
+                              console.log('🔗 openExternalLink 함수 호출 완료');
+                            } catch (error) {
+                              console.error('🔗 openExternalLink 함수 호출 중 에러:', error);
+                            }
+                          }
+                        }
                      ]
                    );
                  }}
