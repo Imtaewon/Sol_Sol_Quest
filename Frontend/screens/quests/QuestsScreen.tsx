@@ -49,6 +49,7 @@ import { useClaimQuestRewardMutation } from '../../store/api/baseApi';
 import { useSavingsAccount } from '../../hooks/useUser';
 import { RootState } from '../../store';
 import { HomeStackParamList } from '../../navigation/HomeStack';
+import { useQueryClient } from '@tanstack/react-query';
 
 type QuestsScreenNavigationProp = StackNavigationProp<HomeStackParamList, 'Quests'>;
 
@@ -188,6 +189,7 @@ export const QuestsScreen: React.FC = () => {
 
   // 퀘스트 수령 훅 (새로운 API 사용)
   const claimQuestRewardMutation = useClaimQuestRewardMutation();
+  const queryClient = useQueryClient();
 
   // 선택된 타입에 따른 데이터와 로딩 상태
   const getQuestsData = () => {
@@ -291,8 +293,15 @@ export const QuestsScreen: React.FC = () => {
            quest_id: quest.id
          });
          
-         // 성공적으로 완료되면 퀘스트 목록을 새로고침
-         await refetch();
+         // 성공적으로 완료되면 모든 관련 데이터 새로고침
+         console.log('🎯 퀘스트 완료 후 데이터 새로고침 시작');
+         await Promise.all([
+           refetch(), // 퀘스트 목록 새로고침
+           refetchGrowth(), // 성장 퀘스트 새로고침
+           refetchDaily(), // 일상 퀘스트 새로고침
+           refetchSurprise(), // 돌발 퀘스트 새로고침
+         ]);
+         console.log('🎯 퀘스트 완료 후 데이터 새로고침 완료');
        } catch (error) {
          console.error('퀘스트 완료 실패:', error);
        }
@@ -309,17 +318,18 @@ export const QuestsScreen: React.FC = () => {
     return Math.min((quest.progress / quest.maxProgress) * 100, 100);
   };
 
-  /**
-   * 퀘스트 상태 텍스트 반환 함수
-   * @param quest 퀘스트 객체
-   * @returns 상태에 따른 한글 텍스트
-   */
-  const getQuestStatusText = (quest: any) => {
-    if (quest.isCompleted) return '완료';
-    if (quest.user_status === 'CLEAR') return '수령 가능';
-    if (quest.progress && quest.progress > 0) return '진행중';
-    return '미시작';
-  };
+     /**
+    * 퀘스트 상태 텍스트 반환 함수
+    * @param quest 퀘스트 객체
+    * @returns 상태에 따른 한글 텍스트
+    */
+   const getQuestStatusText = (quest: any) => {
+     if (quest.isCompleted) return '완료';
+     if (quest.user_status === 'CLEAR') return '수령 가능';
+     if (quest.user_status === 'SUBMITTED') return '승인대기';
+     if (quest.progress && quest.progress > 0) return '진행중';
+     return '미시작';
+   };
 
   /**
    * 퀘스트 카드 렌더링 함수
@@ -368,18 +378,20 @@ export const QuestsScreen: React.FC = () => {
     const progress = getQuestProgress(quest);
     const statusText = getQuestStatusText(quest);
     
-    // 퀘스트 상태별 버튼 표시 조건 (변환된 데이터 구조 사용)
-    const isInProgress = quest.progress && quest.progress > 0 && !quest.isCompleted;
-    const canClaim = quest.user_status === 'CLEAR';
-    const isCompleted = quest.isCompleted;
+         // 퀘스트 상태별 버튼 표시 조건 (변환된 데이터 구조 사용)
+     const isInProgress = quest.progress && quest.progress > 0 && !quest.isCompleted;
+     const canClaim = quest.user_status === 'CLEAR';
+     const isCompleted = quest.isCompleted;
+     const isSubmitted = quest.user_status === 'SUBMITTED';
 
-    console.log('🎯 퀘스트 상태 계산:', {
-      progress,
-      statusText,
-      isInProgress,
-      canClaim,
-      isCompleted
-    });
+         console.log('🎯 퀘스트 상태 계산:', {
+       progress,
+       statusText,
+       isInProgress,
+       canClaim,
+       isCompleted,
+       isSubmitted
+     });
 
     // 링크 열기 버튼 렌더링 조건 로그
     console.log('🔗 링크 열기 버튼 렌더링 조건 확인:', {
@@ -444,41 +456,85 @@ export const QuestsScreen: React.FC = () => {
                <Text style={styles.statusText}>{statusText}</Text>
              </View>
 
-                           {/* 링크 퀘스트인 경우 링크 열기 버튼 */}
-              {quest.verify_method === 'LINK' && quest.link_url && (
-                <TouchableOpacity
-                  style={[styles.startButton, styles.linkButton]}
-                  onPress={async () => {
-                    console.log('🔗 링크 열기 버튼 클릭됨');
-                    console.log('🔗 퀘스트 정보:', {
-                      id: quest.id,
-                      title: quest.title,
-                      verify_method: quest.verify_method,
-                      link_url: quest.link_url,
-                      hasSavings: hasSavings
-                    });
-                    
-                    try {
-                      // 1) 퀘스트 완료 API 호출 (경험치 수령)
-                      console.log('🎯 링크 퀘스트 완료 API 호출 시작');
-                      await handleClaimQuest(quest);
-                      console.log('🎯 링크 퀘스트 완료 API 호출 완료');
+                                                                                   {/* 링크 퀘스트인 경우 링크 열기 버튼 */}
+                {quest.verify_method === 'LINK' && quest.link_url && !isCompleted && (
+                  <TouchableOpacity
+                    style={[styles.startButton, styles.linkButton]}
+                    onPress={async () => {
+                      console.log('🔗 링크 열기 버튼 클릭됨');
+                      console.log('🔗 퀘스트 정보:', {
+                        id: quest.id,
+                        title: quest.title,
+                        verify_method: quest.verify_method,
+                        link_url: quest.link_url,
+                        hasSavings: hasSavings
+                      });
                       
-                      // 2) 링크 열기
-                      console.log('🔗 링크 열기 시작');
-                      openExternalLink(quest.link_url);
-                      console.log('🔗 링크 열기 완료');
+                                             try {
+                         // 1) 퀘스트 완료 API 호출 (경험치 수령)
+                         console.log('🎯 링크 퀘스트 완료 API 호출 시작');
+                         await handleClaimQuest(quest);
+                         console.log('🎯 링크 퀘스트 완료 API 호출 완료');
+                         
+                         // 2) 사용자 정보 및 리더보드 데이터 새로고침
+                         console.log('🔄 사용자 정보 및 리더보드 새로고침 시작');
+                         await Promise.all([
+                           queryClient.invalidateQueries({ queryKey: ['user'] }),
+                           queryClient.invalidateQueries({ queryKey: ['ranks'] }),
+                           queryClient.invalidateQueries({ queryKey: ['leaderboard'] }),
+                         ]);
+                         console.log('🔄 사용자 정보 및 리더보드 새로고침 완료');
+                         
+                         // 3) 링크 열기
+                         console.log('🔗 링크 열기 시작');
+                         openExternalLink(quest.link_url);
+                         console.log('🔗 링크 열기 완료');
+                         
+                       } catch (error) {
+                         console.error('🔗 링크 열기 중 에러:', error);
+                         Alert.alert('오류', '링크를 여는 중 오류가 발생했습니다.');
+                       }
+                    }}
+                  >
+                    <Ionicons name="open-outline" size={16} color={COLORS.white} />
+                    <Text style={styles.startButtonText}>링크 열기</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* 파일 업로드 퀘스트인 경우 파일 제출 버튼 또는 승인대기 표시 */}
+                {quest.verify_method === 'UPLOAD' && !isCompleted && !isSubmitted && (
+                  <TouchableOpacity
+                    style={[styles.startButton, styles.uploadButton]}
+                    onPress={() => {
+                      console.log('📁 파일 제출 버튼 클릭됨');
+                      console.log('📁 퀘스트 정보:', {
+                        id: quest.id,
+                        title: quest.title,
+                        verify_method: quest.verify_method,
+                        hasSavings: hasSavings
+                      });
                       
-                    } catch (error) {
-                      console.error('🔗 링크 열기 중 에러:', error);
-                      Alert.alert('오류', '링크를 여는 중 오류가 발생했습니다.');
-                    }
-                  }}
-                >
-                  <Ionicons name="open-outline" size={16} color={COLORS.white} />
-                  <Text style={styles.startButtonText}>링크 열기</Text>
-                </TouchableOpacity>
-              )}
+                      navigation.navigate('QuestUpload', {
+                        quest: {
+                          id: quest.id,
+                          title: quest.title,
+                          description: quest.description || quest.title,
+                        },
+                      });
+                    }}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={16} color={COLORS.white} />
+                    <Text style={styles.startButtonText}>파일 제출</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* 파일 제출 후 승인대기 상태 */}
+                {quest.verify_method === 'UPLOAD' && isSubmitted && (
+                  <View style={[styles.startButton, styles.waitingButton]}>
+                    <Ionicons name="time-outline" size={16} color={COLORS.white} />
+                    <Text style={styles.startButtonText}>승인대기</Text>
+                  </View>
+                )}
 
              {/* EXP 받기 가능한 경우 */}
              {canClaim && (
@@ -738,12 +794,24 @@ const styles = StyleSheet.create({
   claimButton: {
     backgroundColor: COLORS.success,
   },
-  linkButton: {
-    backgroundColor: COLORS.accent,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.xs,
-  },
+     linkButton: {
+     backgroundColor: COLORS.accent,
+     flexDirection: 'row',
+     alignItems: 'center',
+     gap: SPACING.xs,
+   },
+       uploadButton: {
+      backgroundColor: COLORS.warning,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+    },
+    waitingButton: {
+      backgroundColor: COLORS.gray[500],
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: SPACING.xs,
+    },
   startButtonText: {
     color: COLORS.white,
     fontSize: FONT_SIZES.sm,

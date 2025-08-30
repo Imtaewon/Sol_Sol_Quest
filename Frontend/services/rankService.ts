@@ -64,7 +64,7 @@ export const rankService = {
     console.log('🌐 rankService.getMySchoolRank HTTP 요청 시작');
     console.log('🌐 rankService.getMySchoolRank 요청 URL:', '/api/v1/universities/leaderboard');
     try {
-      const response = await apiClient.get<ApiResponse<UniversityLeaderboardResponse>>('/api/v1/universities/leaderboard');
+      const response = await apiClient.get<UniversityLeaderboardResponse>('/api/v1/universities/leaderboard');
       console.log('🌐 rankService.getMySchoolRank HTTP 요청 완료:', response.status);
       console.log('🌐 rankService.getMySchoolRank 응답 헤더:', response.headers);
       console.log('🌐 rankService.getMySchoolRank 전체 응답 데이터:', JSON.stringify(response.data, null, 2));
@@ -127,7 +127,7 @@ export const rankService = {
   getMySchoolRankWithUser: async (): Promise<ApiResponse<MySchoolRankWithUser>> => {
     console.log('🌐 rankService.getMySchoolRankWithUser HTTP 요청 시작');
     try {
-      const response = await apiClient.get<ApiResponse<UniversityLeaderboardResponse>>('/api/v1/universities/leaderboard');
+      const response = await apiClient.get<UniversityLeaderboardResponse>('/api/v1/universities/leaderboard');
       console.log('🌐 rankService.getMySchoolRankWithUser HTTP 요청 완료:', response.status);
       
       // my_university 데이터를 MySchoolRankWithUser 형식으로 변환
@@ -168,7 +168,7 @@ export const rankService = {
   getTopSchoolsByTotal: async (): Promise<ApiResponse<SchoolRank[]>> => {
     console.log('🌐 rankService.getTopSchoolsByTotal HTTP 요청 시작');
     try {
-      const response = await apiClient.get<ApiResponse<UniversityLeaderboardResponse>>('/api/v1/universities/leaderboard');
+      const response = await apiClient.get<UniversityLeaderboardResponse>('/api/v1/universities/leaderboard');
       console.log('🌐 rankService.getTopSchoolsByTotal HTTP 요청 완료:', response.status);
       
       // top10_overall 데이터를 SchoolRank[] 형식으로 변환
@@ -193,7 +193,7 @@ export const rankService = {
   getTopSchoolsByAverage: async (): Promise<ApiResponse<SchoolRank[]>> => {
     console.log('🌐 rankService.getTopSchoolsByAverage HTTP 요청 시작');
     try {
-      const response = await apiClient.get<ApiResponse<UniversityLeaderboardResponse>>('/api/v1/universities/leaderboard');
+      const response = await apiClient.get<UniversityLeaderboardResponse>('/api/v1/universities/leaderboard');
       console.log('🌐 rankService.getTopSchoolsByAverage HTTP 요청 완료:', response.status);
       
       // top10_avg 데이터를 SchoolRank[] 형식으로 변환

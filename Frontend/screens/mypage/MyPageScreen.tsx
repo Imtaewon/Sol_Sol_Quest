@@ -104,9 +104,9 @@ export const MyPageScreen: React.FC = () => {
     switch (tier) {
       case 'BASIC': return 2.5;
       case 'BRONZE': return 3.0;
-      case 'SILVER': return 3.8;
-      case 'GOLD': return 5.0;
-      case 'SOL': return 7.0;
+      case 'SILVER': return 4.5;
+      case 'GOLD': return 6.0;
+      case 'SOL': return 10.0;
       default: return 2.5; // 기본값
     }
   };

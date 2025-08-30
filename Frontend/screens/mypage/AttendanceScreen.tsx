@@ -47,6 +47,7 @@ import { LoadingView } from '../../components/common/LoadingView';
 import { ErrorView } from '../../components/common/ErrorView';
 import { useAttendanceData, useCheckAttendance } from '../../hooks/useAttendance';
 import { RootState } from '../../store';
+import { useQueryClient } from '@tanstack/react-query';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +59,7 @@ export const AttendanceScreen: React.FC = () => {
   
   // Redux에서 user 정보 가져오기
   const user = useSelector((state: RootState) => state.user.user);
+  const queryClient = useQueryClient();
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth() + 1;
@@ -104,8 +106,15 @@ export const AttendanceScreen: React.FC = () => {
         day, 
         user_id: user?.id?.toString() || '' 
       });
-      // 성공 시 데이터 리페치
-      refetch();
+      // 성공 시 데이터 리페치 및 퀘스트 데이터도 새로고침
+      await Promise.all([
+        refetch(),
+        // 퀘스트 관련 데이터도 새로고침하여 출석 퀘스트 상태 업데이트
+        queryClient.invalidateQueries({ queryKey: ['quests'] }),
+        queryClient.invalidateQueries({ queryKey: ['dailyQuests'] }),
+        queryClient.invalidateQueries({ queryKey: ['growthQuests'] }),
+        queryClient.invalidateQueries({ queryKey: ['surpriseQuests'] }),
+      ]);
     } catch (error) {
       console.error('출석 체크 실패:', error);
     }

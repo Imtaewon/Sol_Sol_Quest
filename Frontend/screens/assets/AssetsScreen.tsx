@@ -22,8 +22,8 @@ import { AssetsStackParamList } from '../../navigation/AssetsStack';
 // 더미 데이터
 const mockSavingsCard = {
   baseRate: 2.5,
-  tierBonusRate: 2.5, // 골드 티어 보너스
-  finalRate: 5.0, // 골드 티어 최종 금리
+  tierBonusRate: 3.5, // 골드 티어 보너스 (6.0% - 2.5% = 3.5%)
+  finalRate: 6.0, // 골드 티어 최종 금리
   balance: 500000,
   monthlyAmount: 100000,
 };
@@ -42,7 +42,7 @@ const mockProducts = [
     rate: 2.5, // 기본 금리
     period: 12,
     minAmount: 100000,
-    description: '티어에 따라 최대 7.0%까지!',
+    description: '티어에 따라 최대 10.0%까지!',
   },
   {
     id: '2',
@@ -184,17 +184,17 @@ export const AssetsScreen: React.FC = () => {
             </View>
             <View style={styles.tierItem}>
               <Text style={styles.tierItemName}>실버</Text>
-              <Text style={styles.tierItemRate}>3.8%</Text>
+              <Text style={styles.tierItemRate}>4.5%</Text>
               <Text style={styles.tierItemExp}>501-1000 EXP</Text>
             </View>
             <View style={styles.tierItem}>
               <Text style={styles.tierItemName}>골드</Text>
-              <Text style={styles.tierItemRate}>5.0%</Text>
+              <Text style={styles.tierItemRate}>6.0%</Text>
               <Text style={styles.tierItemExp}>1001-2000 EXP</Text>
             </View>
             <View style={styles.tierItem}>
               <Text style={styles.tierItemName}>SOL</Text>
-              <Text style={styles.tierItemRate}>7.0%</Text>
+              <Text style={styles.tierItemRate}>10.0%</Text>
               <Text style={styles.tierItemExp}>2001+ EXP</Text>
             </View>
           </View>

@@ -213,14 +213,24 @@ export const baseApi = createApi({
       invalidatesTags: ['Quest'],
     }),
 
-    // 퀘스트 완료 및 경험치 수령 (시도 기록 자동 생성)
-    claimQuestReward: builder.mutation<any, { quest_id: string }>({
-      query: ({ quest_id }) => ({
-        url: `/api/v1/quests/${quest_id}/claim`,
-        method: 'POST',
-      }),
-      invalidatesTags: ['Quest', 'User', 'Account'],
-    }),
+         // 퀘스트 완료 및 경험치 수령 (시도 기록 자동 생성)
+     claimQuestReward: builder.mutation<any, { quest_id: string }>({
+       query: ({ quest_id }) => ({
+         url: `/api/v1/quests/${quest_id}/claim`,
+         method: 'POST',
+       }),
+       invalidatesTags: ['Quest', 'User', 'Account', 'Leaderboard'],
+     }),
+
+     // 퀘스트 파일 업로드
+     uploadQuestProof: builder.mutation<any, { quest_id: string; proof_url: string }>({
+       query: ({ quest_id, proof_url }) => ({
+         url: `/api/v1/quests/${quest_id}/upload`,
+         method: 'POST',
+         body: { proof_url },
+       }),
+       invalidatesTags: ['Quest'],
+     }),
 
     // 적금 계좌 생성
     createSavingsAccount: builder.mutation<any, {
@@ -284,10 +294,11 @@ export const {
   useGetSchoolsQuery,
   useGetSchoolLeaderboardQuery,
   
-  // 퀘스트
-  useGetQuestsQuery,
-  useCompleteQuestMutation,
-  useClaimQuestRewardMutation,
+     // 퀘스트
+   useGetQuestsQuery,
+   useCompleteQuestMutation,
+   useClaimQuestRewardMutation,
+   useUploadQuestProofMutation,
   
   // 계좌
   useCreateSavingsAccountMutation,

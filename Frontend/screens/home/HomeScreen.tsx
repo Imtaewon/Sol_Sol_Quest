@@ -98,11 +98,33 @@ export const HomeScreen: React.FC = () => {
     switch (tier) {
       case 'BASIC': return 2.5;
       case 'BRONZE': return 3.0;
-      case 'SILVER': return 3.8;
-      case 'GOLD': return 5.0;
-      case 'SOL': return 7.0;
+      case 'SILVER': return 4.5;
+      case 'GOLD': return 6.0;
+      case 'SOL': return 10.0;
       default: return 2.5; // 기본값
     }
+  };
+
+  // 기부금 계산 함수
+  const calculateDonationAmount = (): number => {
+    if (!hasSavings || !savingsAccount?.data?.data?.[0] || !userInfo?.data?.current_tier) {
+      return 0;
+    }
+
+    const monthlyAmount = savingsAccount.data.data[0].monthly_amount || 0;
+    const currentTier = userInfo.data.current_tier;
+    
+    // 티어별 기부율 (월 납입액 대비)
+    const donationRates: Record<string, number> = {
+      'BASIC': 0.01,   // 1%
+      'BRONZE': 0.015, // 1.5%
+      'SILVER': 0.02,  // 2%
+      'GOLD': 0.025,   // 2.5%
+      'SOL': 0.03,     // 3%
+    };
+
+    const donationRate = donationRates[currentTier] || donationRates['BASIC'];
+    return Math.round(monthlyAmount * donationRate);
   };
   
   // 학교 랭킹 API 호출 (적금 가입 여부와 관계없이 동일한 API 사용)
@@ -197,6 +219,35 @@ export const HomeScreen: React.FC = () => {
     } catch (error) {
       console.error('퀘스트 완료 실패:', error);
     }
+  };
+
+  const renderDonationCard = () => {
+    const donationAmount = calculateDonationAmount();
+    
+    // 적금이 없으면 기부금 카드 표시 안함
+    if (!hasSavings || donationAmount === 0) {
+      return null;
+    }
+
+    return (
+      <View style={styles.donationSection}>
+        <View style={styles.donationCard}>
+          <View style={styles.donationHeader}>
+            <Ionicons name="heart" size={24} color={COLORS.error} />
+            <Text style={styles.donationTitle}>기부</Text>
+          </View>
+          <Text style={styles.donationMessage}>
+            고객님의 성장만큼, 헤이영이 기부합니다
+          </Text>
+          <Text style={styles.donationAmount}>
+            예상기부금 {formatNumber(donationAmount)}원
+          </Text>
+          <Text style={styles.donationSubtext}>
+            (월납입액 기준)
+          </Text>
+        </View>
+      </View>
+    );
   };
 
   const renderAccountCarousel = () => (
@@ -417,6 +468,8 @@ export const HomeScreen: React.FC = () => {
         {/* 계좌 캐러셀 */}
         {renderAccountCarousel()}
 
+        {/* 기부금 카드 */}
+        {renderDonationCard()}
 
         {/* 학교 랭킹 */}
         <View style={styles.rankingSection}>
@@ -740,6 +793,50 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: SPACING.md,
     gap: SPACING.xs,
+  },
+  // 기부금 카드 스타일
+  donationSection: {
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+  },
+  donationCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  donationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  donationTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: '700',
+    color: COLORS.error,
+    marginLeft: SPACING.sm,
+  },
+  donationMessage: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.dark,
+    fontWeight: '500',
+    marginBottom: SPACING.md,
+    lineHeight: 22,
+  },
+  donationAmount: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: '700',
+    color: COLORS.error,
+    marginBottom: SPACING.xs,
+  },
+  donationSubtext: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray[600],
+    fontStyle: 'italic',
   },
   indicatorDot: {
     width: 8,
